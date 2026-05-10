@@ -1,0 +1,73 @@
+---
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+const filtered = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<nav id="toc" aria-label="Table of contents">
+  <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-3 px-3">
+    On this page
+  </p>
+  <ul class="space-y-0.5">
+    {
+      filtered.map((h) => (
+        <li>
+          <a
+            href={`#${h.slug}`}
+            data-heading={h.slug}
+            class:list={['toc-link', h.depth === 3 && 'toc-h3']}
+          >
+            {h.text}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<script>
+  const links = document.querySelectorAll<HTMLAnchorElement>('[data-heading]');
+  const targets = document.querySelectorAll<HTMLElement>(
+    'article h2[id], article h3[id]',
+  );
+
+  function activate(id: string) {
+    links.forEach((l) => l.classList.remove('active'));
+    const active = document.querySelector<HTMLElement>(`[data-heading="${id}"]`);
+    if (!active) return;
+    active.classList.add('active');
+    active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          activate(entry.target.id);
+          break;
+        }
+      }
+    },
+    { rootMargin: '-72px 0px -72% 0px', threshold: 0 },
+  );
+
+  targets.forEach((el) => observer.observe(el));
+
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = link.dataset.heading!;
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      activate(id);
+    });
+  });
+</script>

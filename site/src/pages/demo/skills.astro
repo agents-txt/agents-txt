@@ -1,0 +1,343 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="Skills Demo · agents.txt"
+  description="Live demonstration of skill package discovery. agents.json is read to enumerate declared skills, the package is fetched directly over HTTP, and the same content is retrieved through the MCP get_skill tool. Executed in your browser."
+  canonicalUrl="https://agentstxt.dev/demo/skills"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">Skills</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          Skill Package Discovery: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">agents.txt v0.4 · Skills directive · agentskills.io</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">
+            <a href="https://agentskills.io" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              agentskills.io
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/agents.json · skills[] · Skills: directive</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTP · /skills/* · MCP get_skill tool</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page executes a complete skill discovery and retrieval flow against this server. The <code>Skills:</code> directive in <code>agents.txt</code> advertises a URL; <code>agents.json</code> supplements it with a human-readable description and optional access tier. Two retrieval paths are then demonstrated: a direct HTTP fetch of the skill package, and delivery of the same content through the MCP <code>get_skill</code> tool, for agents that already hold an open MCP session.
+        </p>
+        <p>
+          Skills in this context are instruction packages for agents. This one teaches agents how the agents.txt standard works (the spec structure, configuration fields, CLI commands, and middleware wiring) so an agent can guide a developer through integrating it into any site. Discovery always begins with <code>agents.json</code>; the <code>Skills:</code> line in <code>agents.txt</code> is the machine-readable pointer that leads an agent there.
+        </p>
+
+        <h2>Discovery and retrieval flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Transport</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Read skills index from <code>agents.json</code></td><td class="text-[#999]">HTTP GET · no auth</td></tr>
+            <tr><td class="font-mono">1</td><td>Fetch skill package over HTTP</td><td>HTTP GET · /skills/*</td></tr>
+            <tr><td class="font-mono">2</td><td>Initialise MCP session (obtain session ID for step 3)</td><td>POST /mcp · session ID assigned</td></tr>
+            <tr><td class="font-mono">3</td><td>Retrieve skill via MCP <code>get_skill</code> tool</td><td>tools/call · same content, protocol-native</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">Skill discovery runner</p>
+            <p class="text-xs text-[#999] mt-0.5">agents.json · /skills/* · MCP session · all requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'Skills index',              'GET /agents.json · skills[]'],
+            ['1', 'HTTP retrieval',             'GET /skills/agents-txt-setup.md'],
+            ['2', 'MCP session initialisation', 'POST /mcp (required to obtain session ID for get_skill)'],
+            ['3', 'MCP tool invocation',        'tools/call · get_skill("agents-txt-setup")'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">Skill packages are indexed in <code>/agents.json</code> and served at <code>/skills/*</code>. The MCP session used here expires automatically.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Two retrieval paths, one source</h3>
+        <p>
+          Steps 1 and 3 retrieve identical content from different transport layers. Step 1 is a plain HTTP GET; any HTTP client can fetch a skill this way, with no prior protocol negotiation. Step 3 delivers the same content through the MCP <code>get_skill</code> tool, which reads the skills index from <code>agents.json</code> at call time and fetches the target URL on behalf of the caller. An agent already connected to an MCP session can retrieve skills without a second HTTP round-trip.
+        </p>
+        <h3><code>agents.json</code> as the single skills index</h3>
+        <p>
+          The MCP <code>get_skill</code> tool does not maintain a hardcoded list of skill names. It reads <code>agents.json</code> on every call. This means adding a new <code>Skills:</code> line to the config and regenerating the discovery files is sufficient to make the skill available through both HTTP and MCP. No changes to the MCP server are required.
+        </p>
+        <h3>Skill tiers and payment gating</h3>
+        <p>
+          The <code>tier</code> field in <code>agents.json</code> (<code>"free"</code> or <code>"paid"</code>) allows an agent to determine access cost before fetching. A <code>paid</code> skill URL may be protected by x402 or MPP middleware; the agent will receive a <code>402 Payment Required</code> response and handle payment before retrying. The <code>agents.txt</code> <code>Skills:</code> directive carries only the URL; all metadata lives in <code>agents.json</code>.
+        </p>
+        <h3>Service-consumption vs repository skills</h3>
+        <p>
+          The agentskills.io standard distinguishes two skill categories. Repository skills (CLAUDE.md, AGENTS.md, <code>/.claude/skills/</code>) teach agents how to work on a codebase and are developer-facing artifacts. Service-consumption skills (the kind served at <code>/skills/*</code>) teach agents how to use a deployed service's API or MCP tools. Only service-consumption skills belong in the <code>Skills:</code> directive.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+function truncate(text: string, limit = 1200): string {
+  if (text.length <= limit) return text;
+  return text.slice(0, limit) + `\n\n… (${text.length.toLocaleString()} bytes total)`;
+}
+
+function parseSSE(text: string): unknown {
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      try { return JSON.parse(line.slice(6)); } catch {}
+    }
+  }
+  return null;
+}
+
+async function mcpPost(
+  path: string,
+  body: unknown,
+  sessionId: string | null = null,
+): Promise<{ raw: unknown; sessionId: string | null; status: number }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream',
+  };
+  if (sessionId) headers['Mcp-Session-Id'] = sessionId;
+  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const text = await res.text();
+  const raw = parseSSE(text) ?? JSON.parse(text);
+  const returnedSession = res.headers.get('mcp-session-id');
+  return { raw, sessionId: returnedSession ?? sessionId, status: res.status };
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: agents.json skills index ─────────────────────────────────────
+    setRunning('0');
+    const agentsRes = await fetch(`${origin}/agents.json`);
+    const agentsJson = await agentsRes.json() as { skills?: Array<{ url: string; description?: string; tier?: string }> };
+    const skills = agentsJson.skills ?? [];
+    const skillsSummary = skills.map(s =>
+      `url          ${s.url}\ndescription  ${s.description ?? '—'}${s.tier ? `\ntier         ${s.tier}` : ''}`
+    ).join('\n\n');
+    setDone('0',
+      `GET /agents.json · skills[]\n\n${skills.length} skill package${skills.length !== 1 ? 's' : ''} declared\n\n${skillsSummary}`,
+      `${skills.length} skill${skills.length !== 1 ? 's' : ''}`,
+    );
+
+    if (skills.length === 0) throw new Error('No skills declared in agents.json. Nothing to retrieve.');
+    const skillUrl = skills[0].url;
+    const skillName = skillUrl.split('/').pop()?.replace('.md', '') ?? 'unknown';
+
+    // ── Step 1: HTTP retrieval ────────────────────────────────────────────────
+    setRunning('1');
+    const skillPath = new URL(skillUrl).pathname;
+    const skillRes = await fetch(`${origin}${skillPath}`);
+    const skillText = await skillRes.text();
+    setDone('1',
+      `GET ${skillPath}\n\n${truncate(skillText)}`,
+      `${skillRes.status} · ${skillText.length.toLocaleString()} bytes`,
+    );
+
+    // ── Step 2: MCP session initialisation ───────────────────────────────────
+    setRunning('2');
+    const init = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'agentstxt-demo', version: '1.0.0' } },
+    });
+    if (!init.sessionId) throw new Error(`No session ID returned:\n${fmt(init.raw)}`);
+    const sessionId = init.sessionId;
+    const initResult = (init.raw as { result?: { serverInfo?: unknown; capabilities?: unknown } }).result;
+    setDone('2',
+      `POST /mcp  (no Mcp-Session-Id)\n\nMcp-Session-Id  ${sessionId}\n\n${fmt(initResult)}`,
+      `${init.status}`,
+    );
+
+    // ── Step 3: get_skill via MCP ─────────────────────────────────────────────
+    setRunning('3');
+    const skillCall = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 2, method: 'tools/call',
+      params: { name: 'get_skill', arguments: { name: skillName } },
+    }, sessionId);
+    const skillContent = (skillCall.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text ?? fmt(skillCall.raw);
+    setDone('3',
+      `tools/call get_skill  name=${skillName}\nSession: ${sessionId.slice(0, 16)}…\n\n${truncate(skillContent)}`,
+      `${skillCall.status}`,
+    );
+
+    resultText.textContent = `Skill "${skillName}" retrieved via both HTTP and MCP; content verified identical through both transport paths.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

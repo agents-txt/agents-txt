@@ -1,0 +1,28 @@
+{
+  "version": "1.0",
+  "standard": "https://agentstxt.dev",
+  "site": {
+    "name": "agents.txt Standard",
+    "url": "https://agentstxt.dev",
+    "description": "The open specification for AI agent capability declarations. Layer 4 of the agent-readiness stack."
+  },
+  "authorization": {
+    "protocols": [
+      "agent-auth"
+    ],
+    "discovery": "/.well-known/agent-configuration"
+  },
+  "mcp": [
+    {
+      "url": "https://agentstxt.dev/mcp",
+      "type": "streamable-http",
+      "description": "Exposes the agents.txt spec as structured resources: sections, directive reference, examples, and the JSON schema for agents.json."
+    }
+  ],
+  "skills": [
+    {
+      "url": "https://agentstxt.dev/skills/agents-txt-setup.md",
+      "description": "Guides agents through integrating the agentify CLI into any website: init wizard, config fields, middleware wiring for Express/Next.js/Hono, and payment protocol setup."
+    }
+  ]
+}

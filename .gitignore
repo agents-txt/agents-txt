@@ -1,0 +1,44 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.astro/
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Environment — never commit secrets ────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# ── Generated agentic files (commit if you want to pin them, ignore if generated at build time) ──
+# public/robots.txt
+# public/llms.txt
+# public/llms-full.txt
+# public/agent-map.json
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editors ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Test / coverage ───────────────────────────────────────────────────────────
+coverage/
+.nyc_output/

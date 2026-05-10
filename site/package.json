@@ -1,0 +1,23 @@
+{
+  "name": "agents-txt-spec",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "latest",
+    "astro": "^6.3.1",
+    "mppx": "^0.6.16",
+    "stripe": "^22.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/postcss": "^4.3.0",
+    "tailwindcss": "^4.3.0",
+    "wrangler": "^4.90.0"
+  }
+}

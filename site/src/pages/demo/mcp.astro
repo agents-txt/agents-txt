@@ -1,0 +1,363 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="MCP Demo · agents.txt"
+  description="Live demonstration of the Model Context Protocol. An MCP session is initialised against this server's public endpoint, tools are enumerated, and the agents.txt spec is retrieved. Executed in your browser."
+  canonicalUrl="https://agentstxt.dev/demo/mcp"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">MCP</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          Model Context Protocol: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">MCP 2024-11-05 · JSON-RPC 2.0 · Streamable HTTP · SSE</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Protocol</dt>
+          <dd class="text-[#111]">
+            <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              modelcontextprotocol.io
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="font-mono text-[#111]">Streamable HTTP: POST /mcp · SSE response</dd>
+          <dt class="text-[#999] font-medium">Server</dt>
+          <dd class="font-mono text-[#111]">agents.txt v0.5.0 · Cloudflare Workers + Durable Objects</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page executes a live MCP session against this server's public <code>/mcp</code> endpoint. The session follows the Streamable HTTP transport defined in MCP 2024-11-05: a <code>POST</code> request with no session ID initiates the handshake, the server assigns a session ID in the response headers, and all subsequent requests carry that session ID.
+        </p>
+        <p>
+          MCP responses are delivered as Server-Sent Events (<code>text/event-stream</code>). Each response is a single <code>data:</code> line containing a JSON-RPC 2.0 result object. The demo parses these inline. No MCP client library is required.
+        </p>
+
+        <h2>Protocol flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Method</th><th>Session ID</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td><code>initialize</code> (server assigns session ID)</td><td class="text-[#999]">none (server assigns)</td></tr>
+            <tr><td class="font-mono">1</td><td><code>tools/list</code>: enumerate available tools</td><td>required</td></tr>
+            <tr><td class="font-mono">2</td><td><code>tools/call get_spec</code>: retrieve spec section</td><td>required</td></tr>
+            <tr><td class="font-mono">3</td><td><code>tools/call validate_agents_txt</code>: validate live <code>/agents.txt</code></td><td>required</td></tr>
+            <tr><td class="font-mono">4</td><td><code>tools/call validate_agents_json</code>: validate live <code>/agents.json</code></td><td>required</td></tr>
+            <tr><td class="font-mono">5</td><td><code>tools/call audit_site</code>: full compliance audit of this site</td><td>required</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">MCP session runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Streamable HTTP · session negotiated on demand · requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'Session initialisation',       'POST /mcp  (no Mcp-Session-Id)'],
+            ['1', 'Tool enumeration',              'tools/list'],
+            ['2', 'Tool invocation: get_spec',          'tools/call · section: authorization'],
+            ['3', 'Tool invocation: validate_agents_txt',  'tools/call · content: /agents.txt (fetched live)'],
+            ['4', 'Tool invocation: validate_agents_json', 'tools/call · content: /agents.json (fetched live)'],
+            ['5', 'Tool invocation: audit_site',           'tools/call · full compliance audit of this site'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">MCP sessions expire automatically. Run again to open a new session.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Streamable HTTP transport</h3>
+        <p>
+          MCP 2024-11-05 defines Streamable HTTP as the primary transport. All requests are <code>POST /mcp</code> with <code>Content-Type: application/json</code> and <code>Accept: application/json, text/event-stream</code>. The server responds with <code>text/event-stream</code>; each response is a single <code>data:</code> line containing a JSON-RPC 2.0 object.
+        </p>
+        <h3>Session lifecycle</h3>
+        <p>
+          The <code>initialize</code> request must be sent without an <code>Mcp-Session-Id</code> header. The server assigns a session ID and returns it in the response headers. All subsequent requests in the session carry this ID. Sending <code>initialize</code> with an existing session ID is rejected with <code>-32600 Invalid Request</code>.
+        </p>
+        <h3>Durable Objects</h3>
+        <p>
+          The MCP server uses Cloudflare Durable Objects to maintain session state. Each session is backed by its own Durable Object instance, enabling consistent streaming across requests without a stateful long-lived connection.
+        </p>
+        <h3>Available tools</h3>
+        <p>
+          This server exposes six tools: <code>get_spec</code>, <code>get_skill</code>, <code>parse_agents_txt</code>, <code>validate_agents_txt</code>, <code>validate_agents_json</code>, and <code>audit_site</code>. All tools are public. No authentication required. The demo exercises all of them except <code>get_skill</code> and <code>parse_agents_txt</code>: <code>get_spec</code> retrieves a spec section; <code>validate_agents_txt</code> and <code>validate_agents_json</code> validate the raw file content fetched in-browser; <code>audit_site</code> performs a full server-side compliance audit of this site, fetching and parsing all three files (<code>agents.txt</code>, <code>agents.json</code>, <code>robots.txt</code>) from the MCP worker.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+function parseSSE(text: string): unknown {
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      try { return JSON.parse(line.slice(6)); } catch {}
+    }
+  }
+  return null;
+}
+
+async function mcpPost(path: string, body: unknown, sessionId: string | null = null): Promise<{ raw: unknown; sessionId: string | null; status: number }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream',
+  };
+  if (sessionId) headers['Mcp-Session-Id'] = sessionId;
+
+  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const text = await res.text();
+  const raw = parseSSE(text) ?? JSON.parse(text);
+  const returnedSession = res.headers.get('mcp-session-id');
+  return { raw, sessionId: returnedSession ?? sessionId, status: res.status };
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: Initialize ────────────────────────────────────────────────────
+    setRunning('0');
+    const init = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'agentstxt-demo', version: '1.0.0' } },
+    });
+    if (!init.sessionId) throw new Error(`No session ID returned:\n${fmt(init.raw)}`);
+    const sessionId = init.sessionId;
+    const initResult = (init.raw as { result?: { serverInfo?: unknown; capabilities?: unknown } }).result;
+    setDone('0',
+      `POST /mcp  (no Mcp-Session-Id)\n\nMcp-Session-Id  ${sessionId}\n\n${fmt(initResult)}`,
+      `${init.status}`,
+    );
+
+    // ── Step 1: tools/list ────────────────────────────────────────────────────
+    setRunning('1');
+    const list = await mcpPost(`${origin}/mcp`, { jsonrpc: '2.0', id: 2, method: 'tools/list' }, sessionId);
+    const tools = (list.raw as { result?: { tools?: Array<{ name: string; description: string }> } }).result?.tools ?? [];
+    const toolSummary = tools.map((t: { name: string; description: string }) =>
+      `${t.name.padEnd(22)} ${t.description.slice(0, 60)}${t.description.length > 60 ? '…' : ''}`
+    ).join('\n');
+    setDone('1',
+      `tools/list → ${tools.length} tools\n\n${toolSummary}`,
+      `${tools.length} tools`,
+    );
+
+    // ── Step 2: get_spec ──────────────────────────────────────────────────────
+    setRunning('2');
+    const spec = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 3, method: 'tools/call',
+      params: { name: 'get_spec', arguments: { section: 'authorization' } },
+    }, sessionId);
+    const specContent = (spec.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text ?? fmt(spec.raw);
+    const truncated = specContent.length > 1200 ? specContent.slice(0, 1200) + '\n\n… (truncated)' : specContent;
+    setDone('2',
+      `tools/call get_spec  section=authorization\n\n${truncated}`,
+      `${spec.status}`,
+    );
+
+    // ── Step 3: validate_agents_txt ───────────────────────────────────────────
+    setRunning('3');
+    const agentsTxtContent = await fetch(`${origin}/agents.txt`).then(r => r.text());
+    const validateTxt = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 4, method: 'tools/call',
+      params: { name: 'validate_agents_txt', arguments: { content: agentsTxtContent } },
+    }, sessionId);
+    const validateTxtContent = (validateTxt.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text ?? fmt(validateTxt.raw);
+    setDone('3',
+      `tools/call validate_agents_txt\nSource: ${origin}/agents.txt (fetched live)\n\n${validateTxtContent}`,
+      `${validateTxt.status}`,
+    );
+
+    // ── Step 4: validate_agents_json ──────────────────────────────────────────
+    setRunning('4');
+    const agentsJsonContent = await fetch(`${origin}/agents.json`).then(r => r.text());
+    const validateJson = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 5, method: 'tools/call',
+      params: { name: 'validate_agents_json', arguments: { content: agentsJsonContent } },
+    }, sessionId);
+    const validateJsonContent = (validateJson.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text ?? fmt(validateJson.raw);
+    setDone('4',
+      `tools/call validate_agents_json\nSource: ${origin}/agents.json (fetched live)\n\n${validateJsonContent}`,
+      `${validateJson.status}`,
+    );
+
+    // ── Step 5: audit_site ────────────────────────────────────────────────────
+    setRunning('5');
+    const siteCheck = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 6, method: 'tools/call',
+      params: { name: 'audit_site', arguments: { url: origin } },
+    }, sessionId);
+    const siteCheckContent = (siteCheck.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text ?? fmt(siteCheck.raw);
+    setDone('5',
+      `tools/call audit_site  url=${origin}\n\n${siteCheckContent}`,
+      `${siteCheck.status}`,
+    );
+
+    resultText.textContent = `MCP session ${sessionId.slice(0, 16)}… completed: 6 steps, ${tools.length} tools discovered.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Session interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

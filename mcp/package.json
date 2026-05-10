@@ -1,0 +1,23 @@
+{
+  "name": "agents-txt-mcp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "npx tsc --noEmit",
+    "deploy": "wrangler deploy --minify",
+    "deploy:production": "wrangler deploy --minify --env production"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "agents": "^0.12.3",
+    "hono": "4.12.18",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260312.1",
+    "@types/node": "^25.5.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.90.0"
+  }
+}

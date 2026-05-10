@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "agents-txt-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "vars": {
+    "SITE_ORIGIN": "http://localhost:4321"
+  },
+
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1.0 }
+  },
+
+  "durable_objects": {
+    "bindings": [{ "class_name": "AgentsTxtMCP", "name": "AgentsTxtMCP" }]
+  },
+
+  "migrations": [
+    { "new_sqlite_classes": ["AgentsTxtMCP"], "tag": "v1" }
+  ],
+
+  "env": {
+    "production": {
+      "name": "agents-txt-mcp-production",
+      "vars": {
+        "SITE_ORIGIN": "https://agentstxt.dev"
+      },
+      "durable_objects": {
+        "bindings": [{ "class_name": "AgentsTxtMCP", "name": "AgentsTxtMCP" }]
+      },
+      "migrations": [{ "new_sqlite_classes": ["AgentsTxtMCP"], "tag": "v1" }],
+      "routes": [{ "pattern": "mcp.agentstxt.dev", "custom_domain": true }]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "agentstxt",
+  "private": true,
+  "version": "0.1.0",
+  "description": "agents.txt — open standard, reference site, MCP server, and agent-auth worker",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+
+    "site:dev": "pnpm --filter agents-txt-spec dev",
+    "site:build": "pnpm --filter agents-txt-spec build",
+    "site:deploy": "pnpm --filter agents-txt-spec deploy",
+
+    "mcp:dev": "pnpm --filter agents-txt-mcp dev",
+    "mcp:build": "pnpm --filter agents-txt-mcp build",
+    "mcp:deploy": "pnpm --filter agents-txt-mcp deploy",
+    "mcp:deploy:prod": "pnpm --filter agents-txt-mcp deploy:production",
+
+    "auth:dev": "pnpm --filter agents-txt-auth dev",
+    "auth:build": "pnpm --filter agents-txt-auth build",
+    "auth:test": "pnpm --filter agents-txt-auth test",
+    "auth:deploy": "pnpm --filter agents-txt-auth deploy",
+    "auth:deploy:prod": "pnpm --filter agents-txt-auth deploy:production"
+  },
+  "packageManager": "pnpm@10.26.2",
+  "engines": {
+    "node": ">=20.12.0"
+  }
+}

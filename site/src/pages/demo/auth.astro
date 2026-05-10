@@ -1,0 +1,366 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="Agent Auth Demo · agents.txt"
+  description="Live demonstration of the agent-auth protocol. An Ed25519 keypair is generated in your browser, registered with this server, and used to access a protected resource. No installation required."
+  canonicalUrl="https://agentstxt.dev/demo/auth"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">Agent Auth</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          Agent Auth Protocol: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">agent-auth-protocol · v0.1 · Ed25519 / EdDSA</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Protocol</dt>
+          <dd class="text-[#111]">
+            <a href="https://agent-auth-protocol.com" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              agent-auth-protocol.com
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Cryptography</dt>
+          <dd class="font-mono text-[#111]">Ed25519 (EdDSA), Web Crypto API</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTPS · Bearer JWT · Cloudflare Workers KV</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page executes a complete agent authentication handshake against this server. All cryptographic operations (keypair generation, JWT signing, and signature verification) run in your browser using the Web Crypto API. No keys are sent to any third party. The agent identity is ephemeral: it exists only for the duration of this session.
+        </p>
+        <p>
+          The agent-auth protocol establishes a separation between the <strong>host</strong> (the party that registers an agent) and the <strong>agent</strong> (the identity that authenticates for capability execution). Each holds a separate Ed25519 keypair. Compromising one does not compromise the other.
+        </p>
+
+        <h2>Protocol flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Auth</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Discover provider metadata</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">1</td><td>Generate host + agent Ed25519 keypairs</td><td class="text-[#999]">local</td></tr>
+            <tr><td class="font-mono">2</td><td>Register agent (host JWT carries <code>agent_public_key</code>)</td><td>Host JWT</td></tr>
+            <tr><td class="font-mono">3</td><td>Confirm agent status</td><td>Host JWT</td></tr>
+            <tr><td class="font-mono">4</td><td>Execute capability (signed by agent key)</td><td>Agent JWT</td></tr>
+            <tr><td class="font-mono">5a</td><td>Access protected resource without credentials</td><td class="text-[#999]">none → 401</td></tr>
+            <tr><td class="font-mono">5b</td><td>Access protected resource with agent JWT</td><td>Agent JWT → 200</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">Authentication flow runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Keypairs generated in-browser · requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0',  'Discovery',                              'GET /.well-known/agent-configuration'],
+            ['1',  'Keypair generation',                    'Ed25519 (host + agent)'],
+            ['2',  'Agent registration',                    'POST /agent/register'],
+            ['3',  'Status check',                          'GET /agent/status'],
+            ['4',  'Capability execution',                  'POST /capability/execute'],
+            ['5a', 'Protected resource: unauthenticated',  'GET /auth → expect 401'],
+            ['5b', 'Protected resource: authenticated',    'GET /auth → expect 200'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">Agent identity is ephemeral. Not persisted beyond this session. Run again to generate a new keypair.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Separate keypairs</h3>
+        <p>
+          The host keypair is used exclusively for management operations (registration, status, revocation). The agent keypair is used exclusively for execution operations. The server stores the agent's public key at registration time and verifies all subsequent agent JWTs against it. A token signed by the host key is rejected when presented to an agent-only endpoint.
+        </p>
+        <h3><code>typ</code> is a JOSE header claim</h3>
+        <p>
+          The spec requires <code>"typ": "host+jwt"</code> and <code>"typ": "agent+jwt"</code> in the JWT header, not the payload. A token with the correct body claims but the wrong header <code>typ</code> is rejected immediately, before signature verification.
+        </p>
+        <h3>JTI replay prevention</h3>
+        <p>
+          Every JWT carries a unique <code>jti</code> (JWT ID). On first use it is written to KV with a 90-second TTL. A second request with the same <code>jti</code> within that window is rejected with <code>Token replay detected</code>, regardless of signature validity.
+        </p>
+        <h3>JWK thumbprint as host identity</h3>
+        <p>
+          The host's stable identity is a JWK thumbprint (RFC 7638): canonical JSON <code>{"{crv, kty, x}"}</code> → SHA-256 → base64url. This thumbprint is used as the <code>iss</code> claim in all host JWTs and as the KV key for host records.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function b64url(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function generateKeypair() {
+  const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']) as CryptoKeyPair;
+  const publicJwk = await crypto.subtle.exportKey('jwk', kp.publicKey) as JsonWebKey;
+  return { publicJwk, privateKey: kp.privateKey };
+}
+
+async function thumbprint(jwk: JsonWebKey): Promise<string> {
+  const canonical = JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x });
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical));
+  return b64url(digest);
+}
+
+async function signJwt(payload: Record<string, unknown>, header: Record<string, unknown>, privateKey: CryptoKey): Promise<string> {
+  const h = b64url(new TextEncoder().encode(JSON.stringify({ alg: 'EdDSA', ...header })));
+  const p = b64url(new TextEncoder().encode(JSON.stringify({
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 60,
+    jti: crypto.randomUUID(),
+    ...payload,
+  })));
+  const sig = await crypto.subtle.sign({ name: 'Ed25519' }, privateKey, new TextEncoder().encode(`${h}.${p}`));
+  return `${h}.${p}.${b64url(sig)}`;
+}
+
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    setRunning('0');
+    const discRes = await fetch(`${origin}/.well-known/agent-configuration`);
+    const disc = await discRes.json() as Record<string, unknown>;
+    setDone('0', `GET /.well-known/agent-configuration\n\n${fmt(disc)}`, `${discRes.status}`);
+
+    setRunning('1');
+    const host = await generateKeypair();
+    const agent = await generateKeypair();
+    const hostThumbprint = await thumbprint(host.publicJwk);
+    setDone('1', `Host thumbprint   ${hostThumbprint}\nAgent public key  ${agent.publicJwk.x}`, 'local');
+
+    setRunning('2');
+    const hostJwt = await signJwt(
+      { iss: hostThumbprint, aud: origin, host_public_key: host.publicJwk, agent_public_key: agent.publicJwk },
+      { typ: 'host+jwt' },
+      host.privateKey,
+    );
+    const regRes = await fetch(`${origin}/agent/register`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostJwt}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const reg = await regRes.json() as Record<string, unknown>;
+    if (!reg.agent_id) throw new Error(`Registration failed:\n${fmt(reg)}`);
+    const agentId = reg.agent_id as string;
+    setDone('2', `POST /agent/register\n\n${fmt(reg)}`, `${regRes.status}`);
+
+    setRunning('3');
+    const statusJwt = await signJwt(
+      { iss: hostThumbprint, aud: origin, host_public_key: host.publicJwk },
+      { typ: 'host+jwt' },
+      host.privateKey,
+    );
+    const statusRes = await fetch(`${origin}/agent/status?agent_id=${agentId}`, {
+      headers: { Authorization: `Bearer ${statusJwt}` },
+    });
+    const status = await statusRes.json() as Record<string, unknown>;
+    setDone('3', `GET /agent/status?agent_id=${agentId}\n\n${fmt(status)}`, `${statusRes.status}`);
+
+    setRunning('4');
+    const agentJwt = await signJwt(
+      { iss: hostThumbprint, sub: agentId, aud: `${origin}/capability/execute` },
+      { typ: 'agent+jwt' },
+      agent.privateKey,
+    );
+    const execRes = await fetch(`${origin}/capability/execute`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${agentJwt}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability: 'ping' }),
+    });
+    const exec = await execRes.json() as Record<string, unknown>;
+    setDone('4', `POST /capability/execute\n\n${fmt(exec)}`, `${execRes.status}`);
+
+    setRunning('5a');
+    const unauthedRes = await fetch(`${origin}/auth`);
+    const unauthed = await unauthedRes.json() as Record<string, unknown>;
+    setDone('5a', `GET /auth  (no Authorization header)\n\n${fmt(unauthed)}`, `${unauthedRes.status}`);
+
+    setRunning('5b');
+    const authJwt = await signJwt(
+      { iss: hostThumbprint, sub: agentId, aud: `${origin}/auth` },
+      { typ: 'agent+jwt' },
+      agent.privateKey,
+    );
+    const authedRes = await fetch(`${origin}/auth`, {
+      headers: { Authorization: `Bearer ${authJwt}` },
+    });
+    const authed = await authedRes.json() as Record<string, unknown>;
+    setDone('5b', `GET /auth  (Authorization: Bearer <agent+jwt>)\n\n${fmt(authed)}`, `${authedRes.status}`);
+
+    resultText.textContent = `Agent ${agentId} successfully authenticated via the agent-auth protocol.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

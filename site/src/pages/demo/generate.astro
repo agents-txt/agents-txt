@@ -1,0 +1,627 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="File Generator · agents.txt"
+  description="Generate agents.txt and agents.json for your site. Select directives, configure options, and copy the output directly into your project. No install required."
+  canonicalUrl="https://agentstxt.dev/demo/generate"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">Generate</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+
+    <!-- Cover -->
+    <div class="max-w-[72ch] mb-10 pb-8 border-b border-[#e5e5e5]">
+      <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+        File Generator
+      </h1>
+      <p class="text-sm text-[#777] font-mono mb-6">agents.txt · agents.json · directives · copy-paste</p>
+      <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+        <dt class="text-[#999] font-medium">Output</dt>
+        <dd class="font-mono text-[#111]">agents.txt · agents.json</dd>
+        <dt class="text-[#999] font-medium">Standard</dt>
+        <dd class="text-[#111]">
+          <a href="/" class="underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+            agents.txt v{SPEC_VERSION}
+          </a>
+        </dd>
+        <dt class="text-[#999] font-medium">Method</dt>
+        <dd class="text-[#111]">Browser-only · no server calls · no install required</dd>
+      </dl>
+    </div>
+
+    <!-- Introduction -->
+    <div class="prose max-w-none mb-10">
+      <p>
+        <code>agents.txt</code> is the plain-text announcement layer: minimal directives that tell
+        AI agents what capabilities this site supports. <code>agents.json</code> is its structured
+        companion — the same information in machine-readable JSON with richer metadata per field.
+        Both files are served from your site root and discovered automatically by compliant agents.
+      </p>
+      <p>
+        Select the directives you want to declare, fill in the values for your site, then click
+        <strong>Generate</strong>. The files are built entirely in your browser. Copy the output
+        directly into your project or use
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer">
+          the agentify CLI
+        </a>
+        to generate and keep them in sync from <code>agentic.config.js</code>.
+      </p>
+
+      <h2>Directives</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Directive</th>
+            <th>agents.txt</th>
+            <th>agents.json</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Payments</code></td>
+            <td><code>Payments: enabled</code> + <code>Protocols:</code></td>
+            <td><code>payments.protocols</code> · <code>x402.chains</code> · <code>payments.pricing</code></td>
+          </tr>
+          <tr>
+            <td><code>Authorization</code></td>
+            <td><code>Authorization:</code> + optional <code>Identity: required</code></td>
+            <td><code>authorization.protocols</code> · <code>discovery</code> endpoint</td>
+          </tr>
+          <tr>
+            <td><code>MCP</code></td>
+            <td><code>MCP: &lt;url&gt;</code></td>
+            <td><code>mcp[].url</code> + <code>type: streamable-http</code></td>
+          </tr>
+          <tr>
+            <td><code>Skills</code></td>
+            <td><code>Skills: &lt;url&gt;</code></td>
+            <td><code>skills[].url</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Configurator ──────────────────────────────────────────────────────── -->
+    <div class="max-w-[72ch] mb-8">
+      <div class="border border-[#e5e5e5]">
+
+        <!-- Panel header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <p class="text-sm font-semibold text-[#111]">Configure directives</p>
+          <button id="generate-btn"
+            class="text-xs font-medium px-3 py-1.5 border border-[#111] hover:bg-[#111] hover:text-white transition-colors">
+            Generate
+          </button>
+        </div>
+
+        <!-- Site inputs (always visible) -->
+        <div class="px-5 py-5 border-b border-[#e5e5e5]">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-4">Site</p>
+          <div class="flex flex-col gap-3">
+            <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+              <label class="text-xs text-[#555]" for="site-name">Name</label>
+              <input id="site-name" type="text" value="My Site"
+                class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+            </div>
+            <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+              <label class="text-xs text-[#555]" for="site-url">URL</label>
+              <input id="site-url" type="text" value="https://example.com"
+                class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+            </div>
+            <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+              <label class="text-xs text-[#555]" for="site-desc">
+                Description
+                <span class="text-[#bbb] font-normal">opt.</span>
+              </label>
+              <input id="site-desc" type="text" placeholder="Short description of your site"
+                class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Directive toggles -->
+        <div class="divide-y divide-[#e5e5e5]">
+
+          <!-- ── Payments ───────────────────────────────────────────────────── -->
+          <div class="px-5 py-4">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" id="chk-payments" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+              <span class="text-sm font-medium text-[#111]">Payments</span>
+              <span class="font-mono text-[11px] text-[#999]">x402 · MPP</span>
+            </label>
+
+            <div id="payments-sub" class="hidden">
+              <div class="mt-4 pl-5 flex flex-col gap-5">
+
+                <!-- x402 sub-toggle -->
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer select-none mb-3">
+                    <input type="checkbox" id="chk-x402" class="w-3.5 h-3.5 accent-[#111] shrink-0" checked />
+                    <span class="text-xs font-semibold text-[#111]">x402</span>
+                    <span class="font-mono text-[11px] text-[#999]">on-chain · USDC · EVM + Solana</span>
+                  </label>
+                  <div id="x402-sub" class="pl-5 flex flex-col gap-2.5">
+                    <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                      <label class="text-xs text-[#555]" for="evm-addr">EVM address</label>
+                      <input id="evm-addr" type="text" placeholder="0xYourEVMWalletAddress"
+                        class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                    </div>
+                    <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                      <label class="text-xs text-[#555]" for="sol-addr">
+                        Solana address
+                        <span class="text-[#bbb] font-normal">opt.</span>
+                      </label>
+                      <input id="sol-addr" type="text" placeholder="YourSolanaAddressBase58"
+                        class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                    </div>
+                    <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                      <label class="text-xs text-[#555]" for="x402-price">
+                        Default price
+                        <span class="text-[#bbb] font-normal">opt.</span>
+                      </label>
+                      <div class="flex gap-2">
+                        <input id="x402-price" type="text" placeholder="0.001"
+                          class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                        <input id="x402-token" type="text" placeholder="USDC"
+                          class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-20 shrink-0" />
+                      </div>
+                    </div>
+                    <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                      <label class="text-xs text-[#555]" for="x402-description">
+                        Description
+                        <span class="text-[#bbb] font-normal">opt.</span>
+                      </label>
+                      <input id="x402-description" type="text" placeholder="Access to premium API endpoints"
+                        class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                    </div>
+                    <p class="text-[11px] text-[#999] leading-relaxed">
+                      Wallet addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only — never in the declaration files. Pricing is surfaced in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> so agents can pre-screen affordability.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- MPP sub-toggle -->
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer select-none mb-3">
+                    <input type="checkbox" id="chk-mpp" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+                    <span class="text-xs font-semibold text-[#111]">MPP</span>
+                    <span class="font-mono text-[11px] text-[#999]">fiat + USDC · session-based · Stripe · Tempo</span>
+                  </label>
+                  <div id="mpp-sub" class="hidden">
+                    <div class="pl-5 flex flex-col gap-2.5">
+                      <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                        <label class="text-xs text-[#555]" for="mpp-price">
+                          Default price
+                          <span class="text-[#bbb] font-normal">opt.</span>
+                        </label>
+                        <div class="flex gap-2">
+                          <input id="mpp-price" type="text" placeholder="0.001"
+                            class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                          <input id="mpp-token" type="text" placeholder="USD"
+                            class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-20 shrink-0" />
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                        <label class="text-xs text-[#555]" for="mpp-description">
+                          Description
+                          <span class="text-[#bbb] font-normal">opt.</span>
+                        </label>
+                        <input id="mpp-description" type="text" placeholder="Premium content access"
+                          class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                      </div>
+                      <p class="text-[11px] text-[#999] leading-relaxed">
+                        Default price appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>. Payment method details (Stripe, Tempo) are advertised in the MPP <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> challenge at request time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Authorization ──────────────────────────────────────────────── -->
+          <div class="px-5 py-4">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" id="chk-auth" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+              <span class="text-sm font-medium text-[#111]">Authorization</span>
+              <span class="font-mono text-[11px] text-[#999]">agent-auth · Ed25519 · JWT</span>
+            </label>
+            <div id="auth-sub" class="hidden">
+              <div class="mt-4 pl-5 flex flex-col gap-3">
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="auth-protocol">Protocol</label>
+                  <input id="auth-protocol" type="text" value="agent-auth"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <label class="flex items-center gap-3 cursor-pointer select-none">
+                  <input type="checkbox" id="chk-identity" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+                  <span class="text-xs text-[#555]">
+                    <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">Identity: required</code>
+                    — agents must authenticate before any interaction, not just capability execution
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── MCP ────────────────────────────────────────────────────────── -->
+          <div class="px-5 py-4">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" id="chk-mcp" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+              <span class="text-sm font-medium text-[#111]">MCP</span>
+              <span class="font-mono text-[11px] text-[#999]">Model Context Protocol · Streamable HTTP</span>
+            </label>
+            <div id="mcp-sub" class="hidden">
+              <div class="mt-4 pl-5 flex flex-col gap-2.5">
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="mcp-url">Endpoint URL</label>
+                  <input id="mcp-url" type="text" placeholder="https://example.com/mcp"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="mcp-desc">
+                    Description
+                    <span class="text-[#bbb] font-normal">opt.</span>
+                  </label>
+                  <input id="mcp-desc" type="text" placeholder="What this MCP server exposes"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <p class="text-[11px] text-[#999] leading-relaxed">
+                  Must support both POST and GET (MCP spec 2025-03-26+). Transport is always <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">streamable-http</code>. Description appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Skills ─────────────────────────────────────────────────────── -->
+          <div class="px-5 py-4">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" id="chk-skills" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+              <span class="text-sm font-medium text-[#111]">Skills</span>
+              <span class="font-mono text-[11px] text-[#999]">agentskills.io · skill packages</span>
+            </label>
+            <div id="skills-sub" class="hidden">
+              <div class="mt-4 pl-5 flex flex-col gap-2.5">
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="skills-url">Package URL</label>
+                  <input id="skills-url" type="text" placeholder="https://example.com/skills/my-skill.md"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="skills-desc">
+                    Description
+                    <span class="text-[#bbb] font-normal">opt.</span>
+                  </label>
+                  <input id="skills-desc" type="text" placeholder="What this skill package teaches agents"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <p class="text-[11px] text-[#999] leading-relaxed">
+                  Service-consumption skill packages teach agents how to use your API. Description appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only. May be gated behind payment — agents handle <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> normally.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Output ────────────────────────────────────────────────────────────── -->
+    <div id="output-section" class="hidden">
+
+      <div class="pb-6 mb-6 border-b border-[#e5e5e5]">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">Generated output</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- agents.txt -->
+        <div class="border border-[#e5e5e5]">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-[#e5e5e5]">
+            <p class="font-mono text-xs font-semibold text-[#111]">agents.txt</p>
+            <button id="copy-txt"
+              class="text-[11px] font-medium text-[#555] hover:text-[#111] transition-colors border border-[#e5e5e5] hover:border-[#111] px-2.5 py-1">
+              Copy
+            </button>
+          </div>
+          <pre id="out-txt" class="px-5 py-4 font-mono text-xs text-[#111] leading-relaxed overflow-x-auto bg-[#fafafa] whitespace-pre min-h-[8rem]"></pre>
+        </div>
+
+        <!-- agents.json -->
+        <div class="border border-[#e5e5e5]">
+          <div class="flex items-center justify-between px-5 py-3 border-b border-[#e5e5e5]">
+            <p class="font-mono text-xs font-semibold text-[#111]">agents.json</p>
+            <button id="copy-json"
+              class="text-[11px] font-medium text-[#555] hover:text-[#111] transition-colors border border-[#e5e5e5] hover:border-[#111] px-2.5 py-1">
+              Copy
+            </button>
+          </div>
+          <pre id="out-json" class="px-5 py-4 font-mono text-xs text-[#111] leading-relaxed overflow-x-auto bg-[#fafafa] whitespace-pre min-h-[8rem]"></pre>
+        </div>
+
+      </div>
+
+      <p class="text-xs text-[#999] mt-6 leading-relaxed">
+        Place <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">agents.txt</code> and <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">agents.json</code> at your site root. For ongoing sync, use the <a href="https://github.com/agentstxt/agents.txt" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">agentify CLI</a> — <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">npx agentify generate</code> regenerates both from <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">agentic.config.js</code> on every build.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ── Directive panel toggles ────────────────────────────────────────────────
+    function wireToggle(checkboxId: string, panelId: string): void {
+      const chk = document.getElementById(checkboxId) as HTMLInputElement | null
+      const panel = document.getElementById(panelId)
+      if (!chk || !panel) return
+      chk.addEventListener('change', () => {
+        panel.classList.toggle('hidden', !chk.checked)
+      })
+    }
+
+    wireToggle('chk-payments', 'payments-sub')
+    wireToggle('chk-x402',    'x402-sub')
+    wireToggle('chk-mpp',     'mpp-sub')
+    wireToggle('chk-auth',    'auth-sub')
+    wireToggle('chk-mcp',     'mcp-sub')
+    wireToggle('chk-skills',  'skills-sub')
+
+    // ── Generator state ────────────────────────────────────────────────────────
+    interface GenConfig {
+      name:             string
+      url:              string
+      description:      string
+      payments:         boolean
+      x402:             boolean
+      evmAddress:       string
+      solanaAddress:    string
+      x402Price:        string
+      x402Token:        string
+      x402Description:  string
+      mpp:              boolean
+      mppPrice:         string
+      mppToken:         string
+      mppDescription:   string
+      authorization:    boolean
+      authProtocol:     string
+      identityRequired: boolean
+      mcp:              boolean
+      mcpUrl:           string
+      mcpDescription:   string
+      skills:           boolean
+      skillsUrl:        string
+      skillsDescription: string
+    }
+
+    function readConfig(): GenConfig {
+      const v = (id: string): string =>
+        ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim()
+      const c = (id: string): boolean =>
+        !!(document.getElementById(id) as HTMLInputElement | null)?.checked
+      return {
+        name:              v('site-name') || 'My Site',
+        url:               v('site-url')  || 'https://example.com',
+        description:       v('site-desc'),
+        payments:          c('chk-payments'),
+        x402:              c('chk-x402'),
+        evmAddress:        v('evm-addr'),
+        solanaAddress:     v('sol-addr'),
+        x402Price:         v('x402-price'),
+        x402Token:         v('x402-token'),
+        x402Description:   v('x402-description'),
+        mpp:               c('chk-mpp'),
+        mppPrice:          v('mpp-price'),
+        mppToken:          v('mpp-token'),
+        mppDescription:    v('mpp-description'),
+        authorization:     c('chk-auth'),
+        authProtocol:      v('auth-protocol') || 'agent-auth',
+        identityRequired:  c('chk-identity'),
+        mcp:               c('chk-mcp'),
+        mcpUrl:            v('mcp-url'),
+        mcpDescription:    v('mcp-desc'),
+        skills:            c('chk-skills'),
+        skillsUrl:         v('skills-url'),
+        skillsDescription: v('skills-desc'),
+      }
+    }
+
+    // ── agents.txt generator (mirrors @agentify/core/src/agents-txt.ts) ────────
+    function buildAgentsTxt(c: GenConfig): string {
+      const base = c.url.replace(/\/$/, '')
+      const lines: string[] = [
+        '# agents.txt',
+        '# Standard: https://agentstxt.dev',
+        `# JSON: ${base}/agents.json`,
+      ]
+
+      if (c.payments) {
+        const protocols: string[] = []
+        if (c.x402 && (c.evmAddress || c.solanaAddress)) protocols.push('x402')
+        if (c.mpp)  protocols.push('mpp')
+        if (protocols.length > 0) {
+          lines.push('', 'Payments: enabled', `Protocols: ${protocols.join(', ')}`)
+        }
+      }
+
+      if (c.authorization) {
+        lines.push('', `Authorization: ${c.authProtocol}`)
+        if (c.identityRequired) lines.push('Identity: required')
+      }
+
+      if (c.mcp) {
+        lines.push('', `MCP: ${c.mcpUrl || 'https://example.com/mcp'}`)
+      }
+
+      if (c.skills) {
+        lines.push('', `Skills: ${c.skillsUrl || 'https://example.com/skills/my-skill.md'}`)
+      }
+
+      return lines.join('\n') + '\n'
+    }
+
+    // ── agents.json generator (mirrors @agentify/core/src/agents-json.ts) ──────
+    const SOLANA_MAINNET_CHAIN = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+
+    function buildAgentsJson(c: GenConfig): string {
+      const obj: Record<string, unknown> = {
+        version: '1.0',
+        standard: 'https://agentstxt.dev',
+        site: {
+          name: c.name,
+          url: c.url,
+          ...(c.description ? { description: c.description } : {}),
+        },
+      }
+
+      if (c.payments) {
+        const protocols: string[] = []
+        const x402Active = c.x402 && (c.evmAddress || c.solanaAddress)
+        if (x402Active) protocols.push('x402')
+        if (c.mpp)      protocols.push('mpp')
+
+        if (protocols.length > 0) {
+          const p: Record<string, unknown> = { enabled: true, protocols }
+
+          // pricing — from x402.pricing first, mpp.pricing as fallback
+          const priceAmount = (x402Active && c.x402Price) ? c.x402Price
+            : (c.mpp && c.mppPrice) ? c.mppPrice
+            : ''
+          const priceToken  = (x402Active && c.x402Price) ? (c.x402Token || 'USDC')
+            : (c.mpp && c.mppPrice) ? (c.mppToken || 'USD')
+            : ''
+          if (priceAmount) {
+            p.pricing = {
+              amount: priceAmount,
+              currency: priceToken,
+            }
+          }
+
+          if (x402Active) {
+            const chains: string[] = []
+            if (c.evmAddress)    chains.push('eip155:8453')
+            if (c.solanaAddress) chains.push(SOLANA_MAINNET_CHAIN)
+            p.x402 = {
+              chains,
+              ...(c.x402Description ? { description: c.x402Description } : {}),
+            }
+          }
+
+          if (c.mpp && c.mppDescription) {
+            p.mpp = { description: c.mppDescription }
+          }
+
+          obj.payments = p
+        }
+      }
+
+      if (c.authorization) {
+        const auth: Record<string, unknown> = {
+          protocols: [c.authProtocol],
+          discovery: '/.well-known/agent-configuration',
+        }
+        if (c.identityRequired) auth.identity = 'required'
+        obj.authorization = auth
+      }
+
+      if (c.mcp) {
+        obj.mcp = [{
+          url: c.mcpUrl || 'https://example.com/mcp',
+          type: 'streamable-http',
+          ...(c.mcpDescription ? { description: c.mcpDescription } : {}),
+        }]
+      }
+
+      if (c.skills) {
+        obj.skills = [{
+          url: c.skillsUrl || 'https://example.com/skills/my-skill.md',
+          ...(c.skillsDescription ? { description: c.skillsDescription } : {}),
+        }]
+      }
+
+      return JSON.stringify(obj, null, 2) + '\n'
+    }
+
+    // ── Generate on click ──────────────────────────────────────────────────────
+    const generateBtn = document.getElementById('generate-btn')!
+    const outputSection = document.getElementById('output-section')!
+    const outTxt = document.getElementById('out-txt')!
+    const outJson = document.getElementById('out-json')!
+
+    generateBtn.addEventListener('click', () => {
+      const cfg = readConfig()
+      outTxt.textContent  = buildAgentsTxt(cfg)
+      outJson.textContent = buildAgentsJson(cfg)
+
+      if (outputSection.classList.contains('hidden')) {
+        outputSection.classList.remove('hidden')
+        outputSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    })
+
+    // ── Copy buttons ───────────────────────────────────────────────────────────
+    function wireCopy(btnId: string, sourceId: string): void {
+      const btn = document.getElementById(btnId)
+      const src = document.getElementById(sourceId)
+      if (!btn || !src) return
+      btn.addEventListener('click', async () => {
+        const text = src.textContent ?? ''
+        try {
+          await navigator.clipboard.writeText(text)
+          btn.textContent = 'Copied'
+          setTimeout(() => { btn.textContent = 'Copy' }, 1500)
+        } catch {
+          btn.textContent = 'Error'
+          setTimeout(() => { btn.textContent = 'Copy' }, 1500)
+        }
+      })
+    }
+
+    wireCopy('copy-txt',  'out-txt')
+    wireCopy('copy-json', 'out-json')
+  </script>
+
+</BaseLayout>

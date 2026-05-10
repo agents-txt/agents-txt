@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://agentstxt.dev</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/auth</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/mcp</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/payments</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/skills</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/llms</loc>
+  </url>
+  <url>
+    <loc>https://agentstxt.dev/demo/generate</loc>
+  </url>
+</urlset>

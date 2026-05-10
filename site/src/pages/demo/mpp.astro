@@ -1,0 +1,423 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="MPP Demo · agents.txt"
+  description="Live demonstration of the Machine Payments Protocol (MPP). The same gated endpoint that serves x402 also serves an MPP WWW-Authenticate challenge, letting an mppx-capable agent settle through Tempo (USDC stablecoin), Stripe (fiat card networks), or Stripe SPT (Solana USDC). Session-based, agent-to-agent, no per-request signature."
+  canonicalUrl="https://agentstxt.dev/demo/mpp"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">MPP</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          MPP (Machine Payments Protocol): Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">draft-ryan-httpauth-payment · Tempo USDC · Stripe (cards · Solana USDC) · Session-based</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Protocol</dt>
+          <dd class="text-[#111]">
+            <a href="https://mpp.dev" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              mpp.dev
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">SDK</dt>
+          <dd class="text-[#111]">
+            <a href="https://github.com/wevm/mppx" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              wevm/mppx
+            </a>
+            <span class="text-[#999]"> (TypeScript)</span>
+          </dd>
+          <dt class="text-[#999] font-medium">Methods</dt>
+          <dd class="font-mono text-[#111]">Tempo USDC.e · Stripe SPT (cards · Solana USDC)</dd>
+          <dt class="text-[#999] font-medium">Auth scheme</dt>
+          <dd class="font-mono text-[#111]">Authorization: Payment</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Real WWW-Authenticate challenge served on the same endpoint as x402.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page demonstrates the Machine Payments Protocol (MPP), the IETF <code>draft-ryan-httpauth-payment</code> scheme co-authored by Stripe and Tempo. MPP is the session-based companion to x402: where x402 attaches a fresh on-chain signature to every request, MPP issues a credential the agent presents in a standard <code>Authorization: Payment</code> header for the duration of a session.
+        </p>
+        <p>
+          The agentstxt server runs MPP through the <code>mppx</code> SDK with two registered methods: Tempo (USDC.e stablecoin on the Tempo chain) and Stripe SPT (the Stripe Payments Token, which covers card networks plus Solana USDC). Both methods appear together in a single <code>WWW-Authenticate</code> challenge. The agent picks whichever it can satisfy and authorizes through that path; the server verifies through the same SDK on retry.
+        </p>
+        <p>
+          The same gated endpoint that serves the x402 demo (<code>/payment-test</code>) also emits the MPP challenge. A 402 response carries x402 <code>accepts[]</code> in the body and the MPP <code>WWW-Authenticate</code> in the headers at the same time; the agent picks the protocol it speaks. This page focuses on the MPP path.
+        </p>
+        <p class="text-xs text-[#777] border-l-2 border-[#e5e5e5] pl-3 italic">
+          Note: <code>agents.json</code> is the optional pre-screening layer. The MPP path is "active" on a deployment only when Tempo or Stripe credentials are configured server-side; without them, the endpoint still emits a 402 (with x402 accepts[]) but no <code>WWW-Authenticate: Payment</code> header. The two steps below are independent.
+        </p>
+
+        <h2>Protocol flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Result</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Read MPP capability declaration from <code>agents.json</code></td><td class="text-[#999]">protocols includes <code>mpp</code> when configured</td></tr>
+            <tr><td class="font-mono">1</td><td>Request gated resource (no <code>Authorization</code> header)</td><td>402 with <code>WWW-Authenticate: Payment</code> challenge</td></tr>
+            <tr><td class="font-mono text-[#ccc]">.</td><td class="text-[#999]">Agent inspects challenge methods, picks Tempo or Stripe, authorizes through the chosen method</td><td class="text-[#999]">SDK-side · not executable in browser</td></tr>
+            <tr><td class="font-mono text-[#ccc]">.</td><td class="text-[#999]">Agent retries with <code>Authorization: Payment &lt;credential&gt;</code> · server verifies via mppx · responds 200</td><td class="text-[#999]">200 · <code>Payment-Receipt</code> header</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">MPP challenge runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Live requests · 402 served by this server · no payment executed</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'MPP capability declaration', 'GET /agents.json · payments.protocols includes mpp'],
+            ['1', 'Challenge negotiation',      'GET /payment-test  (no Authorization) → expect 402 + WWW-Authenticate: Payment'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">The challenge above is the actual <code>WWW-Authenticate</code> header served by this server. To complete the flow, use an mppx-capable agent or the <a href="https://mpp.dev/sdk/typescript" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">mppx TypeScript SDK</a>.</p>
+        </div>
+      </div>
+
+      <!-- Method comparison -->
+      <div class="prose max-w-none mt-12">
+        <h2>Tempo vs Stripe: payment method differences</h2>
+        <table>
+          <thead>
+            <tr><th></th><th>Tempo (USDC stablecoin)</th><th>Stripe (cards · Solana USDC)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-medium">Method identifier</td><td class="font-mono text-[11px]">tempo</td><td class="font-mono text-[11px]">stripe</td></tr>
+            <tr><td class="font-medium">Settlement layer</td><td>Tempo chain (TIP-20 token transfer)</td><td>Stripe Payments Network (SPT)</td></tr>
+            <tr><td class="font-medium">Currency</td><td>USDC.e (Tempo mainnet)</td><td>Any Stripe-supported currency. Defaults to USD. SPT also covers Solana USDC.</td></tr>
+            <tr><td class="font-medium">Recipient field</td><td>Tempo wallet address (<code>0x.</code>)</td><td>Stripe Business Network profile ID</td></tr>
+            <tr><td class="font-medium">Agent authorization</td><td>Sign and send a TIP-20 transfer through the agent's Tempo wallet</td><td>Authorize a Stripe SPT through a payment method (card · Link · USDC)</td></tr>
+            <tr><td class="font-medium">Agent secret material</td><td>Tempo wallet private key (held by agent)</td><td>Stripe customer credential (held by agent)</td></tr>
+            <tr><td class="font-medium">Server verification</td><td><code>mppx.tempo.charge()</code> verifies on-chain transfer</td><td><code>mppx.stripe.charge()</code> verifies SPT through Stripe API</td></tr>
+            <tr><td class="font-medium">Receipt</td><td>Same wire shape: <code>Payment-Receipt</code> header on 200</td><td>Same wire shape: <code>Payment-Receipt</code> header on 200</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Protocol reference</h2>
+
+        <h3>The 402 challenge: <code>WWW-Authenticate: Payment</code></h3>
+        <p>
+          When the agent has no <code>Authorization</code> header, the server responds with 402 and a <code>WWW-Authenticate: Payment</code> header containing both supported methods. The challenge value is opaque to the agent except for the method names and a server-assigned challenge identifier; the SDK parses it.
+        </p>
+        <pre><code>{`HTTP/1.1 402 Payment Required
+WWW-Authenticate: Payment
+  realm="agents.txt",
+  challenge="<server-assigned-challenge-id>",
+  methods="tempo,stripe"
+
+{
+  "x402Version": 2,
+  "error":       "Payment required",
+  "resource":    { "url": "https://agentstxt.dev/payment-test", "..." },
+  "accepts":     [ /* x402 accepts[] alongside the MPP challenge */ ],
+  "mpp":         { "challenge": "<full-WWW-Authenticate-header-value>" }
+}`}</code></pre>
+
+        <h3>Tempo authorization payload</h3>
+        <p>
+          The agent's Tempo wallet signs and broadcasts a TIP-20 token transfer to the recipient address declared in the challenge. The SDK wraps the resulting transaction proof in a credential and the agent presents it on retry.
+        </p>
+        <pre><code>{`// Authorization: Payment header value (base64-encoded JSON):
+{
+  "method":       "tempo",
+  "challenge":    "<server-assigned-challenge-id>",
+  "amount":       "10000",
+  "currency":     "0x20c0000000000000000000000000000000000000",
+  "recipient":    "0x<treasury-tempo-address>",
+  "transaction":  "0x<tempo-tx-hash>",
+  "proof":        { /* TIP-20 transfer proof */ }
+}`}</code></pre>
+
+        <h3>Stripe authorization payload</h3>
+        <p>
+          The agent uses its registered Stripe customer credential to authorize a Stripe Payments Token (SPT). Card networks and Link are supported by default. SPT also covers Solana USDC for agents that prefer paying in stablecoin without operating their own Tempo wallet.
+        </p>
+        <pre><code>{`// Authorization: Payment header value (base64-encoded JSON):
+{
+  "method":       "stripe",
+  "challenge":    "<server-assigned-challenge-id>",
+  "amount":       "1",
+  "currency":     "usd",
+  "spt":          "<stripe-payments-token>",
+  "networkId":    "<stripe-business-network-profile-id>"
+}`}</code></pre>
+
+        <h3>Successful response: <code>Payment-Receipt</code></h3>
+        <p>
+          Verification produces a receipt that the server attaches to the 200 response. The receipt is opaque to the resource handler; mppx generates and signs it. The agent persists the receipt for audit, and may reuse the same <code>Authorization: Payment</code> credential within the session window without renegotiating.
+        </p>
+        <pre><code>{`HTTP/1.1 200 OK
+Payment-Receipt: <base64-encoded-signed-receipt>
+Content-Type: application/json
+
+{
+  "message":  "Payment-test verified. agents.txt is implemented end-to-end.",
+  "resource": "https://agentstxt.dev/payment-test"
+}`}</code></pre>
+
+        <h2>Why MPP alongside x402</h2>
+        <p>
+          The two protocols are complementary, not competitive. x402 is appropriate for fully autonomous agents that hold their own keys and want to settle each request independently on chain. MPP is appropriate for agents that have an existing payment relationship through a custodian (Stripe customer, Tempo wallet manager) and prefer session-based authorization to reduce per-request signing overhead. The agentstxt server presents both so neither agent class is excluded.
+        </p>
+        <p>
+          Within MPP, Tempo covers the on-chain stablecoin path while Stripe covers fiat plus Solana USDC. Together they reach the largest possible set of agent wallets and customer profiles without forcing any single chain or rail.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '...';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running...';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running...';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: MPP capability declaration from agents.json ────────────────────
+    setRunning('0');
+    const agentsRes = await fetch(`${origin}/agents.json`);
+    const agentsJson = await agentsRes.json() as {
+      payments?: {
+        enabled?: boolean;
+        protocols?: string[];
+      };
+    };
+    const protocols = agentsJson.payments?.protocols ?? [];
+    const mppDeclared = protocols.includes('mpp');
+
+    const summary = mppDeclared
+      ? [
+          'MPP declared    yes',
+          `protocols       ${protocols.join(', ')}`,
+          'session         Authorization: Payment <credential>',
+          'methods served  tempo, stripe (per server config)',
+        ].join('\n')
+      : [
+          'MPP declared    no',
+          `protocols       ${protocols.length ? protocols.join(', ') : '(none)'}`,
+          '',
+          'The MPP path is not currently advertised in agents.json.',
+          'The endpoint will still be probed in step 1; a 402 with a WWW-Authenticate',
+          'header indicates a live MPP method on the server even when not declared.',
+        ].join('\n');
+
+    setDone('0',
+      `GET /agents.json · payments{}\n\n${summary}\n\nFull response:\n${fmt(agentsJson)}`,
+      mppDeclared ? 'declared' : 'not declared',
+    );
+
+    // ── Step 1: Challenge negotiation — hit /payment-test without Authorization
+    setRunning('1');
+    const paymentRes = await fetch(`${origin}/payment-test`);
+    const wwwAuth = paymentRes.headers.get('WWW-Authenticate');
+    const paymentBody = await paymentRes.json() as {
+      x402Version?: number;
+      mpp?: { challenge?: string };
+      error?: string;
+    };
+
+    if (paymentRes.status !== 402) {
+      throw new Error(`Expected 402, got ${paymentRes.status}:\n${fmt(paymentBody)}`);
+    }
+
+    const headerChallenge = wwwAuth ?? paymentBody.mpp?.challenge ?? null;
+    const mppActive = !!headerChallenge;
+
+    const stepOutput = mppActive
+      ? [
+          `GET /payment-test  (no Authorization header)`,
+          ``,
+          `Status  ${paymentRes.status} Payment Required`,
+          ``,
+          `WWW-Authenticate header:`,
+          `  ${headerChallenge}`,
+          ``,
+          `An mppx-capable agent parses the methods field, picks one it can satisfy,`,
+          `authorizes through that path, and retries the request with:`,
+          `  Authorization: Payment <base64-credential>`,
+          ``,
+          `Full 402 body (also carries x402 accepts[] alongside MPP):`,
+          fmt(paymentBody),
+        ].join('\n')
+      : [
+          `GET /payment-test  (no Authorization header)`,
+          ``,
+          `Status  ${paymentRes.status} Payment Required`,
+          ``,
+          `No WWW-Authenticate: Payment header was returned.`,
+          `MPP is not active on this server (no Tempo recipient or Stripe credentials configured).`,
+          `The body still contains the x402 accepts[] for chain-based payment.`,
+          ``,
+          `Full 402 body:`,
+          fmt(paymentBody),
+        ].join('\n');
+
+    setDone('1', stepOutput, mppActive ? `${paymentRes.status} · WWW-Authenticate present` : `${paymentRes.status} · MPP inactive`);
+
+    resultText.textContent = mppActive
+      ? `MPP challenge received. The server advertises both Tempo and Stripe methods through a single WWW-Authenticate header. An mppx-capable agent picks one and authorizes through it.`
+      : `MPP path is not active on this deployment. The endpoint still serves the x402 chain-based path. Set TREASURY_TEMPO or Stripe environment variables to activate MPP.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

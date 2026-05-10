@@ -1,0 +1,10 @@
+# agents.txt Standard
+
+> The open specification for AI agent capability declarations. Layer 4 of the agent-readiness stack.
+
+This site supports agentic access via the [x402 payment protocol](https://x402.org). Agents may access protected content for 0.001 USDC per request on eip155:8453.
+Treasury: `0x0000000000000000000000000000000000000000`
+Discovery: https://agentstxt.dev/agents.txt
+
+## Specification
+- [agents.txt Standard v0.5-draft](https://agentstxt.dev): The open specification for AI agent capability declarations. Covers file format, directives, discovery, payment protocols (x402, MPP), authorization (agent-auth), MCP endpoint declaration, and skills. Layer 4 of the agent-readiness stack.

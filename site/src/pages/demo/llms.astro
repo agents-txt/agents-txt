@@ -1,0 +1,276 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="LLMs Demo · agents.txt"
+  description="Live demonstration of the llmstxt.org content declaration standard. Both /llms.txt and /llms-full.txt are fetched from this server and displayed. No installation required."
+  canonicalUrl="https://agentstxt.dev/demo/llms"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">LLMs</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          Content Declarations: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">llmstxt.org · llms.txt + llms-full.txt · Layer 3</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">
+            <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              llmstxt.org
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Files</dt>
+          <dd class="font-mono text-[#111]">/llms.txt · /llms-full.txt</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTPS · Cloudflare CDN · static</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Fetching from this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page fetches both content declaration files served by this server and displays their raw content. <code>/llms.txt</code> is the link inventory: a curated, section-organized list of pages an LLM should read to understand this site. <code>/llms-full.txt</code> is the expanded form: the same structure, but with the markdown content of each linked page inlined under its heading.
+        </p>
+        <p>
+          Both files are generated from the same <code>AgenticConfig</code> object that drives <code>agents.txt</code> and the payment middleware. The content driver (<code>sitemap</code>, <code>firecrawl</code>, <code>static</code>, or <code>manual</code>) determines how pages are discovered. <code>llms-full.txt</code> additionally scrapes each page's markdown content when a Firecrawl driver is configured.
+        </p>
+
+        <h2>Retrieval flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>File</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td><code>/llms.txt</code></td><td>Link inventory: curated page list with descriptions</td></tr>
+            <tr><td class="font-mono">1</td><td><code>/llms-full.txt</code></td><td>Expanded form: page content inlined under each heading</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">Content declaration runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Static files · fetched live from this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'Link inventory',   'GET /llms.txt'],
+            ['1', 'Expanded content', 'GET /llms-full.txt'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">Both files are served statically and regenerated from <code>agentic.config.js</code> on each deploy.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Layer 3 of the agent-readiness stack</h3>
+        <p>
+          The llmstxt.org spec defines <code>/llms.txt</code> as Layer 3 of agent readiness, sitting between the page inventory (<code>/sitemap.xml</code>, Layer 2) and agent capability declarations (<code>/agents.txt</code>, Layer 4). Where a sitemap enumerates every URL for crawlers, <code>llms.txt</code> is editorially curated. It surfaces the pages most useful for an LLM to read first.
+        </p>
+        <h3>Content drivers</h3>
+        <p>
+          The <code>content.driver</code> field in <code>AgenticConfig</code> controls how pages are discovered. <code>sitemap</code> fetches <code>/sitemap.xml</code> and groups pages by path prefix. <code>firecrawl</code> crawls the site via the Firecrawl API, producing richer titles and natural groupings. <code>static</code> accepts a hardcoded page list, useful for Jamstack sites with no runtime sitemap. <code>manual</code> accepts a pre-built sections array for full editorial control.
+        </p>
+        <h3>llms-full.txt: content scraping</h3>
+        <p>
+          When a Firecrawl driver is configured under <code>content.fullTxt</code>, <code>generateLlmsFullTxt</code> scrapes each page's markdown via <code>POST https://api.firecrawl.dev/v2/scrape</code> with <code>onlyMainContent: true</code>. Pages are batched five at a time to respect rate limits. Without Firecrawl, the expanded file falls back to the same link-list format as <code>llms.txt</code>. No body content is inlined.
+        </p>
+        <h3>Separate source for llms-full.txt</h3>
+        <p>
+          The <code>content.fullTxt.driver</code> field accepts an independent driver. This lets a site point <code>llms.txt</code> at the marketing site (<code>sitemap</code> driver) and <code>llms-full.txt</code> at a docs subdomain (Firecrawl driver); the two files can cover completely different URL spaces and still be generated from the same config object.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+function truncate(text: string, limit = 1200): string {
+  if (text.length <= limit) return text;
+  return text.slice(0, limit) + `\n\n… (${text.length.toLocaleString()} bytes total; full content at this URL)`;
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: llms.txt ─────────────────────────────────────────────────────
+    setRunning('0');
+    const llmsRes = await fetch(`${origin}/llms.txt`);
+    const llmsText = await llmsRes.text();
+    setDone('0',
+      `GET /llms.txt\n\n${truncate(llmsText)}`,
+      `${llmsRes.status} · ${llmsText.length.toLocaleString()} bytes`,
+    );
+
+    // ── Step 1: llms-full.txt ────────────────────────────────────────────────
+    setRunning('1');
+    const fullRes = await fetch(`${origin}/llms-full.txt`);
+    const fullText = await fullRes.text();
+    setDone('1',
+      `GET /llms-full.txt\n\n${truncate(fullText)}`,
+      `${fullRes.status} · ${fullText.length.toLocaleString()} bytes`,
+    );
+
+    resultText.textContent = `Both content declaration files retrieved: ${llmsText.length.toLocaleString()} bytes (llms.txt) · ${fullText.length.toLocaleString()} bytes (llms-full.txt).`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Retrieval interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

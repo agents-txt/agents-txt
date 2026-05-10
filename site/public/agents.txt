@@ -1,0 +1,9 @@
+# agents.txt
+# Standard: https://agentstxt.dev
+# JSON: https://agentstxt.dev/agents.json
+
+Authorization: agent-auth
+
+MCP: https://agentstxt.dev/mcp
+
+Skills: https://agentstxt.dev/skills/agents-txt-setup.md

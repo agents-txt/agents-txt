@@ -1,0 +1,50 @@
+# robots.txt
+# Standard: https://www.rfc-editor.org/rfc/rfc9309
+
+# Search engine crawlers
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Slurp
+User-agent: DuckDuckBot
+User-agent: Baiduspider
+User-agent: YandexBot
+User-agent: Twitterbot
+User-agent: facebot
+Allow: /
+
+# Free AI training scrapers — blocked (use x402 for paid access)
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-Web
+User-agent: anthropic-ai
+User-agent: Google-Extended
+User-agent: Gemini
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: PerplexityBot
+User-agent: YouBot
+User-agent: Cohere-AI
+User-agent: Bytespider
+User-agent: PetalBot
+User-agent: Diffbot
+User-agent: FacebookBot
+User-agent: Amazonbot
+Disallow: /
+
+# Paid agentic agents — access gated by x402 payment protocol
+User-agent: AgentstxtBot
+Allow: /
+
+# Default: allow everything (specific bots above override this)
+User-agent: *
+Allow: /llms.txt
+Allow: /agents.txt
+Allow: /
+
+Sitemap: https://agentstxt.dev/sitemap.xml
+# llms.txt: https://agentstxt.dev/llms.txt
+# agents.txt: https://agentstxt.dev/agents.txt
+Agents-Txt: https://agentstxt.dev/agents.txt
+Content-Signal: search=yes, ai-train=no, ai-input=no
