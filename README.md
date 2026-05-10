@@ -169,5 +169,9 @@ If you build a parser, generator, validator, or middleware for `agents.txt` in a
 
 ## License
 
-- **Specification** (`spec/AGENTS-TXT-STANDARD.md`): [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain. Implement, fork, vendor without permission or attribution.
-- **Reference workers and site** (`site/`, `mcp/`, `auth/`, `landingpage/`): Apache 2.0.
+This repository is dual-licensed. The specification and the reference code are released under different terms, and each license is included as a separate file in the repository:
+
+- **Specification** (`spec/AGENTS-TXT-STANDARD.md`): [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/), see [`LICENSE-CC0`](LICENSE-CC0). Public domain dedication: implement, fork, or vendor without permission or attribution.
+- **Reference workers and site** (`site/`, `mcp/`, `auth/`, `landingpage/`): [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0), see [`LICENSE`](LICENSE).
+
+GitHub's license detector reads the root `LICENSE` file and labels the repository Apache-2.0; the spec license lives alongside it as `LICENSE-CC0` and applies to the contents of `spec/`.
