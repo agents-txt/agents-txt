@@ -7,7 +7,7 @@ build/
 out/
 .next/
 .astro/
-
+.wrangler/
 
 # ── TypeScript ────────────────────────────────────────────────────────────────
 *.tsbuildinfo
