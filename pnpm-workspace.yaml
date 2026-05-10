@@ -1,4 +1,4 @@
 packages:
-  - 'site'
-  - 'mcp'
-  - 'auth'
+  - 'app/site'
+  - 'app/mcp'
+  - 'app/auth'

@@ -5,7 +5,7 @@ export const collections = {
   spec: defineCollection({
     loader: glob({
       pattern: '**/*.md',
-      base: '../spec',
+      base: './src/content/spec',
     }),
   }),
 };
