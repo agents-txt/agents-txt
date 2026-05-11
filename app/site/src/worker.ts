@@ -65,8 +65,36 @@ const CORS = {
 // independently readable; a real site can choose to combine them on one route.
 
 const TEMPO_USDC_E = '0x20c0000000000000000000000000000000000000'; // USDC.e on Tempo mainnet
-const MPP_TEST_AMOUNT = '0.001';
-const MPP_TEST_DESCRIPTION = 'agents.txt MPP demo charge (0.001 USDC).';
+// Major-unit decimal. 0.01 is the minimum that survives Stripe's 1-cent
+// precision floor (0.001 USD × 10² = 0.1 → 0). Also matches the announced
+// payments.pricing.amount in agents.json, so announcement and wire agree.
+const MPP_TEST_AMOUNT = '0.01';
+const MPP_TEST_DESCRIPTION = 'agents.txt MPP demo charge (0.01 USDC / USD).';
+
+// Parse a WWW-Authenticate: Payment header (RFC 7235 multi-challenge form) into
+// an array of structured challenge objects, decoding the base64 `request` blob
+// into JSON when present. The raw header value remains the canonical wire form
+// for agents per spec §5.2; this structured array is emitted alongside it in
+// the JSON body for demo readability only.
+function parseMppChallenges(headerValue: string | null | undefined): Array<Record<string, unknown>> {
+  if (!headerValue) return [];
+  const pieces = headerValue.split(/,\s*Payment\s+/i);
+  pieces[0] = pieces[0].replace(/^Payment\s+/i, '');
+  return pieces.map(piece => {
+    const params: Record<string, unknown> = {};
+    const re = /(\w+)="([^"]*)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(piece)) !== null) {
+      const [, key, value] = m;
+      if (key === 'request') {
+        try { params.request = JSON.parse(atob(value)); } catch { params.request = value; }
+      } else {
+        params[key] = value;
+      }
+    }
+    return params;
+  });
+}
 
 type MppxStatus =
   | { ok: true; mppx: ReturnType<typeof Mppx.create> }
@@ -225,7 +253,7 @@ export default {
       try {
         const charges = [
           ...(env.TREASURY_TEMPO ? [mppx.tempo.charge({ amount: MPP_TEST_AMOUNT, description: MPP_TEST_DESCRIPTION, recipient: env.TREASURY_TEMPO })] : []),
-          ...(env.STRIPE_NETWORK_ID ? [mppx.stripe.charge({ amount: MPP_TEST_AMOUNT, description: MPP_TEST_DESCRIPTION, currency: 'usd' })] : []),
+          ...(env.STRIPE_NETWORK_ID ? [mppx.stripe.charge({ amount: MPP_TEST_AMOUNT, description: MPP_TEST_DESCRIPTION, currency: 'usd', decimals: 2 })] : []),
         ];
         const result = await Mppx.compose(...charges)(request);
 
@@ -243,6 +271,7 @@ export default {
         const headers: Record<string, string> = { 'Content-Type': 'application/json', ...CORS };
         const wwwAuth = result.challenge.headers.get('WWW-Authenticate');
         if (wwwAuth) headers['WWW-Authenticate'] = wwwAuth;
+        const challenges = parseMppChallenges(wwwAuth);
 
         return new Response(JSON.stringify({
           error: 'Payment required',
@@ -251,7 +280,11 @@ export default {
             description: 'Synthetic gated route demonstrating the MPP (Machine Payments Protocol) wire shape. Methods activate per configured credentials.',
             mimeType:    'application/json',
           },
-          mpp: { challenge: wwwAuth },
+          // The canonical wire form is the WWW-Authenticate: Payment header
+          // (RFC 7235 multi-challenge per spec §5.2). This body field is the
+          // same data parsed and decoded for human inspection; agents should
+          // read the header, not the body.
+          mpp: { challenges },
         }, null, 2), {
           status: 402,
           headers,

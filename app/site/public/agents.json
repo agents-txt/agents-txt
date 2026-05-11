@@ -15,7 +15,8 @@
     },
     "mpp": {
       "methods": [
-        "tempo"
+        "tempo",
+        "stripe"
       ],
       "description": "Synthetic gated route /mpp demonstrating the MPP wire shape via mppx. Tempo and (when wired) Stripe SPT. Demo charge only; the spec and docs remain free."
     },

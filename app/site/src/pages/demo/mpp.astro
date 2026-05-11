@@ -285,6 +285,29 @@ function setError(num: string, message: string) {
 
 const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
 
+// Fallback parser when the upstream worker does not duplicate the parsed
+// challenges into the JSON body. Mirrors parseMppChallenges in worker.ts:
+// splits on the ", Payment " boundary per RFC 7235 multi-challenge form,
+// extracts key="value" pairs, base64-decodes the `request` blob into JSON.
+function parseChallengesClientSide(headerValue: string): Array<Record<string, unknown>> {
+  const pieces = headerValue.split(/,\s*Payment\s+/i);
+  pieces[0] = pieces[0].replace(/^Payment\s+/i, '');
+  return pieces.map((piece) => {
+    const params: Record<string, unknown> = {};
+    const re = /(\w+)="([^"]*)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(piece)) !== null) {
+      const [, key, value] = m;
+      if (key === 'request') {
+        try { params.request = JSON.parse(atob(value)); } catch { params.request = value; }
+      } else {
+        params[key] = value;
+      }
+    }
+    return params;
+  });
+}
+
 async function run() {
   const btn = document.getElementById('run-btn')!;
   const label = document.getElementById('run-btn-label')!;
@@ -355,29 +378,64 @@ async function run() {
     try { probeBody = await probeRes.json(); } catch { /* not JSON */ }
 
     const mppHeader = wwwAuth && /^Payment\b/i.test(wwwAuth) ? wwwAuth : null;
-    const inactive = probeRes.status === 503;
+    const probeError = (probeBody && typeof probeBody === 'object' && 'error' in (probeBody as Record<string, unknown>))
+      ? (probeBody as { error?: string }).error
+      : undefined;
+    const probeMessage = (probeBody && typeof probeBody === 'object' && 'message' in (probeBody as Record<string, unknown>))
+      ? (probeBody as { message?: string }).message
+      : undefined;
+    const inactive   = probeRes.status === 503 && probeError === 'endpoint_inactive';
+    const runtimeErr = probeRes.status === 503 && probeError === 'mpp_runtime_error';
 
     if (mppHeader) {
+      // Prefer the parsed array the worker emits in mpp.challenges; fall back
+      // to a client-side parse of the header value when the body shape differs
+      // (e.g. another mppx-backed server that does not duplicate the challenges
+      // into the body).
+      const bodyChallenges = (probeBody && typeof probeBody === 'object' && 'mpp' in (probeBody as Record<string, unknown>))
+        ? ((probeBody as { mpp?: { challenges?: Array<Record<string, unknown>> } }).mpp?.challenges)
+        : undefined;
+      const challenges = (bodyChallenges && bodyChallenges.length > 0)
+        ? bodyChallenges
+        : parseChallengesClientSide(mppHeader);
+
+      const blocks = challenges.map((ch, i) => {
+        const lines = [
+          `  ── challenge ${i + 1} of ${challenges.length} ──`,
+          `  method        ${ch.method ?? '(none)'}`,
+          `  id            ${ch.id ?? '(none)'}`,
+          `  realm         ${ch.realm ?? '(none)'}`,
+          `  intent        ${ch.intent ?? '(none)'}`,
+        ];
+        if (ch.description) lines.push(`  description   ${ch.description}`);
+        if (ch.expires)     lines.push(`  expires       ${ch.expires}`);
+        lines.push(``);
+        lines.push(`  request (base64-decoded):`);
+        const reqStr = (typeof ch.request === 'object' && ch.request !== null)
+          ? fmt(ch.request).split('\n').map((l) => `    ${l}`).join('\n')
+          : `    ${ch.request ?? '(none)'}`;
+        lines.push(reqStr);
+        return lines.join('\n');
+      }).join('\n\n');
+
       setDone('1',
         [
           `GET /mpp  (no Authorization header)`,
           ``,
           `Status  ${probeRes.status} Payment Required`,
           ``,
-          `WWW-Authenticate header:`,
-          `  ${mppHeader}`,
+          `${challenges.length} challenge${challenges.length !== 1 ? 's' : ''} in the WWW-Authenticate header (RFC 7235 multi-scheme form):`,
+          ``,
+          blocks,
           ``,
           `An mppx-capable agent parses methods, picks one it can satisfy,`,
           `authorizes through it, then retries with:`,
           `  Authorization: Payment <base64-credential>`,
-          ``,
-          `Full 402 body:`,
-          fmt(probeBody),
         ].join('\n'),
-        `${probeRes.status} · WWW-Authenticate present`,
+        `${probeRes.status} · ${challenges.length} method${challenges.length !== 1 ? 's' : ''}`,
       );
       resultText.textContent = mppDeclared
-        ? `MPP challenge received. The announcement (agents.json) and the wire (WWW-Authenticate header) agree. An mppx-capable agent would now authorize through one of the declared methods.`
+        ? `MPP challenge${challenges.length !== 1 ? 's' : ''} received. The announcement (agents.json) and the wire (WWW-Authenticate header) agree. An mppx-capable agent picks one of the methods above and authorizes through it.`
         : `MPP challenge present on the wire but no payments.mpp block in agents.json. Either declare it (regenerate after setting MPP credentials) or the wire layer is misconfigured.`;
     } else if (inactive) {
       setDone('1',
@@ -396,6 +454,24 @@ async function run() {
         '503 inactive',
       );
       resultText.textContent = `MPP wire offline on this deployment. The announcement step is the spec-mandated declaration; the wire step needs MPP credentials in .dev.vars (TREASURY_TEMPO and/or Stripe pair).`;
+    } else if (runtimeErr) {
+      setDone('1',
+        [
+          `GET /mpp`,
+          ``,
+          `Status  503 Service Unavailable`,
+          ``,
+          `mppx threw at request time. The worker caught it and returned a clean 503`,
+          `(rather than crashing). Most common causes: an SDK signature mismatch`,
+          `between worker.ts and the installed mppx version, an invalid currency or`,
+          `decimals on a charge config, or a Stripe SDK call hitting an invalid key.`,
+          ``,
+          `Underlying error:`,
+          probeMessage ?? '(none)',
+        ].join('\n'),
+        '503 runtime error',
+      );
+      resultText.textContent = `mppx errored at request time. The error message above identifies the failing field or call. The announcement step is unaffected; only the wire step failed.`;
     } else {
       setDone('1',
         [
