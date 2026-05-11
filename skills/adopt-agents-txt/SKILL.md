@@ -25,6 +25,7 @@ Before recommending anything, determine four things (infer from context, ask onl
    - **Authorization** (`agent-auth`): only if agents need to identify themselves
    - **MCP** server: only if the site exposes an MCP endpoint
    - **Skills**: only if the site publishes installable skill packages
+   - **A2A** AgentCards: only if the site runs A2A agents at non-canonical paths or runs multiple A2A agents on one origin. Single-agent sites at the canonical well-known path (`/.well-known/agent-card.json`) do not need an `A2A:` block; A2A clients can probe the well-known path directly.
    - Otherwise: just `agents.txt` with site identity, no capability blocks
 
 3. **Do they already have `robots.txt`, `sitemap.xml`, `llms.txt`?**
@@ -177,6 +178,8 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 - **Path inconsistency.** If they put `agents.txt` at `/static/agents.txt` instead of `/agents.txt`, agents won't find it. The standard requires the file at the root path.
 - **Stale generated files.** If using a generator, run it on every deploy, not just locally. CI integration matters.
 - **MCP without transport.** If they declare `MCP: https://example.com/mcp` in `agents.txt`, the URL must speak Streamable HTTP MCP, not just be a JSON endpoint. If they don't have an MCP server, drop the directive.
+- **A2A URL without an AgentCard.** Each `A2A:` line MUST point to a valid AgentCard JSON document (a2a-protocol.org). If the URL returns 404 or a non-AgentCard document, drop the directive. Single-agent sites that already serve their AgentCard at the canonical `/.well-known/agent-card.json` do not need this block at all.
+- **Inventing protocol identifiers.** If the user wants to advertise a protocol not registered in the spec (not `x402`, `mpp`, `agent-auth`), tell them to use the `x-` prefix per §3.1 (`x-mypay`, `x-myauth`). Parsers accept it; validators don't warn. Inventing an unprefixed identifier puts them outside the spec and triggers `unknown-protocol` warnings.
 
 ---
 
@@ -190,4 +193,4 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 
 ## Reference
 
-[REFERENCE.md](REFERENCE.md) carries the full directive list, `agents.json` schema, capability block examples (Payments / Authorization / MCP / Skills), and hand-write templates per framework. Open it inline whenever the user asks about a specific directive's syntax or fields.
+[REFERENCE.md](REFERENCE.md) carries the full directive list, `agents.json` schema, capability block examples (Payments / Authorization / MCP / Skills / A2A), and hand-write templates per framework. Open it inline whenever the user asks about a specific directive's syntax or fields.

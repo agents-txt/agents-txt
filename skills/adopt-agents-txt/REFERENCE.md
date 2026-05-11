@@ -21,6 +21,7 @@ Plain UTF-8 text. One directive per line. Lines starting with `#` are comments. 
 | `Identity:` | 0–1 | `Identity: required` | When agents must authenticate before any interaction |
 | `MCP:` | 0–N | `MCP: https://mysite.com/mcp` | URL of an MCP server (Streamable HTTP transport) |
 | `Skills:` | 0–N | `Skills: https://mysite.com/skills/main/SKILL.md` | URL of a `SKILL.md` file or skill index. Path is site-specific. |
+| `A2A:` | 0–N | `A2A: https://mysite.com/.well-known/agent-card.json` | URL of an A2A AgentCard JSON document (a2a-protocol.org). Opens the A2A block (spec §9). |
 
 **Order:** Site-* directives first, capability blocks after. Within a block, the block-opener directive first (e.g., `Protocols:` for payments, `Authorization:` for auth) followed by any policy hints (`Payments: required`, `Identity: required`).
 
@@ -60,7 +61,7 @@ Supported values:
 - `x402`: HTTP-native crypto micropayments (per-request, EIP-3009 / SVM). Spec: [x402.org](https://x402.org).
 - `mpp`: Machine Payments Protocol (session-based, fiat + USDC via Stripe SPT or Tempo). IETF draft: `draft-ryan-httpauth-payment`.
 
-Future values can be added without spec bump as long as they're identifier strings.
+**Experimental identifiers (`x-` prefix).** Per spec §3.1, protocols not yet registered in the spec MAY be advertised using the `x-` prefix (e.g. `Protocols: x402, x-mypay`). Parsers MUST accept these; validators MUST NOT warn. The convention extends to `agents.json` per-protocol object keys (`payments["x-mypay"]: {}`). Use this for protocols still being designed in the wild. Once registered formally, the `x-` form is retired in favour of the registered name.
 
 ### Authorization
 
@@ -69,7 +70,7 @@ Authorization: agent-auth
 Identity: required
 ```
 
-`Authorization:` declares the agent-identification protocol. Currently spec-recognized: `agent-auth`. Discovery endpoint is hardcoded at `/.well-known/agent-configuration` per the agent-auth protocol.
+`Authorization:` declares the agent-identification protocol. Currently spec-recognized: `agent-auth`. Discovery endpoint is hardcoded at `/.well-known/agent-configuration` per the agent-auth protocol. Experimental identifiers via the `x-` prefix (e.g. `x-myauth`) are accepted per spec §3.1.
 
 `Identity: required` is a site-level policy; if present, agents MUST authenticate before any interaction (not just before capability execution). Useful for sites that gate all reads on agent identity.
 
@@ -89,6 +90,25 @@ Skills: https://mysite.com/skills/main/SKILL.md
 ```
 
 URL of the `SKILL.md` file at the root of an [agentskills.io](https://agentskills.io)-conformant skill folder. The canonical layout is `<base>/<skill-name>/SKILL.md` with optional sibling `REFERENCE.md` and any supporting scripts or assets in the same folder. `agents.txt` advertises only the `SKILL.md` URL (one `Skills:` line per skill); companion files are discovered by the skill's own internal links once the agent has fetched `SKILL.md`. `agents.json` references the same URL under `skills[].url`. `agents.txt` governs only the discovery directive, not the path or internal layout; the path is fully site-specific.
+
+### A2A
+
+```
+A2A: https://mysite.com/.well-known/agent-card.json
+A2A: https://mysite.com/agents/support/card.json
+```
+
+One `A2A:` line per [A2A](https://a2a-protocol.org) AgentCard URL. Each URL points to a JSON document describing one agent's identity, capabilities, supported extensions (including the [x402 payments extension](https://github.com/google-agentic-commerce/a2a-x402) where applicable), transport, and security schemes.
+
+**When to declare an A2A block.** The canonical well-known path `/.well-known/agent-card.json` already lets A2A clients discover a single AgentCard without help from `agents.txt`. Declare the block only when:
+
+- the site runs more than one A2A agent on the same origin (multi-agent sites), or
+- the AgentCard is served at a non-canonical path (e.g. `/agents/sales/card.json`), or
+- the site wants to surface a description on each card in `agents.json` (the description field is `agents.json`-only).
+
+`agents.txt` carries only the URL. All agent metadata (skills, capabilities, supported extensions, security schemes, transport) stays in the AgentCard itself, exactly as the A2A specification defines. Per spec §9, the `A2A:` block is independent of the Payments and Authorization blocks; per-agent payment configuration lives in each AgentCard's `capabilities.extensions`, not in `agents.txt`.
+
+`agents.json` mirrors the directive as an `a2a[]` array of `{ url, description? }` entries, symmetric with `mcp[]` and `skills[]`.
 
 ---
 
@@ -125,6 +145,9 @@ Same information as `agents.txt`, in machine-friendly JSON. Sites SHOULD serve b
   ],
   "skills": [
     { "url": "https://mysite.com/skills/main/SKILL.md", "description": "Public skill package." }
+  ],
+  "a2a": [
+    { "url": "https://mysite.com/.well-known/agent-card.json", "description": "Primary support agent." }
   ]
 }
 ```
@@ -148,6 +171,7 @@ Same information as `agents.txt`, in machine-friendly JSON. Sites SHOULD serve b
 | `authorization.identityRequired` | optional | Mirrors `Identity:` directive |
 | `mcp[]` | when MCP declared | Array of `{ url, type, description? }`. `type` is always `"streamable-http"` for HTTP MCP. |
 | `skills[]` | when skills declared | Array of `{ url, description? }`. URL points to a `SKILL.md` file or skill index (agentskills.io). Path is site-specific. |
+| `a2a[]` | when A2A declared | Array of `{ url, description? }`. URL points to an A2A AgentCard JSON document (a2a-protocol.org). Description is optional and `agents.json`-only. |
 
 ### Security invariants for `agents.json`
 
@@ -286,6 +310,13 @@ Both files MUST be served with:
 
 The CORS header is the one most often missed. It exists because browser-context agents (extensions, web playgrounds, in-app copilots) cannot fetch a cross-origin `agents.txt` / `agents.json` without it; the file silently becomes unreadable. The charset half of `Content-Type` exists because §3 mandates UTF-8 and browsers fall back to ISO-8859-1 without it.
 
+**Static vs dynamic well-known paths.** §4.5 governs `/agents.txt` and `/agents.json` only, but other discovery surfaces (`/.well-known/agent-card.json` for A2A, `/.well-known/agent-configuration` for agent-auth, future well-known paths) need the same headers to work cross-origin. The right place to set them depends on how the path is served, not on what it contains:
+
+- **Static file** (a real file under your `public/` directory, including `public/.well-known/*.json`): add a block to your `_headers` (or `vercel.json#headers`) mirroring the `/agents.json` shape. The hosting platform's static asset pipeline applies them. Without an entry the file responds 200, but no CORS header is set and any browser-context client on a different origin gets a CORS error.
+- **Dynamic route** (served by a route handler, middleware, or worker): the handler sets the headers in code. `_headers` and similar declarative configs do not apply to dynamic routes; if you put an entry there, it has no effect. Inside an Express, Next.js, Hono, or Cloudflare worker handler, set `Access-Control-Allow-Origin: *`, the right `Content-Type`, and a `Cache-Control` before responding.
+
+Quick test for which one you have: if you can `ls` the file in your output directory after `npm run build`, it's static. If the file does not exist on disk but the URL still responds, it's dynamic.
+
 ### Per-platform configuration
 
 | Platform | Mechanism | Generated by `agentify generate --headers`? |
@@ -370,7 +401,7 @@ The reference MCP server at `mcp.agentstxt.dev` exposes:
 |---|---|---|
 | `validate_agents_txt` | `{ content: string }` | Compliance report against the v1.0 spec |
 | `validate_agents_json` | `{ content: string }` | JSON schema check |
-| `audit_site` | `{ url: string }` | End-to-end live audit: §4.5 serving headers, §3-§8 directive validation, §10 schema validation, §10.4/§12 secret-leak scan, and `agents.txt ↔ agents.json` cross-file consistency. Returns a `summary` block with `compliant: boolean` for one-line pass/fail. |
+| `audit_site` | `{ url: string }` | End-to-end live audit: §4.5 serving headers, §3-§9 directive validation, §11 schema validation, §11.4 / §13 secret-leak scan, and `agents.txt` vs `agents.json` cross-file consistency. Returns a `summary` block with `compliant: boolean` for one-line pass/fail. |
 | `parse_agents_txt` | `{ content: string }` | Returns the parsed directive map |
 | `get_spec` | `{ section?: string }` | Returns the spec text or a specific section |
 
@@ -393,7 +424,8 @@ If both files are present, confirm they declare the same capabilities. Mismatche
 ## Common questions to answer in-line
 
 - **"Do I need both `agents.txt` and `agents.json`?"** Strictly, just `agents.txt`. The companion is recommended for any site with capability blocks because it lets agents pre-screen without parsing plain text. For a minimal site declaring only `Site-Name`/`Site-URL`, `agents.txt` alone is fine.
-- **"Can I add custom directives?"** The spec is extensible (new capability blocks can be added without breaking parsers). Custom directives outside the spec must use `X-` prefix to signal non-standard. Better: open an RFC against the spec.
+- **"Can I add custom directives?"** The spec is extensible: new capability blocks can be added without breaking parsers. For unregistered *protocol identifiers* inside an existing block (`Protocols:`, `Authorization:`), use the `x-` prefix per §3.1 (`x-mypay`, `x-myauth`). Parsers accept them; validators do not warn. For a wholly new *directive* (a new block opener like `A2A:` was in v1.0), open an RFC PR against the spec instead; experimental directive names are not covered by the `x-` convention.
+- **"Do I need an `A2A:` block?"** No, unless you run multiple A2A agents on one origin or serve an AgentCard at a non-canonical path. A2A clients can probe the canonical well-known path (`/.well-known/agent-card.json`) directly. The `A2A:` block exists to cover the cases the canonical path does not.
 - **"Where do wallet addresses go?"** Never in discovery files. They appear in `402` response bodies via the protocol's own conventions (e.g. `accepts[].payTo` for x402 v2). Discovery files only signal *which protocols* are supported, not the wire details.
 - **"What if my site doesn't accept payments?"** Drop the `Protocols:` line (and optional `Payments: required`) from `agents.txt` and omit the `payments` block from `agents.json`. A site declaring no monetization is fully conformant.
 - **"How do I update the file when I change a capability?"** Re-deploy. Cache headers should be ≤ 1 hour for `agents.*` files since they're discovery surfaces; agents will pick up changes within that window.

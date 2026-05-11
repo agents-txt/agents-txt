@@ -131,6 +131,31 @@ Trigger `/adopt-agents-txt`. The skill walks them through reading the spec, choo
 4. Bump the `Version:` line if semantics change.
 5. Mirror the change into `mcp/src/` validators and `site/public/agents.json`.
 
+### …the user wants to add a new protocol or capability block
+
+Three paths exist; pick by formalization level. Default to suggesting the lightest one that fits the user's actual need.
+
+**Path A: experimental (`x-` prefix), no spec change.** A site advertises an unregistered protocol with the `x-` prefix per §3.1 (`Protocols: x402, x-mypay`, or `payments["x-mypay"]: {}` in `agents.json`). Parsers must accept; validators must not warn. The reference deployment already accepts `x-` identifiers without warnings via `isAcceptedPaymentIdentifier` / `isAcceptedAuthIdentifier` in `mcp/src/protocols.ts`. No code or spec edits required.
+
+**Path B: register an identifier in an existing block (§5 Payments or §6 Authorization).** The protocol fits an existing block's semantics and is stable enough to standardize. Steps:
+1. PR against `spec/AGENTS-TXT-STANDARD.md`: add a subsection to §5 or §6 describing what the identifier signals and where the protocol's own details live.
+2. Bump `Version:`.
+3. Append the identifier to `PAYMENT_PROTOCOLS` or `AUTH_PROTOCOLS` in `mcp/src/protocols.ts`. Validators and `audit_site` follow automatically.
+4. If the protocol has structured fields in `agents.json`, document the per-protocol object in §11.2 and §11.3, then add the JSON shape check in `mcp/src/tools/validate_agents.ts` and `audit_site.ts` next to the existing x402 and MPP blocks.
+
+**Path C: new capability block (the A2A path).** The protocol does not fit any existing block. This is what A2A required in v1.0. Steps:
+1. Spec section in `AGENTS-TXT-STANDARD.md`: directive name, wire format (single value per line, repeatable, HTTPS-only), the discovery gap the block fills, relationship to existing blocks.
+2. Directive table entry in §3.1.
+3. `agents.json` schema entry in §11.2 plus field notes in §11.3. For URL-carrying blocks mirror the `mcp[]` / `skills[]` shape: `{ url, description? }`, description is `agents.json`-only.
+4. Register the directive in `BLOCK_OPENERS` inside `mcp/src/protocols.ts`. This is the distinction between "expected block opener" and "unknown directive surfaced under `extensions`".
+5. Parser case in `mcp/src/tools/parse_agents_txt.ts`.
+6. Validation rules in `mcp/src/tools/validate_agents.ts` (txt URL shape + HTTPS, json array shape).
+7. Audit rules in `mcp/src/tools/audit_site.ts`: §N directive check, §11.2 array check, plus the cross-file consistency check that the URL set in `agents.txt` equals the URL set in `agents.json`.
+8. If the new block is inserted before any existing section, renumber subsequent sections everywhere they are referenced (search the audit code for `§` to find every literal).
+9. If `site/` adopts the new block, regenerate or hand-edit `site/public/agents.txt` and `site/public/agents.json` in the same PR.
+
+Default behaviour: when a user mentions a brand-new protocol, suggest Path A first. Move to Path B or C only when there is a stable spec on the other side and ecosystem demand. Never silently extend `PAYMENT_PROTOCOLS` / `AUTH_PROTOCOLS` without confirming the spec status.
+
 ### …the user wants to add an MCP tool
 
 1. Add the tool definition + handler in `mcp/src/`.
@@ -160,9 +185,20 @@ Trigger `/adopt-agents-txt`. The skill walks them through reading the spec, choo
 3. Verify after deploy by calling the MCP `audit_site` tool against `https://agentstxt.dev` (e.g. via `mcp.agentstxt.dev/mcp`); a clean run reports `corsAllOrigins: true`, the right `Content-Type`, and a present `Cache-Control` for both files.
 4. Localhost (`astro dev`) does NOT honor `_headers`. The §4.5 errors that appear when auditing `http://localhost:4321` are expected; the spec governs production, not dev preview.
 
+### …the user adds a new well-known path (or any new static discovery file)
+
+Static files use `_headers`; dynamic worker routes set headers in code. The rule splits on how the path is served, not on what it contains.
+
+- **Static file** (anything under `site/public/`, including `public/.well-known/*.json`): Cloudflare's static asset pipeline serves it. Response headers come from `_headers` and nowhere else. Add a new block to `site/public/_headers` mirroring the `/agents.json` shape (`Content-Type`, `Access-Control-Allow-Origin: *`, `Cache-Control: public, max-age=3600`). Without the entry the file still responds 200, but no CORS header is set and any browser-context client on another origin gets a CORS error.
+- **Dynamic route** (anything proxied by `site/src/worker.ts` to the auth worker, MCP worker, or handled directly): the handler sets response headers in code. `_headers` does not apply to dynamic worker routes. Make sure the handler emits `Content-Type`, `Access-Control-Allow-Origin: *`, and (where appropriate) `Cache-Control` itself. The existing `/.well-known/agent-configuration` proxy in the auth worker is the reference pattern.
+
+Worked examples in the repo. `/agents.txt` and `/agents.json` are static and have `_headers` entries (spec §4.5 mandates these). `/.well-known/agent-card.json` is static (A2A reference card) and has a matching `_headers` entry. `/.well-known/agent-configuration` is dynamic (served by the agent-auth worker) and gets its headers in `auth/src/`.
+
+agents.txt spec §4.5 mandates headers only for `/agents.txt` and `/agents.json`. For any other discovery surface the headers are an implementation concern (CORS in particular is load-bearing for browser-context clients). When in doubt, mirror the `/agents.json` shape.
+
 ### …the user asks to add or change an MCP audit check
 
-The MCP `audit_site` tool lives at `mcp/src/tools/audit_site.ts` (function: `registerAuditSite`). Scope is intentionally limited to the agents.txt spec: §3-§8 directive validation, §10 schema validation, §4.5 serving headers, §10.4 / §12 secret-leak scan, and `agents.txt ↔ agents.json` cross-file consistency. A light-touch check on `robots.txt` confirms `Allow: /agents.txt` is present (the §4.3 discovery surface). RFC 9309, sitemap.xml, and llms.txt are out of scope; do not extend the tool to audit them.
+The MCP `audit_site` tool lives at `mcp/src/tools/audit_site.ts` (function: `registerAuditSite`). Scope is intentionally limited to the agents.txt spec: §3-§9 directive validation, §11 schema validation, §4.5 serving headers, §11.4 / §13 secret-leak scan, and `agents.txt` vs `agents.json` cross-file consistency. A light-touch check on `robots.txt` confirms `Allow: /agents.txt` is present (the §4.3 discovery surface). RFC 9309, sitemap.xml, and llms.txt are out of scope; do not extend the tool to audit them.
 
 ### …the user mentions agentify
 
@@ -193,7 +229,9 @@ Acknowledge it as a sibling project that helps adopt this spec. Mention it lives
 | Question | Source of truth |
 |---|---|
 | What does directive X mean? | `spec/AGENTS-TXT-STANDARD.md` |
-| What's the wire format of `agents.json`? | `spec/AGENTS-TXT-STANDARD.md` §10 |
+| What's the wire format of `agents.json`? | `spec/AGENTS-TXT-STANDARD.md` §11 |
+| What's the A2A block / `A2A:` directive? | `spec/AGENTS-TXT-STANDARD.md` §9 |
+| What identifiers are registered? | `mcp/src/protocols.ts` (single source of truth) |
 | What MCP tools does the server expose? | `mcp/src/` (read the actual handlers) |
 | What's the agent-auth handshake? | `auth/src/` + `/.well-known/agent-configuration` response |
 | How does `/donate` settle x402 payments? | `site/src/worker.ts` (hand-rolled, ~150 lines) |

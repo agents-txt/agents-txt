@@ -78,7 +78,8 @@ The single source of truth for the standard. Versioned (`v1.0` at time of writin
 - Wire format (UTF-8 plain text, RFC 3629)
 - Required and optional directives
 - Companion `agents.json` schema (UTF-8 JSON, RFC 8259)
-- Capability blocks: Payments, Authorization, MCP, Skills
+- Capability blocks: Payments (§5), Authorization (§6), MCP (§7), Skills (§8), A2A (§9)
+- `x-` prefix convention for experimental protocol identifiers (§3.1)
 - Conformance requirements
 
 Treat this file as **load-bearing**. Changes here can break every parser, generator, and validator in the ecosystem.
@@ -97,7 +98,9 @@ The `/donate` handler in `worker.ts` is a **deliberate self-contained reference*
 
 A Cloudflare Worker exposing the `agents.txt` spec to AI agents over Model Context Protocol. Tools: `get_spec`, `parse_agents_txt`, `validate_agents_txt`, `validate_agents_json`, `audit_site`, `get_skill`. Built on `hono`, `@modelcontextprotocol/sdk`, `agents`. Deploys to `mcp.agentstxt.dev`.
 
-`audit_site` does the heavy lifting: it fetches `/agents.txt`, `/agents.json`, and `/robots.txt`, validates the §4.5 serving headers (Content-Type, CORS, Cache-Control), runs the §3-§8 directive validators on `agents.txt`, schema-validates `agents.json` per §10, scans both files for accidental treasury / secret leaks per §10.4 / §12, and cross-checks that the two files declare consistent capabilities (payments / authorization / MCP / Skills). Out of scope: full RFC 9309 audit, sitemap.xml, llms.txt — those are governed by other specs.
+`audit_site` does the heavy lifting: it fetches `/agents.txt`, `/agents.json`, and `/robots.txt`, validates the §4.5 serving headers (Content-Type, CORS, Cache-Control), runs the §3-§9 directive validators on `agents.txt`, schema-validates `agents.json` per §11, scans both files for accidental treasury / secret leaks per §11.4 / §13, and cross-checks that the two files declare consistent capabilities (payments / authorization / MCP / Skills / A2A). Out of scope: full RFC 9309 audit, sitemap.xml, llms.txt. Those are governed by other specs.
+
+The MCP package centralises every recognised protocol identifier in [`mcp/src/protocols.ts`](mcp/src/protocols.ts): `PAYMENT_PROTOCOLS`, `AUTH_PROTOCOLS`, `MPP_METHODS`, `BLOCK_OPENERS`, plus `isAcceptedPaymentIdentifier` / `isAcceptedAuthIdentifier` helpers that accept both registered identifiers and `x-` prefixed experimental ones. Adding a registered identifier or a new block-opening directive is a single edit there; the parser, validators, and audit tool all read from it.
 
 ### Agent-auth worker: `auth/`
 
@@ -165,6 +168,7 @@ These constraints exist to keep the spec credible, the reference deployment work
 
 - New MCP tools should be additive. Do not break existing tool signatures (`get_spec`, `parse_agents_txt`, etc.); third-party MCP clients may depend on them.
 - When the spec changes, update `validate_agents_txt` / `validate_agents_json` to match. Tests in `auth/` cover auth invariants but the validator quality is on you to assess by exercising it against `site/public/agents.txt` and `agents.json`.
+- The protocol registry at [`src/protocols.ts`](mcp/src/protocols.ts) is the single source of truth for recognised identifiers. Adding a new registered payment or auth identifier is one edit there; the parser, validators, and audit tool follow automatically.
 
 ### `auth/`
 
@@ -210,5 +214,49 @@ Use this skill when a user is working in *their own* repository and asks how to 
 | Change `/agents.txt` content served by the site | `site/public/agents.txt` (re-generate or hand-edit) |
 | Modify the BFF / `/donate` payment endpoint | `site/src/worker.ts` |
 | Add an MCP tool | `mcp/src/` |
+| Register a payment / auth protocol identifier | `mcp/src/protocols.ts` (single edit; validators and audit tool follow) |
+| Add a new block-opening directive | `mcp/src/protocols.ts` (`BLOCK_OPENERS`) + parser, validator, audit rules; see the A2A diff for a worked example |
 | Extend agent-auth capabilities | `auth/src/` (and add a Vitest case) |
 | Adjust top-level scripts | `package.json` (root of `agentstxt/`) |
+
+---
+
+## Adding a new protocol to the standard
+
+Three paths, in increasing levels of formalization. The spec stays small by absorbing only protocols that have a stable specification of their own.
+
+### 1. Experimental identifier (`x-` prefix)
+
+No spec change required. A site advertises an unregistered protocol with the `x-` prefix (§3.1): `Protocols: x402, x-mypay` in `agents.txt`, `payments["x-mypay"]: {}` in `agents.json`. Parsers must accept; validators must not warn. This is the runway for a protocol to ship in production before formal registration.
+
+The reference deployment's parser, validators, and `audit_site` tool all already accept `x-` prefixed identifiers without warnings (see `isAcceptedPaymentIdentifier` / `isAcceptedAuthIdentifier` in [`mcp/src/protocols.ts`](mcp/src/protocols.ts)). No code changes needed when a new experimental protocol enters the wild.
+
+### 2. Register an identifier in an existing block (§5 Payments or §6 Authorization)
+
+The protocol fits the existing semantics of an existing block and is stable enough to register. Steps:
+
+1. Open a PR against [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md). Add a subsection to §5 or §6 describing what the identifier signals to an agent and where the protocol's own details live (well-known path, response challenge, SDK).
+2. Bump the `Version:` line.
+3. Append the identifier to `PAYMENT_PROTOCOLS` or `AUTH_PROTOCOLS` in [`mcp/src/protocols.ts`](mcp/src/protocols.ts). The MCP validators and audit tool pick it up via `isAcceptedPaymentIdentifier` / `isAcceptedAuthIdentifier`. No other validator code edits required.
+4. If the protocol carries structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §11.2 and §11.3, then add a per-protocol JSON shape check in [`mcp/src/tools/validate_agents.ts`](mcp/src/tools/validate_agents.ts) and [`audit_site.ts`](mcp/src/tools/audit_site.ts) alongside the existing x402 / MPP checks.
+
+### 3. Add a new capability block (the A2A path)
+
+The protocol does not fit any existing block. This is what happened with A2A in v1.0: A2A defines its own well-known path but multi-agent sites and non-canonical AgentCard paths needed a discovery directive, so the spec gained a new §9 with an `A2A:` directive.
+
+Steps (use the A2A diff as the reference):
+
+1. **Spec section** in `AGENTS-TXT-STANDARD.md`. Define the directive name, wire format (single value per line, repeatable, HTTPS-only), the discovery gap the block fills, and the relationship to existing blocks (independent or constrained).
+2. **Directive table entry** in §3.1.
+3. **`agents.json` schema** entry in §11.2, with a field-notes paragraph in §11.3. For URL-carrying blocks, mirror the `mcp[]` / `skills[]` shape: array of `{ url, description? }`, description is `agents.json`-only because the announcement layer (`agents.txt`) stays terse.
+4. **Reference deployment**:
+   - Register the directive in `BLOCK_OPENERS` inside [`mcp/src/protocols.ts`](mcp/src/protocols.ts). This is how the parser distinguishes "I expected this to open a block" from "this is an unknown directive that should fall through to `extensions`".
+   - Add a parsing case in [`mcp/src/tools/parse_agents_txt.ts`](mcp/src/tools/parse_agents_txt.ts) to collect the values into the structured output.
+   - Add validation rules in [`mcp/src/tools/validate_agents.ts`](mcp/src/tools/validate_agents.ts) (txt-side URL shape and HTTPS, json-side array shape).
+   - Add the §N directive check and §11.2 array check in [`mcp/src/tools/audit_site.ts`](mcp/src/tools/audit_site.ts), plus the cross-file consistency check that the URL set in `agents.txt` equals the URL set in `agents.json`.
+5. **Renumbering**. If the new block is inserted before any existing section (the A2A change inserted between §8 Skills and the previous §9 Relationship), renumber the subsequent sections and update every `§N` reference in `audit_site.ts`'s rule messages. Search the audit code for `§` to find them all.
+6. **Reference site** (`site/`): if the site adopts the new block, regenerate or hand-edit `site/public/agents.txt` and `site/public/agents.json` in the same PR.
+
+Pure additive change at the spec layer: parsers ignore unknown directives, so old files stay valid, and old agents continue to work against new files (they just don't see the new block).
+
+Two reviewer approvals required for spec changes per the project's RFC discipline.

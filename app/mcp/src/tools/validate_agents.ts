@@ -1,9 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { parseAgentsTxt } from './parse_agents_txt.js';
-
-const KNOWN_PROTOCOLS = new Set(['x402', 'mpp']);
-const KNOWN_AUTH_PROTOCOLS = new Set(['agent-auth']);
+import {
+  PAYMENT_PROTOCOLS,
+  AUTH_PROTOCOLS,
+  MPP_METHODS,
+  isAcceptedPaymentIdentifier,
+  isAcceptedAuthIdentifier,
+} from '../protocols.js';
 
 type ValidationResult = {
   valid: boolean;
@@ -28,16 +32,16 @@ function validateParsed(parsed: ReturnType<typeof parseAgentsTxt>): ValidationRe
       errors.push('Payments block requires a non-empty Protocols: line with at least one protocol identifier');
     }
     for (const p of parsed.payments.protocols) {
-      if (!KNOWN_PROTOCOLS.has(p)) {
-        warnings.push(`Unknown payment protocol "${p}" — known values: x402, mpp`);
+      if (!isAcceptedPaymentIdentifier(p)) {
+        warnings.push(`Unknown payment protocol "${p}" — known values: ${PAYMENT_PROTOCOLS.join(', ')} (use \`x-\` prefix for experimental)`);
       }
     }
   }
 
   if (parsed.authorization) {
     for (const p of parsed.authorization.protocols) {
-      if (!KNOWN_AUTH_PROTOCOLS.has(p)) {
-        warnings.push(`Unknown authorization protocol "${p}" — known values: agent-auth`);
+      if (!isAcceptedAuthIdentifier(p)) {
+        warnings.push(`Unknown authorization protocol "${p}" — known values: ${AUTH_PROTOCOLS.join(', ')} (use \`x-\` prefix for experimental)`);
       }
     }
   }
@@ -52,6 +56,16 @@ function validateParsed(parsed: ReturnType<typeof parseAgentsTxt>): ValidationRe
     if (!isHttpsUrl(url)) {
       errors.push(`Skills URL must be a valid HTTPS URL — got: "${url}"`);
     }
+  }
+
+  for (const url of parsed.a2a) {
+    if (!isHttpsUrl(url)) {
+      errors.push(`A2A URL must be a valid HTTPS URL — got: "${url}"`);
+    }
+  }
+
+  for (const key of Object.keys(parsed.extensions)) {
+    warnings.push(`Unknown directive "${key}:" — ignored. Use \`x-\` prefix for experimental identifiers; new block-level directives require a spec update.`);
   }
 
   return { valid: errors.length === 0, errors, warnings };
@@ -73,9 +87,11 @@ function validateAgentsJson(obj: unknown): ValidationResult {
 
   if ('payments' in json && json.payments) {
     const payments = json.payments as Record<string, unknown>;
-    const protocolKeys = Object.keys(payments).filter((k) => k === 'x402' || k === 'mpp');
+    const protocolKeys = Object.keys(payments).filter(
+      (k) => (PAYMENT_PROTOCOLS as readonly string[]).includes(k) || k.startsWith('x-'),
+    );
     if (protocolKeys.length === 0) {
-      errors.push('"payments" must include at least one per-protocol object (x402 or mpp) when present');
+      errors.push(`"payments" must include at least one per-protocol object (${PAYMENT_PROTOCOLS.join(' or ')}, or an x- prefixed experimental key) when present`);
     }
     if ('required' in payments && typeof payments.required !== 'boolean') {
       errors.push('"payments.required" must be a boolean when present');
@@ -86,10 +102,10 @@ function validateAgentsJson(obj: unknown): ValidationResult {
       if (!Array.isArray(methods) || methods.length === 0) {
         errors.push('"payments.mpp.methods" must be a non-empty array when present');
       } else {
-        const recognised = new Set(['tempo', 'stripe']);
+        const recognised = new Set<string>(MPP_METHODS);
         for (const m of methods as unknown[]) {
           if (typeof m !== 'string' || !recognised.has(m)) {
-            warnings.push(`Unrecognised MPP method "${String(m)}" (recognised: tempo, stripe)`);
+            warnings.push(`Unrecognised MPP method "${String(m)}" (recognised: ${MPP_METHODS.join(', ')})`);
           }
         }
       }
@@ -127,6 +143,23 @@ function validateAgentsJson(obj: unknown): ValidationResult {
           const e = entry as Record<string, unknown>;
           if (!isHttpsUrl(String(e.url))) {
             errors.push(`skills[].url must be a valid HTTPS URL — got: "${e.url}"`);
+          }
+        }
+      }
+    }
+  }
+
+  if ('a2a' in json && json.a2a) {
+    if (!Array.isArray(json.a2a)) {
+      errors.push('"a2a" must be an array');
+    } else {
+      for (const entry of json.a2a as unknown[]) {
+        if (typeof entry !== 'object' || entry === null || !('url' in (entry as object))) {
+          errors.push('Each a2a entry must have a "url" field');
+        } else {
+          const e = entry as Record<string, unknown>;
+          if (!isHttpsUrl(String(e.url))) {
+            errors.push(`a2a[].url must be a valid HTTPS URL — got: "${e.url}"`);
           }
         }
       }

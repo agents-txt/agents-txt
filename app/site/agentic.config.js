@@ -122,4 +122,15 @@ export default {
       description: 'Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result.',
     },
   },
+
+  // A2A AgentCard discovery (a2a-protocol.org). Spec §9. The AgentCard JSON
+  // is served as a static file from public/.well-known/agent-card.json and
+  // describes a reference meta-agent (no live JSON-RPC backend; this is a
+  // discovery demonstration, not an agent runtime).
+  a2a: {
+    cards: {
+      url: 'https://agentstxt.dev/.well-known/agent-card.json',
+      description: 'Reference A2A AgentCard describing a meta-agent that explains the agents.txt spec, validates discovery files, and points clients at the live MCP tools.',
+    },
+  },
 }

@@ -42,11 +42,12 @@ Protocols: x402, mpp
 Authorization: agent-auth
 MCP: https://mysite.com/mcp
 Skills: https://mysite.com/skills/main/SKILL.md
+A2A: https://mysite.com/.well-known/agent-card.json
 ```
 
-That's it. Six directives, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; the protocol-specific details (pricing, scopes, transport, skill manifests) live in the protocol's own discovery surface.
+That's it. Seven directives, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; the protocol-specific details (pricing, scopes, transport, skill manifests, AgentCard fields) live in the protocol's own discovery surface.
 
-The structured companion **`agents.json`** carries the same information in machine-friendly JSON with richer per-block detail (chain identifiers, default pricing, capability descriptions). Sites SHOULD serve both, same relationship as `llms.txt` ↔ `llms-full.txt`.
+The structured companion **`agents.json`** carries the same information in machine-friendly JSON with richer per-block detail (chain identifiers, default pricing, capability descriptions). Sites SHOULD serve both, same relationship as `llms.txt` and `llms-full.txt`.
 
 ---
 
@@ -72,6 +73,73 @@ agentify is **a nice-to-have, not a requirement**. The spec is implementation-ag
 ### 3. Look at the reference site
 
 The live deployment at [agentstxt.dev](https://agentstxt.dev) is a working agentic site. Source: [`site/`](site/). It hand-rolls its `/donate` x402 + MPP endpoint inside [`site/src/worker.ts`](site/src/worker.ts) so you can read a real, dependency-free implementation of payment serving against the spec. Use it as a reference when building your own server.
+
+---
+
+## Capability blocks
+
+The spec defines five capability blocks. A site emits only the blocks that apply to it; all are optional.
+
+| Block | Directive(s) | What it declares |
+|-------|--------------|------------------|
+| Payments (§5) | `Protocols:` (opens the block), `Payments: required` (optional policy hint) | Which payment protocols the site speaks. Currently registered identifiers: `x402`, `mpp`. |
+| Authorization (§6) | `Authorization:` (opens the block), `Identity: required` (optional policy hint) | Which agent-identity protocols the site speaks. Currently registered: `agent-auth`. |
+| MCP (§7) | `MCP:` (repeatable) | Model Context Protocol endpoint URLs. Streamable HTTP transport. |
+| Skills (§8) | `Skills:` (repeatable) | Agent skill package URLs ([agentskills.io](https://agentskills.io)). |
+| A2A (§9) | `A2A:` (repeatable) | A2A AgentCard URLs ([a2a-protocol.org](https://a2a-protocol.org)). One line per AgentCard, HTTPS only. Complements the canonical well-known path `/.well-known/agent-card.json` for multi-agent sites and non-canonical AgentCard locations. Agent metadata stays in the AgentCard itself; `agents.txt` carries only the URL. |
+
+Blocks are separated by blank lines. Unknown keys are ignored by parsers (forward-compatible). Each block has independent semantics: removing the `Authorization:` block never requires changes to `MCP:` or `Skills:`, and so on.
+
+---
+
+## Adding a new protocol
+
+The spec is **deliberately small** and protocol-agnostic. New protocols can be advertised in three ways, in increasing levels of formalization.
+
+### 1. Use the `x-` prefix (experimental, no spec change)
+
+A protocol that has not been registered in this spec yet can be advertised using the `x-` prefix (`x-mypay`, `x-myauth`) per §3.1. Parsers MUST accept it; validators MUST NOT warn. The same convention extends to `agents.json` per-protocol object keys (`payments["x-mypay"]`). This is the runway for a protocol to be tested in the wild before promotion.
+
+```
+# agents.txt
+Protocols: x402, x-mypay
+```
+
+```json
+// agents.json
+{ "payments": { "x402": { "chains": ["eip155:8453"] }, "x-mypay": {} } }
+```
+
+Site authors decide their own runtime semantics for an experimental protocol (response shape, headers, settlement). No coordination with this spec is required. Once the protocol stabilizes and there is demand, the identifier may be promoted to a registered name in a future spec version, retiring the `x-` form.
+
+### 2. Register an identifier in an existing block (PR against §5 or §6)
+
+When a payment protocol or authorization protocol has a stable specification of its own and ecosystem demand, it can be registered by adding a subsection to §5 (Payment Protocols) or §6 (Authorization Protocols). The bar is editorial:
+
+- Open a PR against [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md).
+- Add a subsection describing what the identifier signals to an agent and where the protocol's own details live (well-known path, response challenge, SDK).
+- Bump the `Version:` line because semantics change.
+- Mirror the addition in the reference deployment: append the identifier to [`mcp/src/protocols.ts`](mcp/src/protocols.ts) so the MCP validators and `audit_site` tool accept it without warnings.
+- If the protocol has structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §11.2 and §11.3.
+
+Discussion happens in the PR. Two reviewer approvals are required for structural spec changes.
+
+### 3. Add a new capability block (RFC against the spec)
+
+When a protocol does not fit any existing block (the way A2A did not fit under Payments, Authorization, MCP, or Skills), it gets its own block and a new directive name. This is a structural change and requires RFC-style discussion in the PR.
+
+The **A2A block (§9), added in v1.0**, is the most recent worked example. The shape it takes:
+
+1. **Spec section** in `AGENTS-TXT-STANDARD.md`. New section that defines the directive (`A2A:`), the wire format (one HTTPS URL per line, repeatable), the discovery gap it fills (multi-agent sites, non-canonical AgentCard paths), and the relationship to existing blocks (independent: `A2A:` and `Authorization:` do not constrain each other).
+2. **Directive table entry** in §3.1.
+3. **Companion entry in `agents.json` schema** (§11.2). For A2A: an `a2a: [ { url, description? } ]` array, symmetric with `mcp[]` and `skills[]`. The description field is `agents.json`-only; `agents.txt` carries only the URL because the announcement layer stays terse.
+4. **Reference deployment update**:
+   - [`mcp/src/protocols.ts`](mcp/src/protocols.ts) registers the directive in `BLOCK_OPENERS` so parsers and audit tools treat it as a known block opener (not as an unknown directive surfaced under `extensions`).
+   - [`mcp/src/tools/parse_agents_txt.ts`](mcp/src/tools/parse_agents_txt.ts) collects the values into the structured output.
+   - [`mcp/src/tools/validate_agents.ts`](mcp/src/tools/validate_agents.ts) and [`audit_site.ts`](mcp/src/tools/audit_site.ts) validate URL shape, HTTPS, and the cross-file consistency rule that the URL set in `agents.txt` equals the URL set in `agents.json`.
+5. **Reference site update**: if the reference deployment itself adopts the new block, the corresponding `agents.txt` and `agents.json` artifacts in [`site/public/`](site/public/) are regenerated.
+
+The spec is forward-compatible by design: parsers ignore unknown directives, so an `A2A:` line written before a parser knew about it is silently dropped, not rejected. New blocks therefore never break existing sites or existing agents.
 
 ---
 

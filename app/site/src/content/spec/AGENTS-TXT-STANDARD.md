@@ -1,7 +1,7 @@
 # agents.txt Standard — v1.0
 
 **Status:** Draft  
-**Version:** 1.0-draft  
+**Version:** 1.0  
 **Authors:** Open Agentic Web contributors  
 **Repository:** https://github.com/agentstxt/agents.txt  
 **License:** CC0 (spec), Apache 2.0 (reference implementation)
@@ -25,7 +25,7 @@ The existing layers handle access policies, page indexes, and content guidance f
 
 **Design principle:** `agents.txt` is the announcement layer. It tells an agent which protocols a site speaks. The implementation details always live in the protocol's own layer: 402 response bodies for payment protocols, `/.well-known/agent-configuration` for authorization protocols. Nothing in `agents.txt` duplicates those details.
 
-Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §10 defines the full schema.
+Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §11 defines the full schema.
 
 A live reference deployment of this specification is available at `https://agentstxt.dev`.
 
@@ -141,8 +141,11 @@ Skills: https://example.com/skills/premium/SKILL.md
 | `Identity:` | Authorization | No | `required` | Agents MUST authenticate before any interaction |
 | `MCP:` | MCP | No | URL | One MCP server endpoint; repeat for multiple servers |
 | `Skills:` | Skills | No | URL | One skill package URL (SKILL.md or index); repeat for multiple packages |
+| `A2A:` | A2A | No | URL | One A2A AgentCard URL; repeat for multiple agents (§9) |
 
 Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §5 and §6 respectively.
+
+**Experimental identifiers.** A protocol that has not yet been formally registered in this specification MAY be advertised using the `x-` prefix (e.g. `x-mypay`, `x-myauth`). Parsers MUST accept `x-`-prefixed identifiers; validators MUST NOT warn on them. This gives new protocols a runway to be tested in the wild before being promoted to a registered identifier in a future spec version. The same convention applies to per-protocol object keys in `agents.json` (e.g. `payments["x-mypay"]`). Once an identifier is registered in the spec, the `x-` form for the same protocol is retired in favour of the registered name.
 
 ### 3.2 Parsing Rules
 
@@ -150,7 +153,7 @@ Presence of `Protocols:` is the payment-block signal: a site that accepts agent 
 - Keys are case-sensitive (use exact capitalisation as shown)
 - Values are trimmed of leading/trailing whitespace
 - Comma-separated values are trimmed individually
-- Unknown keys are ignored (forward-compatible)
+- Unknown keys are ignored (forward-compatible); validators MAY surface them as warnings but MUST NOT treat them as errors
 - Blank lines between blocks are ignored
 - File absent = site does not declare agent interaction capabilities
 
@@ -209,6 +212,30 @@ Both `agents.txt` and `agents.json` are public discovery artifacts. Servers MUST
 - `agents.json` MUST be served with `Content-Type: application/json`.
 - Both files MUST be served with `Access-Control-Allow-Origin: *`. Agent runtimes operating in browser contexts will otherwise be unable to fetch them cross-origin.
 - Servers SHOULD include `Cache-Control: public, max-age=3600`. This prevents agents from re-fetching on every request while keeping declared capabilities reasonably fresh. Sites that update capabilities frequently MAY use a shorter `max-age`.
+
+The mechanism by which a server sets these headers is unspecified. Two patterns satisfy the requirements:
+
+| Pattern | Applies when | Where the headers come from |
+|---|---|---|
+| Static asset configuration | The route is backed by a file on disk in a static asset root. | A platform-specific configuration file. Common forms: a `_headers` file (Cloudflare, Netlify), a `headers[]` array in `vercel.json` (Vercel), `add_header` directives (nginx), `Header set` (Apache), `header` blocks (Caddy). |
+| Dynamic handler | The route is produced by code at request time (a worker, route handler, middleware, edge function). | The handler sets the headers itself before responding. |
+
+A single deployment MAY mix both patterns across different routes. §4.5 governs the headers emitted at request time, not the path that produces them.
+
+The same choice applies to every other discovery surface a deployment serves alongside `agents.txt` and `agents.json`: the AgentCard URL declared by an `A2A:` directive (§9), the agent-configuration document referenced by an `Authorization:` directive (§6), and any future block-level URL. §4.5 does not mandate headers for those paths, but a route backed by a file on disk uses the static asset pipeline, and a route produced by code uses the code that produces it. The static configuration mechanism has no effect on dynamic routes; an entry placed there for a dynamically served path is silently ignored.
+
+#### Reference deployment
+
+The site at `https://agentstxt.dev` exercises both patterns within a single deployment. The headers emitted on each agent-facing route are:
+
+| Route | Served as | Headers configured in | Headers emitted |
+|---|---|---|---|
+| `/agents.txt` | Static file | `_headers` entry | `Content-Type: text/plain; charset=utf-8`<br>`Access-Control-Allow-Origin: *`<br>`Cache-Control: public, max-age=3600` |
+| `/agents.json` | Static file | `_headers` entry | `Content-Type: application/json`<br>`Access-Control-Allow-Origin: *`<br>`Cache-Control: public, max-age=3600` |
+| `/.well-known/agent-card.json` | Static file | `_headers` entry | `Content-Type: application/json`<br>`Access-Control-Allow-Origin: *`<br>`Cache-Control: public, max-age=3600` |
+| `/.well-known/agent-configuration` | Dynamic handler | Set in code | `Content-Type` and `Access-Control-Allow-Origin: *` set by the handler before responding. No `_headers` entry exists for this path because the static asset pipeline does not run for dynamic routes. |
+
+Three of the four routes share the same `_headers` configuration because they are all served as static files. The fourth is served by a route handler that emits its own response headers; adding an entry for it in `_headers` would have no effect on the response. Inspecting both the `_headers` file and the handler that responds to `/.well-known/agent-configuration` confirms that every agent-facing route in this deployment emits the headers required for cross-origin agent access, regardless of the mechanism used to set them.
 
 ---
 
@@ -390,7 +417,41 @@ If skill URLs require authentication, the `Authorization:` block (e.g. `Authoriz
 
 ---
 
-## 9. Relationship to Existing Standards
+## 9. A2A (Agent2Agent Protocol)
+
+[A2A](https://a2a-protocol.org) is an open protocol for agent-to-agent interoperability. An A2A-capable endpoint publishes an **AgentCard** describing its identity, capabilities, transport, and any protocol extensions it supports (for example, the [x402 payments extension](https://github.com/google-agentic-commerce/a2a-x402) for on-chain monetisation).
+
+### 9.1 The Discovery Gap
+
+A2A specifies a canonical well-known path for a *single* agent at the origin: `<origin>/.well-known/agent-card.json`. Two cases fall outside that single canonical path:
+
+1. **Multiple agents on one origin.** A site that operates more than one A2A agent needs a way to point clients at each AgentCard URL.
+2. **Non-canonical hosting.** A site may serve its AgentCard at a path other than the well-known default (e.g. `/agents/sales/card.json`).
+
+The `A2A:` directive fills both gaps in the same way `MCP:` fills the discovery gap for MCP endpoints.
+
+### 9.2 `A2A:` Directive
+
+```
+A2A: https://example.com/.well-known/agent-card.json
+A2A: https://example.com/agents/support/card.json
+```
+
+Each `A2A:` line declares the URL of one AgentCard. The directive is repeatable; sites with multiple agents emit one line per agent. The value MUST be an HTTPS URL pointing to a valid AgentCard JSON document.
+
+The block carries URLs only. Everything else (agent name, capabilities, supported extensions such as x402 and AP2, transport, skills, security schemes) lives in the AgentCard itself, exactly as A2A specifies. `agents.txt` does not duplicate or summarise AgentCard fields.
+
+### 9.3 Discovery Precedence
+
+The `A2A:` directive complements, rather than replaces, the canonical well-known path. Clients that already probe `/.well-known/agent-card.json` directly continue to work for sites with a single agent at the default path. `agents.txt` exists so that clients without that knowledge, or sites with multiple or relocated agents, can still discover every AgentCard the site publishes.
+
+### 9.4 Payments and Authentication
+
+`agents.txt` is silent on per-agent payment or authentication configuration: each AgentCard already declares its own `capabilities.extensions` (including the x402 extension if applicable) and its own `securitySchemes`. The site-level `Payments:` and `Authorization:` blocks in `agents.txt` describe site-wide policy and remain independent of the `A2A:` block.
+
+---
+
+## 10. Relationship to Existing Standards
 
 | Standard | Relationship |
 |----------|-------------|
@@ -403,16 +464,16 @@ If skill URLs require authentication, the `Authorization:` block (e.g. `Authoriz
 | MCP (modelcontextprotocol.io) | `agents.txt` provides MCP endpoint discovery via `MCP:` directives. The MCP spec defines no standard well-known path; `agents.txt` fills this gap. The protocol itself (tools, resources, prompts, auth) is defined by the MCP spec. |
 | Agent Skills (agentskills.io) | `agents.txt` provides discovery of service-consumption skill packages via `Skills:` directives. Repo-level developer skills (AGENTS.md, CLAUDE.md, `/.claude/skills/`) are out of scope for `agents.txt`. |
 | Cloudflare Pay-per-Crawl | Complementary. This spec is open and self-hosted; Cloudflare's service is proprietary. Both may advertise via `agents.txt` in future. |
-| A2A (Agent2Agent Protocol) | Complementary. A2A uses `/.well-known/agent-card.json` as a fixed well-known discovery path; agents that support A2A can probe it directly. `agents.txt` does not duplicate this. Future versions may add an `A2A:` hint block if operator demand emerges. |
+| A2A (Agent2Agent Protocol) | `agents.txt` provides AgentCard discovery via `A2A:` directives (§9), covering sites with multiple agents or non-canonical paths. The well-known path `/.well-known/agent-card.json` remains the primary discovery surface for single-agent sites. The protocol itself (AgentCard schema, JSON-RPC transport, extension mechanism including [x402 payments](https://github.com/google-agentic-commerce/a2a-x402)) is defined by the A2A spec. |
 | ERC-8004 (Trustless Agents Registry) | Compatible. `agents.txt` operates entirely off-chain. Sites that anchor agent identity on-chain via ERC-8004 remain compatible; this spec imposes no constraint. |
 
 ---
 
-## 10. JSON Format (`/agents.json`)
+## 11. JSON Format (`/agents.json`)
 
 `/agents.json` is a **strongly recommended** structured companion to `/agents.txt`. It is generated from the same config and served at `<origin>/agents.json`. It is not a replacement; `agents.txt` remains the canonical plain-text format. Sites SHOULD serve both; agents that support structured formats SHOULD prefer `agents.json` for its richer detail and machine-parsability.
 
-### 10.1 Why both formats?
+### 11.1 Why both formats?
 
 `agents.txt` is the announcement layer: minimal, human-friendly, easy to serve anywhere. `agents.json` is the full machine-readable catalog: structured, schema-validatable, and richer per block. The relationship intentionally mirrors `llms.txt` and `llms-full.txt` (a terse signal file paired with a comprehensive structured companion), adapted here for the agent interaction layer rather than content curation. Where `llms-full.txt` expands page content for LLM inference, `agents.json` expands protocol metadata for agent decision-making: pricing, chain identifiers, discovery pointers, and capability descriptions that would be too verbose for a plain-text file.
 
@@ -424,7 +485,7 @@ The key additions agents.json makes over agents.txt:
 - **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
 - **Site metadata.** Name, url, description from the site config.
 
-### 10.2 Schema
+### 11.2 Schema
 
 ```json
 {
@@ -465,13 +526,19 @@ The key additions agents.json makes over agents.txt:
       "description": "Optional: brief description of what this skill package teaches."
     },
     { "url": "https://example.com/skills/premium/SKILL.md" }
+  ],
+  "a2a": [
+    {
+      "url": "https://example.com/.well-known/agent-card.json",
+      "description": "Optional: brief description of this agent's capability or role."
+    }
   ]
 }
 ```
 
 All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
 
-### 10.3 Field notes
+### 11.3 Field notes
 
 **`version`** — the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
 
@@ -495,7 +562,11 @@ All blocks are optional. A block is omitted entirely when the capability is not 
 
 **`skills[].description`** — OPTIONAL. A brief human-readable summary of what the skill package teaches agents. Agents MAY use this to pre-screen whether the skill applies to their current task. This field is `agents.json`-only; `agents.txt` carries only the URL.
 
-### 10.4 Security
+**`a2a[].url`** — URL of an A2A AgentCard JSON document. The set of entries in this array MUST match the set of `A2A:` lines in `agents.txt` (§9).
+
+**`a2a[].description`** — OPTIONAL. A brief human-readable summary of the agent's capability or role. This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed agent metadata (skills, capabilities, extensions, transport) lives in the AgentCard itself.
+
+### 11.4 Security
 
 The same rules as `agents.txt` apply:
 - No wallet/treasury addresses; stay in `402` responses only.
@@ -504,7 +575,7 @@ The same rules as `agents.txt` apply:
 
 ---
 
-## 11. Versioning and Extensibility
+## 12. Versioning and Extensibility
 
 This spec follows semver. The current version is `v1.0`, the first published release.
 
@@ -516,7 +587,7 @@ This spec follows semver. The current version is `v1.0`, the first published rel
 
 ---
 
-## 12. Security Considerations
+## 13. Security Considerations
 
 - `agents.txt` contains no sensitive data. Do not include wallet addresses, API keys, JWKs, pricing, capability schemas, or any credentials in the file.
 - Payment details (wallet address, chain, amount) MUST only appear in `402 Payment Required` responses, never in `agents.txt`.
@@ -525,7 +596,7 @@ This spec follows semver. The current version is `v1.0`, the first published rel
 
 ---
 
-## 13. Examples
+## 14. Examples
 
 **Payments only (x402 + MPP):**
 ```
@@ -607,13 +678,13 @@ Skills: https://example.com/skills/premium/SKILL.md
 
 ---
 
-## 14. Contributing
+## 15. Contributing
 
 See `CONTRIBUTING.md` in the repository. Changes to this spec require a PR with at least two reviewer approvals. The spec is CC0; anyone may implement it without restriction.
 
 ---
 
-## 15. References
+## 16. References
 
 ### Normative
 

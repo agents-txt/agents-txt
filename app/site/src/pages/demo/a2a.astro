@@ -1,0 +1,439 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="A2A Demo · agents.txt"
+  description="Live demonstration of A2A AgentCard discovery via the A2A directive in agents.txt. Reads agents.json, fetches the declared AgentCard, parses its capabilities and skills, then confirms cross-file consistency via the MCP audit_site tool. Executed in your browser."
+  canonicalUrl="https://agentstxt.dev/demo/a2a"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">A2A</span>
+      </div>
+      <div class="flex items-center gap-5 shrink-0">
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          A2A AgentCard Discovery: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">agents.txt · A2A directive · a2a-protocol.org</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">
+            <a href="https://a2a-protocol.org" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              a2a-protocol.org
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/agents.json · a2a[] · A2A: directive (spec §9)</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTP · /.well-known/agent-card.json · MCP audit_site</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page executes the full A2A discovery flow against this server. The <code>A2A:</code> directive in <code>agents.txt</code> (spec §9) advertises one or more AgentCard URLs. <code>agents.json</code> mirrors the same URLs under <code>a2a[]</code> with optional human-readable descriptions. The demo reads both files, fetches each AgentCard, parses its <code>capabilities</code> and <code>skills</code>, and confirms cross-file consistency using the MCP <code>audit_site</code> tool.
+        </p>
+        <p>
+          The AgentCard is the discovery artifact. Each card describes one A2A agent (identity, capabilities, declared protocol extensions, callable skills, security schemes), and points at the JSON-RPC endpoint where that agent listens. The agents.txt standard governs only how the AgentCard URL is discovered. The <code>url</code> field inside the card, plus the JSON-RPC transport that goes through it, belongs to the A2A protocol and is layered on top.
+        </p>
+
+        <h2>Discovery flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Transport</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Read AgentCard index from <code>agents.json</code></td><td class="text-[#999]">HTTP GET · no auth</td></tr>
+            <tr><td class="font-mono">1</td><td>Fetch the AgentCard JSON document</td><td>HTTP GET · /.well-known/agent-card.json</td></tr>
+            <tr><td class="font-mono">2</td><td>Parse capabilities, declared extensions, and skills</td><td>JSON parse · A2A schema</td></tr>
+            <tr><td class="font-mono">3</td><td>Cross-file consistency check via MCP <code>audit_site</code></td><td>tools/call · agents.txt vs agents.json A2A set</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">A2A discovery runner</p>
+            <p class="text-xs text-[#999] mt-0.5">agents.json · AgentCard fetch · MCP audit · all requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'A2A index',                   'GET /agents.json · a2a[]'],
+            ['1', 'AgentCard retrieval',         'GET /.well-known/agent-card.json'],
+            ['2', 'Card parsing',                'capabilities · extensions · skills · provider'],
+            ['3', 'Cross-file consistency',      'MCP audit_site · agents.txt A2A set vs agents.json a2a[] set'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">AgentCards are indexed in <code>/agents.json</code> under <code>a2a[]</code> and served at the URLs they advertise. This site serves a single reference card at <code>/.well-known/agent-card.json</code>.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Discovery layer vs transport layer</h3>
+        <p>
+          The agents.txt <code>A2A:</code> directive is a discovery hint, not a transport contract. Once a client has the AgentCard URL, it fetches the card to learn the agent's identity, declared protocol extensions, callable skills, and the JSON-RPC endpoint where the agent actually listens. Talking to that endpoint is a separate protocol layer governed by the A2A specification, with its own session handshake, request schemas, and authentication. This demo exercises the discovery layer end to end. It does not open a JSON-RPC session.
+        </p>
+        <h3>When the <code>A2A:</code> block is worth declaring</h3>
+        <p>
+          A2A defines a canonical well-known path at <code>/.well-known/agent-card.json</code>. A client that already knows about A2A can probe that path directly, without help from agents.txt. The <code>A2A:</code> directive exists for the two cases the well-known path does not cover: sites that run more than one A2A agent on the same origin (one <code>A2A:</code> line per AgentCard), and sites that serve their AgentCard at a non-canonical path. A single-agent site at the default location can omit the block; agents.txt remains forward-compatible because parsers ignore directives they do not recognise.
+        </p>
+        <h3>The reference AgentCard served here</h3>
+        <p>
+          This site publishes a single AgentCard at <code>/.well-known/agent-card.json</code> describing a reference meta-agent: it carries declared skills (explain a directive, validate a site's discovery files, summarise a site's capabilities), the A2A protocol version it speaks, and a declaration of the x402 payments extension under <code>capabilities.extensions</code>. No live JSON-RPC backend is running at the card's <code>url</code> field; the AgentCard exists to demonstrate the discovery path and the wire format. Calling a real A2A endpoint is the responsibility of an actual A2A agent runtime, which is out of scope for an agents.txt demo.
+        </p>
+        <h3>Composition with x402</h3>
+        <p>
+          The AgentCard's <code>capabilities.extensions</code> array declares the A2A x402 payments extension (uri <code>https://github.com/google-agentic-commerce/a2a-x402/blob/main/spec/v0.2</code>). This mirrors what a real merchant agent would publish: agents.txt at the site level says "this site speaks x402," the AgentCard at the agent level says "this specific agent settles its monetised skills via x402 inside A2A messages." The two declarations are independent and serve different audiences (site-level discovery vs per-agent extension negotiation).
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+function truncate(text: string, limit = 1600): string {
+  if (text.length <= limit) return text;
+  return text.slice(0, limit) + `\n\n… (${text.length.toLocaleString()} bytes total)`;
+}
+
+function parseSSE(text: string): unknown {
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      try { return JSON.parse(line.slice(6)); } catch {}
+    }
+  }
+  return null;
+}
+
+async function mcpPost(
+  path: string,
+  body: unknown,
+  sessionId: string | null = null,
+): Promise<{ raw: unknown; sessionId: string | null; status: number }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream',
+  };
+  if (sessionId) headers['Mcp-Session-Id'] = sessionId;
+  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const text = await res.text();
+  const raw = parseSSE(text) ?? JSON.parse(text);
+  const returnedSession = res.headers.get('mcp-session-id');
+  return { raw, sessionId: returnedSession ?? sessionId, status: res.status };
+}
+
+type AgentCard = {
+  name?: string;
+  description?: string;
+  url?: string;
+  version?: string;
+  protocolVersion?: string;
+  provider?: { organization?: string; url?: string };
+  documentationUrl?: string;
+  defaultInputModes?: string[];
+  defaultOutputModes?: string[];
+  capabilities?: {
+    streaming?: boolean;
+    pushNotifications?: boolean;
+    extensions?: Array<{ uri?: string; description?: string; required?: boolean }>;
+  };
+  skills?: Array<{
+    id?: string;
+    name?: string;
+    description?: string;
+    tags?: string[];
+    examples?: string[];
+  }>;
+};
+
+function summariseCard(card: AgentCard): string {
+  const lines: string[] = [];
+  lines.push(`name              ${card.name ?? '(missing)'}`);
+  lines.push(`description       ${card.description ?? '(missing)'}`);
+  lines.push(`url               ${card.url ?? '(missing)'}`);
+  lines.push(`version           ${card.version ?? '(missing)'}`);
+  lines.push(`protocolVersion   ${card.protocolVersion ?? '(unspecified)'}`);
+  if (card.provider) {
+    lines.push(`provider          ${card.provider.organization ?? '(no org)'} · ${card.provider.url ?? '(no url)'}`);
+  }
+  if (card.documentationUrl) lines.push(`documentationUrl  ${card.documentationUrl}`);
+  lines.push('');
+
+  const cap = card.capabilities ?? {};
+  lines.push('capabilities');
+  lines.push(`  streaming           ${cap.streaming ?? false}`);
+  lines.push(`  pushNotifications   ${cap.pushNotifications ?? false}`);
+  const exts = cap.extensions ?? [];
+  lines.push(`  extensions          ${exts.length} declared`);
+  for (const ext of exts) {
+    lines.push(`    · ${ext.uri ?? '(no uri)'}`);
+    if (ext.description) lines.push(`      ${ext.description}`);
+    lines.push(`      required: ${ext.required ?? false}`);
+  }
+  lines.push('');
+
+  const skills = card.skills ?? [];
+  lines.push(`skills            ${skills.length} declared`);
+  for (const s of skills) {
+    lines.push(`  · ${s.id ?? '(no id)'}  ${s.name ? '· ' + s.name : ''}`.trim());
+    if (s.description) lines.push(`    ${s.description}`);
+    if (s.tags && s.tags.length) lines.push(`    tags: ${s.tags.join(', ')}`);
+    if (s.examples && s.examples.length) {
+      lines.push(`    examples:`);
+      for (const ex of s.examples) lines.push(`      "${ex}"`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: agents.json a2a[] index ──────────────────────────────────────
+    setRunning('0');
+    const agentsRes = await fetch(`${origin}/agents.json`);
+    const agentsJson = await agentsRes.json() as { a2a?: Array<{ url: string; description?: string }> };
+    const cards = agentsJson.a2a ?? [];
+    const cardsSummary = cards.map(c =>
+      `url          ${c.url}\ndescription  ${c.description ?? '(none)'}`
+    ).join('\n\n');
+    setDone('0',
+      `GET /agents.json · a2a[]\n\n${cards.length} AgentCard${cards.length !== 1 ? 's' : ''} declared\n\n${cardsSummary}`,
+      `${cards.length} card${cards.length !== 1 ? 's' : ''}`,
+    );
+
+    if (cards.length === 0) {
+      throw new Error('No A2A AgentCards declared in agents.json. Nothing to fetch.');
+    }
+
+    // ── Step 1: HTTP retrieval ───────────────────────────────────────────────
+    // agents.json advertises absolute URLs against the production origin
+    // (e.g. https://agentstxt.dev/...). Resolve to the local origin for
+    // dev preview parity, like the skills demo does.
+    setRunning('1');
+    const firstUrl = cards[0].url;
+    const cardPath = new URL(firstUrl).pathname;
+    const cardRes = await fetch(`${origin}${cardPath}`);
+    const cardText = await cardRes.text();
+    const contentType = cardRes.headers.get('content-type') ?? '(missing)';
+    setDone('1',
+      `GET ${cardPath}\nContent-Type: ${contentType}\nStatus: ${cardRes.status}\n\n${truncate(cardText)}`,
+      `${cardRes.status} · ${cardText.length.toLocaleString()} bytes`,
+    );
+
+    // ── Step 2: Parse the AgentCard ──────────────────────────────────────────
+    setRunning('2');
+    let card: AgentCard;
+    try {
+      card = JSON.parse(cardText) as AgentCard;
+    } catch (err) {
+      throw new Error(`AgentCard is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    const skillCount = card.skills?.length ?? 0;
+    const extCount = card.capabilities?.extensions?.length ?? 0;
+    setDone('2',
+      summariseCard(card),
+      `${skillCount} skill${skillCount !== 1 ? 's' : ''} · ${extCount} ext${extCount !== 1 ? 's' : ''}`,
+    );
+
+    // ── Step 3: Cross-file consistency check via MCP audit_site ─────────────
+    setRunning('3');
+    const init = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'agentstxt-a2a-demo', version: '1.0.0' } },
+    });
+    if (!init.sessionId) throw new Error(`MCP session not established:\n${fmt(init.raw)}`);
+    const sessionId = init.sessionId;
+
+    const auditCall = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 2, method: 'tools/call',
+      params: { name: 'audit_site', arguments: { url: origin } },
+    }, sessionId);
+    const auditContent = (auditCall.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text;
+    let consistency = 'A2A consistency block not present in audit output.';
+    if (auditContent) {
+      try {
+        const audit = JSON.parse(auditContent) as {
+          consistency?: { issues?: string[] };
+          summary?: { compliant?: boolean; errors?: number; warnings?: number };
+        };
+        const issues = audit.consistency?.issues ?? [];
+        const a2aIssues = issues.filter(i => i.toLowerCase().includes('a2a'));
+        if (a2aIssues.length === 0) {
+          consistency = `agents.txt A2A set matches agents.json a2a[] set.\nNo cross-file mismatches reported.\nOverall compliance: ${audit.summary?.compliant ? 'pass' : 'fail'} (errors: ${audit.summary?.errors ?? 0}, warnings: ${audit.summary?.warnings ?? 0}).`;
+        } else {
+          consistency = `A2A consistency issues:\n${a2aIssues.map(i => '  · ' + i).join('\n')}`;
+        }
+      } catch {
+        consistency = `audit_site output (raw):\n${truncate(auditContent)}`;
+      }
+    }
+    setDone('3',
+      `tools/call audit_site  url=${origin}\nSession: ${sessionId.slice(0, 16)}…\n\n${consistency}`,
+      `${auditCall.status}`,
+    );
+
+    resultText.textContent = `Reference AgentCard "${card.name ?? '(unnamed)'}" discovered via agents.json, fetched, parsed (${skillCount} skill${skillCount !== 1 ? 's' : ''}, ${extCount} extension${extCount !== 1 ? 's' : ''}), and confirmed consistent across agents.txt and agents.json.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

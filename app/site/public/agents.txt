@@ -7,3 +7,5 @@ Authorization: agent-auth
 MCP: https://agentstxt.dev/mcp
 
 Skills: https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md
+
+A2A: https://agentstxt.dev/.well-known/agent-card.json

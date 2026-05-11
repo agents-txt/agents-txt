@@ -1,0 +1,67 @@
+{
+  "name": "agents.txt Reference Agent",
+  "description": "A reference A2A agent demonstrating the AgentCard discovery path declared by the agents.txt standard. Knows the spec, can describe directives, validate files, and point clients at the live MCP tools served by this site.",
+  "url": "https://agentstxt.dev/a2a",
+  "version": "1.0.0",
+  "protocolVersion": "0.2",
+  "provider": {
+    "organization": "Open Agentic Web contributors",
+    "url": "https://agentstxt.dev"
+  },
+  "documentationUrl": "https://agentstxt.dev/spec",
+  "defaultInputModes": ["text", "text/plain"],
+  "defaultOutputModes": ["text", "text/plain"],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false,
+    "extensions": [
+      {
+        "uri": "https://github.com/google-agentic-commerce/a2a-x402/blob/main/spec/v0.2",
+        "description": "Supports payments using the x402 protocol for on-chain settlement. Mirrors the x402 declaration in this site's agents.txt and agents.json.",
+        "required": false
+      }
+    ]
+  },
+  "skills": [
+    {
+      "id": "explain_directive",
+      "name": "Explain an agents.txt directive",
+      "description": "Returns the spec section text for a named directive (Protocols, Authorization, MCP, Skills, A2A, etc.) plus an example and the relevant section number.",
+      "tags": ["spec", "agents.txt", "documentation"],
+      "examples": [
+        "What does the Protocols: directive mean?",
+        "Show me the spec for the A2A block.",
+        "Where is Identity: required defined?"
+      ],
+      "inputModes": ["text", "text/plain"],
+      "outputModes": ["text", "text/plain"]
+    },
+    {
+      "id": "validate_agents_files",
+      "name": "Validate agents.txt and agents.json",
+      "description": "Runs the spec validators against a site's discovery files and returns a compliance report. Delegates to the audit_site MCP tool exposed at mcp.agentstxt.dev.",
+      "tags": ["validation", "audit", "compliance"],
+      "examples": [
+        "Validate https://example.com/agents.txt",
+        "Audit example.com for agents.txt spec compliance"
+      ],
+      "inputModes": ["text", "text/plain"],
+      "outputModes": ["text", "text/plain", "application/json"]
+    },
+    {
+      "id": "summarize_capabilities",
+      "name": "Summarize a site's agent capabilities",
+      "description": "Reads agents.txt and agents.json from a target origin, summarizes the declared payment protocols, authorization scheme, MCP endpoints, skill packages, and A2A AgentCards in plain language.",
+      "tags": ["discovery", "capabilities", "summary"],
+      "examples": [
+        "What can an agent do on agentstxt.dev?",
+        "List the capabilities declared at example.com"
+      ],
+      "inputModes": ["text", "text/plain"],
+      "outputModes": ["text", "text/plain"]
+    }
+  ],
+  "securitySchemes": {},
+  "security": []
+}

@@ -24,5 +24,11 @@
       "url": "https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md",
       "description": "Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result."
     }
+  ],
+  "a2a": [
+    {
+      "url": "https://agentstxt.dev/.well-known/agent-card.json",
+      "description": "Reference A2A AgentCard describing a meta-agent that explains the agents.txt spec, validates discovery files, and points clients at the live MCP tools."
+    }
   ]
 }

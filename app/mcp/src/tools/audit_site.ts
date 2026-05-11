@@ -1,13 +1,20 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { parseAgentsTxt, type ParsedAgentsTxt } from './parse_agents_txt.js';
+import {
+  PAYMENT_PROTOCOLS,
+  AUTH_PROTOCOLS,
+  MPP_METHODS,
+  isAcceptedPaymentIdentifier,
+  isAcceptedAuthIdentifier,
+} from '../protocols.js';
 
 // audit_site
 // ---------------------------------------------------------------------------
 // Audits a live site for compliance with the agents.txt specification.
 // Scope:
 //   - `agents.txt` (§3, §5–§8): structural validation of every directive
-//   - `agents.json` (§10): JSON schema validation
+//   - `agents.json` (§11): JSON schema validation
 //   - §4.5 serving requirements: Content-Type, CORS, Cache-Control on both
 //   - cross-file consistency: anything declared in agents.txt must also
 //     appear in agents.json (when both are served)
@@ -18,8 +25,6 @@ import { parseAgentsTxt, type ParsedAgentsTxt } from './parse_agents_txt.js';
 // Out of scope (different specs governed by different bodies): the rest of
 // robots.txt validation, sitemap.xml (sitemaps.org), llms.txt (llmstxt.org).
 
-const RECOGNIZED_PAYMENT_PROTOCOLS = new Set(['x402', 'mpp']);
-const RECOGNIZED_AUTH_PROTOCOLS = new Set(['agent-auth']);
 const SPEC_URL = 'https://agentstxt.dev';
 const TREASURY_REGEX = /\b0x[a-fA-F0-9]{40}\b/;
 
@@ -98,11 +103,11 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
   // §3.1 + §5: Payments block requires a non-empty Protocols: line. (Note:
   // parseAgentsTxt already drops the payments record when protocols is empty,
   // so reaching this branch with a parsed.payments means protocols is non-empty.)
-  // §5: payment protocols must parse to recognized identifiers (warn-only per §11)
+  // §5: payment protocols must parse to recognized identifiers (warn-only per §12)
   if (parsed.payments?.protocols) {
     for (const p of parsed.payments.protocols) {
-      if (!RECOGNIZED_PAYMENT_PROTOCOLS.has(p)) {
-        warnings.push(`§5: unrecognized payment protocol "${p}" (recognized: x402, mpp)`);
+      if (!isAcceptedPaymentIdentifier(p)) {
+        warnings.push(`§5: unrecognized payment protocol "${p}" (recognized: ${PAYMENT_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
       }
     }
   }
@@ -112,10 +117,14 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
       errors.push('§6: "Authorization:" must list at least one protocol');
     }
     for (const p of parsed.authorization.protocols) {
-      if (!RECOGNIZED_AUTH_PROTOCOLS.has(p)) {
-        warnings.push(`§6: unrecognized authorization protocol "${p}" (recognized: agent-auth)`);
+      if (!isAcceptedAuthIdentifier(p)) {
+        warnings.push(`§6: unrecognized authorization protocol "${p}" (recognized: ${AUTH_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
       }
     }
+  }
+  // §12: surface unknown directives as warnings, not errors (forward-compatible)
+  for (const key of Object.keys(parsed.extensions)) {
+    warnings.push(`§12: unknown directive "${key}:" (ignored). Use \`x-\` prefix for experimental identifiers; new block-level directives require a spec update.`);
   }
   // §7: MCP URLs must be valid HTTPS
   for (const u of parsed.mcp) {
@@ -126,6 +135,11 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
   for (const u of parsed.skills) {
     if (!isHttpsUrl(u)) errors.push(`§8: invalid Skills URL "${u}"`);
     else if (!u.startsWith('https://')) warnings.push(`§8: Skills URL should use HTTPS: "${u}"`);
+  }
+  // §9: A2A URLs must be valid HTTPS
+  for (const u of parsed.a2a) {
+    if (!isHttpsUrl(u)) errors.push(`§9: invalid A2A URL "${u}"`);
+    else if (!u.startsWith('https://')) warnings.push(`§9: A2A URL should use HTTPS: "${u}"`);
   }
 
   // §4.2: # JSON: comment SHOULD be present (especially when capabilities declared)
@@ -152,111 +166,127 @@ function auditAgentsJson(text: string, headers: ResponseHeaders, origin: string)
 
   checkServingHeaders(headers, /^application\/json\b/i, errors, warnings);
 
-  // §10.4 / §12: forbidden content (wallet addresses, anything that smells like a secret)
+  // §11.4 / §13: forbidden content (wallet addresses, anything that smells like a secret)
   const treasuryHit = text.match(TREASURY_REGEX);
   if (treasuryHit) {
-    errors.push(`§10.4 / §12: agents.json contains what looks like an EVM wallet address "${treasuryHit[0]}"; treasury addresses must only appear in 402 responses`);
+    errors.push(`§11.4 / §13: agents.json contains what looks like an EVM wallet address "${treasuryHit[0]}"; treasury addresses must only appear in 402 responses`);
   }
   if (/\b(sk_live_|sk_test_|whsec_|rk_live_)[a-zA-Z0-9]{8,}/i.test(text)) {
-    errors.push('§10.4 / §12: agents.json contains what looks like a Stripe-style secret key; secrets must never appear in discovery files');
+    errors.push('§11.4 / §13: agents.json contains what looks like a Stripe-style secret key; secrets must never appear in discovery files');
   }
 
   let parsed: Record<string, unknown> | null = null;
   try {
     parsed = JSON.parse(text) as Record<string, unknown>;
   } catch (err) {
-    return { parsed: null, parseError: String(err), errors: [...errors, '§10: agents.json is not valid JSON'], warnings };
+    return { parsed: null, parseError: String(err), errors: [...errors, '§11: agents.json is not valid JSON'], warnings };
   }
 
-  // §10.2: required top-level fields
+  // §11.2: required top-level fields
   if (typeof parsed.version !== 'string') {
-    errors.push('§10.2: "version" (string) is required');
+    errors.push('§11.2: "version" (string) is required');
   } else if (!/^\d+\.\d+$/.test(parsed.version)) {
-    warnings.push(`§10.3: "version" "${parsed.version}" should match numeric \`<major>.<minor>\` (no pre-release suffix)`);
+    warnings.push(`§11.3: "version" "${parsed.version}" should match numeric \`<major>.<minor>\` (no pre-release suffix)`);
   }
   if (typeof parsed.standard !== 'string') {
-    errors.push('§10.2: "standard" (string) is required');
+    errors.push('§11.2: "standard" (string) is required');
   } else if (parsed.standard !== SPEC_URL) {
-    warnings.push(`§10.2: "standard" is "${parsed.standard}" (canonical value is "${SPEC_URL}")`);
+    warnings.push(`§11.2: "standard" is "${parsed.standard}" (canonical value is "${SPEC_URL}")`);
   }
   const site = parsed.site as Record<string, unknown> | undefined;
   if (!site || typeof site !== 'object') {
-    errors.push('§10.2: "site" object is required');
+    errors.push('§11.2: "site" object is required');
   } else {
-    if (typeof site.name !== 'string' || !site.name.trim()) errors.push('§10.2: "site.name" must be a non-empty string');
+    if (typeof site.name !== 'string' || !site.name.trim()) errors.push('§11.2: "site.name" must be a non-empty string');
     if (typeof site.url !== 'string' || !isHttpsUrl(site.url)) {
-      errors.push('§10.2: "site.url" must be a valid URL');
+      errors.push('§11.2: "site.url" must be a valid URL');
     } else if (new URL(site.url).origin !== origin) {
-      warnings.push(`§10.2: "site.url" origin "${new URL(site.url).origin}" does not match audited origin "${origin}"`);
+      warnings.push(`§11.2: "site.url" origin "${new URL(site.url).origin}" does not match audited origin "${origin}"`);
     }
   }
 
-  // §10.2 / §10.3: payments block shape
+  // §11.2 / §11.3: payments block shape
   const payments = parsed.payments as Record<string, unknown> | undefined;
   if (payments) {
     if ('required' in payments && typeof payments.required !== 'boolean') {
-      errors.push('§10.2: "payments.required" must be a boolean when present');
+      errors.push('§11.2: "payments.required" must be a boolean when present');
     }
-    const protocolKeys = Object.keys(payments).filter((k) => RECOGNIZED_PAYMENT_PROTOCOLS.has(k));
+    const protocolKeys = Object.keys(payments).filter(
+      (k) => (PAYMENT_PROTOCOLS as readonly string[]).includes(k) || k.startsWith('x-'),
+    );
     if (protocolKeys.length === 0) {
-      errors.push('§10.2: "payments" must include at least one per-protocol object (x402 or mpp)');
+      errors.push(`§11.2: "payments" must include at least one per-protocol object (${PAYMENT_PROTOCOLS.join(' or ')}, or an x- prefixed experimental key)`);
     }
     const mpp = payments.mpp as Record<string, unknown> | undefined;
     if (mpp && 'methods' in mpp) {
       const methods = mpp.methods;
       if (!Array.isArray(methods) || methods.length === 0) {
-        errors.push('§10.3: "payments.mpp.methods" must be a non-empty array when present');
+        errors.push('§11.3: "payments.mpp.methods" must be a non-empty array when present');
       } else {
-        const recognised = new Set(['tempo', 'stripe']);
+        const recognised = new Set<string>(MPP_METHODS);
         for (const m of methods as unknown[]) {
           if (typeof m !== 'string' || !recognised.has(m)) {
-            warnings.push(`§10.3: unrecognised MPP method "${String(m)}" (recognised: tempo, stripe)`);
+            warnings.push(`§11.3: unrecognised MPP method "${String(m)}" (recognised: ${MPP_METHODS.join(', ')})`);
           }
         }
       }
     }
   }
 
-  // §10.2: authorization block
+  // §11.2: authorization block
   const authorization = parsed.authorization as Record<string, unknown> | undefined;
   if (authorization) {
     if (!Array.isArray(authorization.protocols) || authorization.protocols.length === 0) {
-      errors.push('§10.2: "authorization.protocols" must be a non-empty array');
+      errors.push('§11.2: "authorization.protocols" must be a non-empty array');
     }
     if (typeof authorization.discovery !== 'string') {
-      warnings.push('§10.3: "authorization.discovery" should be set (e.g. "/.well-known/agent-configuration")');
+      warnings.push('§11.3: "authorization.discovery" should be set (e.g. "/.well-known/agent-configuration")');
     }
     if (authorization.identity !== undefined && authorization.identity !== 'required') {
-      errors.push('§10.2: "authorization.identity" must be "required" if present');
+      errors.push('§11.2: "authorization.identity" must be "required" if present');
     }
   }
 
-  // §10.2: mcp[]
+  // §11.2: mcp[]
   const mcp = parsed.mcp as Array<Record<string, unknown>> | undefined;
   if (mcp !== undefined) {
     if (!Array.isArray(mcp)) {
-      errors.push('§10.2: "mcp" must be an array');
+      errors.push('§11.2: "mcp" must be an array');
     } else {
       mcp.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§10.2: "mcp[${i}].url" must be a valid URL`);
+          errors.push(`§11.2: "mcp[${i}].url" must be a valid URL`);
         }
         if (entry?.type !== 'streamable-http') {
-          warnings.push(`§10.3: "mcp[${i}].type" is "${entry?.type ?? '(missing)'}" (always "streamable-http" for HTTP MCP endpoints)`);
+          warnings.push(`§11.3: "mcp[${i}].type" is "${entry?.type ?? '(missing)'}" (always "streamable-http" for HTTP MCP endpoints)`);
         }
       });
     }
   }
 
-  // §10.2: skills[]
+  // §11.2: skills[]
   const skills = parsed.skills as Array<Record<string, unknown>> | undefined;
   if (skills !== undefined) {
     if (!Array.isArray(skills)) {
-      errors.push('§10.2: "skills" must be an array');
+      errors.push('§11.2: "skills" must be an array');
     } else {
       skills.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§10.2: "skills[${i}].url" must be a valid URL`);
+          errors.push(`§11.2: "skills[${i}].url" must be a valid URL`);
+        }
+      });
+    }
+  }
+
+  // §11.2: a2a[]
+  const a2a = parsed.a2a as Array<Record<string, unknown>> | undefined;
+  if (a2a !== undefined) {
+    if (!Array.isArray(a2a)) {
+      errors.push('§11.2: "a2a" must be an array');
+    } else {
+      a2a.forEach((entry, i) => {
+        if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
+          errors.push(`§11.2: "a2a[${i}].url" must be a valid URL`);
         }
       });
     }
@@ -295,7 +325,11 @@ function crossCheck(
   // the recognised protocol identifiers.
   const txtPaymentProtos = set(txt.payments?.protocols);
   const jsonPayments = (json.payments as Record<string, unknown> | undefined) ?? {};
-  const jsonPaymentProtos = new Set(Object.keys(jsonPayments).filter((k) => RECOGNIZED_PAYMENT_PROTOCOLS.has(k)));
+  const jsonPaymentProtos = new Set(
+    Object.keys(jsonPayments).filter(
+      (k) => (PAYMENT_PROTOCOLS as readonly string[]).includes(k) || k.startsWith('x-'),
+    ),
+  );
   if (!eqSet(txtPaymentProtos, jsonPaymentProtos)) {
     issues.push(`payments protocol set mismatch: agents.txt {${[...txtPaymentProtos].join(', ')}} vs agents.json {${[...jsonPaymentProtos].join(', ')}}`);
   }
@@ -328,6 +362,13 @@ function crossCheck(
     issues.push(`Skills URL set mismatch: agents.txt {${[...txtSkills].join(', ')}} vs agents.json {${[...jsonSkills].join(', ')}}`);
   }
 
+  // a2a URLs
+  const txtA2a = set(txt.a2a);
+  const jsonA2a = set((json.a2a as Array<{ url?: string }> | undefined)?.map((e) => e?.url ?? ''));
+  if (!eqSet(txtA2a, jsonA2a)) {
+    issues.push(`A2A URL set mismatch: agents.txt {${[...txtA2a].join(', ')}} vs agents.json {${[...jsonA2a].join(', ')}}`);
+  }
+
   // # JSON: comment URL must reference the agents.json on the same origin
   if (jsonCommentUrl && isHttpsUrl(jsonCommentUrl)) {
     const commentOrigin = new URL(jsonCommentUrl).origin;
@@ -344,7 +385,7 @@ export function registerAuditSite(server: McpServer) {
     'audit_site',
     {
       description:
-        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3-§8, the JSON schema in §10, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
+        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3-§9, the JSON schema in §11, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
       inputSchema: {
         url: z.string().describe('Site origin or URL to audit (e.g. "https://example.com" or "example.com")'),
       },
