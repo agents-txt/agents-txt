@@ -95,10 +95,9 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
 
   const parsed = parseAgentsTxt(content);
 
-  // §3.1 + §5: Payments enabled requires non-empty Protocols
-  if (parsed.payments?.enabled && parsed.payments.protocols.length === 0) {
-    errors.push('§5: "Payments: enabled" requires a non-empty "Protocols:" directive');
-  }
+  // §3.1 + §5: Payments block requires a non-empty Protocols: line. (Note:
+  // parseAgentsTxt already drops the payments record when protocols is empty,
+  // so reaching this branch with a parsed.payments means protocols is non-empty.)
   // §5: payment protocols must parse to recognized identifiers (warn-only per §11)
   if (parsed.payments?.protocols) {
     for (const p of parsed.payments.protocols) {
@@ -195,18 +194,24 @@ function auditAgentsJson(text: string, headers: ResponseHeaders, origin: string)
   // §10.2 / §10.3: payments block shape
   const payments = parsed.payments as Record<string, unknown> | undefined;
   if (payments) {
-    if (payments.enabled !== true && payments.enabled !== false) {
-      errors.push('§10.2: "payments.enabled" must be a boolean');
+    if ('required' in payments && typeof payments.required !== 'boolean') {
+      errors.push('§10.2: "payments.required" must be a boolean when present');
     }
-    const protocols = payments.protocols;
-    if (!Array.isArray(protocols)) {
-      errors.push('§10.2: "payments.protocols" must be an array');
-    } else if (payments.enabled && protocols.length === 0) {
-      errors.push('§5: "payments.enabled: true" requires a non-empty "payments.protocols" array');
-    } else {
-      for (const p of protocols) {
-        if (typeof p === 'string' && !RECOGNIZED_PAYMENT_PROTOCOLS.has(p)) {
-          warnings.push(`§5: unrecognized payment protocol "${p}" (recognized: x402, mpp)`);
+    const protocolKeys = Object.keys(payments).filter((k) => RECOGNIZED_PAYMENT_PROTOCOLS.has(k));
+    if (protocolKeys.length === 0) {
+      errors.push('§10.2: "payments" must include at least one per-protocol object (x402 or mpp)');
+    }
+    const mpp = payments.mpp as Record<string, unknown> | undefined;
+    if (mpp && 'methods' in mpp) {
+      const methods = mpp.methods;
+      if (!Array.isArray(methods) || methods.length === 0) {
+        errors.push('§10.3: "payments.mpp.methods" must be a non-empty array when present');
+      } else {
+        const recognised = new Set(['tempo', 'stripe']);
+        for (const m of methods as unknown[]) {
+          if (typeof m !== 'string' || !recognised.has(m)) {
+            warnings.push(`§10.3: unrecognised MPP method "${String(m)}" (recognised: tempo, stripe)`);
+          }
         }
       }
     }
@@ -271,18 +276,28 @@ function crossCheck(
   const eqSet = (a: Set<string>, b: Set<string>) =>
     a.size === b.size && [...a].every((v) => b.has(v));
 
-  // payments.enabled
-  const txtPaymentsEnabled = !!txt.payments?.enabled;
-  const jsonPaymentsEnabled = !!(json.payments as { enabled?: boolean } | undefined)?.enabled;
-  if (txtPaymentsEnabled !== jsonPaymentsEnabled) {
-    issues.push(`payments.enabled: agents.txt says ${txtPaymentsEnabled}, agents.json says ${jsonPaymentsEnabled}`);
+  // payments block presence (presence = at least one protocol declared)
+  const txtPaymentsPresent = !!txt.payments;
+  const jsonPaymentsPresent = !!json.payments;
+  if (txtPaymentsPresent !== jsonPaymentsPresent) {
+    issues.push(`payments block presence mismatch: agents.txt ${txtPaymentsPresent ? 'present' : 'absent'}, agents.json ${jsonPaymentsPresent ? 'present' : 'absent'}`);
   }
 
-  // payments.protocols
+  // payments.required (site-level policy)
+  const txtPaymentsRequired = txt.payments?.required === true;
+  const jsonPaymentsRequired = (json.payments as { required?: boolean } | undefined)?.required === true;
+  if (txtPaymentsRequired !== jsonPaymentsRequired) {
+    issues.push(`payments.required mismatch: agents.txt ${txtPaymentsRequired ? 'required' : 'unset'}, agents.json ${jsonPaymentsRequired ? 'required' : 'unset'}`);
+  }
+
+  // payments protocol set: agents.txt carries it as the `Protocols:` line;
+  // agents.json carries it as the keys of the payments block intersected with
+  // the recognised protocol identifiers.
   const txtPaymentProtos = set(txt.payments?.protocols);
-  const jsonPaymentProtos = set(((json.payments as { protocols?: string[] } | undefined)?.protocols));
+  const jsonPayments = (json.payments as Record<string, unknown> | undefined) ?? {};
+  const jsonPaymentProtos = new Set(Object.keys(jsonPayments).filter((k) => RECOGNIZED_PAYMENT_PROTOCOLS.has(k)));
   if (!eqSet(txtPaymentProtos, jsonPaymentProtos)) {
-    issues.push(`payments.protocols mismatch: agents.txt {${[...txtPaymentProtos].join(', ')}} vs agents.json {${[...jsonPaymentProtos].join(', ')}}`);
+    issues.push(`payments protocol set mismatch: agents.txt {${[...txtPaymentProtos].join(', ')}} vs agents.json {${[...jsonPaymentProtos].join(', ')}}`);
   }
 
   // authorization.protocols

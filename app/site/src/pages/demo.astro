@@ -183,7 +183,7 @@ import { SPEC_VERSION } from '../config';
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-8">
                 {[
                   ['0', 'Skills index: agents.json · skills[]'],
-                  ['1', 'HTTP retrieval: GET /skills/agents-txt-setup.md'],
+                  ['1', 'HTTP retrieval: GET /skills/adopt-agents-txt/SKILL.md'],
                   ['2', 'MCP session initialisation (session ID for get_skill)'],
                   ['3', 'MCP tool invocation: get_skill("agents-txt-setup")'],
                 ].map(([num, label]) => (
@@ -252,7 +252,7 @@ import { SPEC_VERSION } from '../config';
               <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-3">Steps covered</p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-8">
                 {[
-                  ['0', 'MPP capability declaration: agents.json · protocols includes mpp'],
+                  ['0', 'MPP capability declaration: agents.json · payments.mpp object present'],
                   ['1', 'Challenge negotiation: GET /payment-test → 402 + WWW-Authenticate'],
                 ].map(([num, label]) => (
                   <div class="flex items-baseline gap-2">

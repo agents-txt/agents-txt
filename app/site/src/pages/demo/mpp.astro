@@ -96,7 +96,7 @@ import { SPEC_VERSION } from '../../config';
             <tr><th>Step</th><th>Action</th><th>Result</th></tr>
           </thead>
           <tbody>
-            <tr><td class="font-mono">0</td><td>Read MPP capability declaration from <code>agents.json</code></td><td class="text-[#999]">protocols includes <code>mpp</code> when configured</td></tr>
+            <tr><td class="font-mono">0</td><td>Read MPP capability declaration from <code>agents.json</code></td><td class="text-[#999]"><code>payments.mpp</code> object present when configured</td></tr>
             <tr><td class="font-mono">1</td><td>Request gated resource (no <code>Authorization</code> header)</td><td>402 with <code>WWW-Authenticate: Payment</code> challenge</td></tr>
             <tr><td class="font-mono text-[#ccc]">.</td><td class="text-[#999]">Agent inspects challenge methods, picks Tempo or Stripe, authorizes through the chosen method</td><td class="text-[#999]">SDK-side · not executable in browser</td></tr>
             <tr><td class="font-mono text-[#ccc]">.</td><td class="text-[#999]">Agent retries with <code>Authorization: Payment &lt;credential&gt;</code> · server verifies via mppx · responds 200</td><td class="text-[#999]">200 · <code>Payment-Receipt</code> header</td></tr>
@@ -121,7 +121,7 @@ import { SPEC_VERSION } from '../../config';
 
         <div id="steps" class="divide-y divide-[#e5e5e5]">
           {[
-            ['0', 'MPP capability declaration', 'GET /agents.json · payments.protocols includes mpp'],
+            ['0', 'MPP capability declaration', 'GET /agents.json · payments.mpp object present'],
             ['1', 'Challenge negotiation',      'GET /payment-test  (no Authorization) → expect 402 + WWW-Authenticate: Payment'],
           ].map(([num, label, hint]) => (
             <div class="step" data-step={num} data-state="idle">
@@ -325,23 +325,27 @@ async function run() {
     const agentsRes = await fetch(`${origin}/agents.json`);
     const agentsJson = await agentsRes.json() as {
       payments?: {
-        enabled?: boolean;
-        protocols?: string[];
+        mpp?: { methods?: string[] };
+        x402?: { chains?: string[] };
       };
     };
-    const protocols = agentsJson.payments?.protocols ?? [];
-    const mppDeclared = protocols.includes('mpp');
+    const payments = agentsJson.payments;
+    const declaredProtocols = payments
+      ? Object.keys(payments).filter((k) => k === 'x402' || k === 'mpp')
+      : [];
+    const mppDeclared = declaredProtocols.includes('mpp');
+    const mppMethods = payments?.mpp?.methods ?? [];
 
     const summary = mppDeclared
       ? [
           'MPP declared    yes',
-          `protocols       ${protocols.join(', ')}`,
+          `protocols       ${declaredProtocols.join(', ')}`,
           'session         Authorization: Payment <credential>',
-          'methods served  tempo, stripe (per server config)',
+          `methods         ${mppMethods.length > 0 ? mppMethods.join(', ') : '(none declared)'}`,
         ].join('\n')
       : [
           'MPP declared    no',
-          `protocols       ${protocols.length ? protocols.join(', ') : '(none)'}`,
+          `protocols       ${declaredProtocols.length ? declaredProtocols.join(', ') : '(none)'}`,
           '',
           'The MPP path is not currently advertised in agents.json.',
           'The endpoint will still be probed in step 1; a 402 with a WWW-Authenticate',

@@ -24,8 +24,8 @@ function validateParsed(parsed: ReturnType<typeof parseAgentsTxt>): ValidationRe
   const warnings: string[] = [];
 
   if (parsed.payments) {
-    if (parsed.payments.enabled && parsed.payments.protocols.length === 0) {
-      errors.push('Payments: enabled requires a Protocols: line with at least one protocol identifier');
+    if (parsed.payments.protocols.length === 0) {
+      errors.push('Payments block requires a non-empty Protocols: line with at least one protocol identifier');
     }
     for (const p of parsed.payments.protocols) {
       if (!KNOWN_PROTOCOLS.has(p)) {
@@ -73,8 +73,26 @@ function validateAgentsJson(obj: unknown): ValidationResult {
 
   if ('payments' in json && json.payments) {
     const payments = json.payments as Record<string, unknown>;
-    if (payments.enabled === true && !Array.isArray(payments.protocols)) {
-      errors.push('"payments.protocols" must be an array when payments.enabled is true');
+    const protocolKeys = Object.keys(payments).filter((k) => k === 'x402' || k === 'mpp');
+    if (protocolKeys.length === 0) {
+      errors.push('"payments" must include at least one per-protocol object (x402 or mpp) when present');
+    }
+    if ('required' in payments && typeof payments.required !== 'boolean') {
+      errors.push('"payments.required" must be a boolean when present');
+    }
+    const mpp = payments.mpp as Record<string, unknown> | undefined;
+    if (mpp && 'methods' in mpp) {
+      const methods = mpp.methods;
+      if (!Array.isArray(methods) || methods.length === 0) {
+        errors.push('"payments.mpp.methods" must be a non-empty array when present');
+      } else {
+        const recognised = new Set(['tempo', 'stripe']);
+        for (const m of methods as unknown[]) {
+          if (typeof m !== 'string' || !recognised.has(m)) {
+            warnings.push(`Unrecognised MPP method "${String(m)}" (recognised: tempo, stripe)`);
+          }
+        }
+      }
     }
   }
 

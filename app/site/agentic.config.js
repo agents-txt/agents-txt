@@ -1,12 +1,11 @@
-// Payments are only declared in discovery files when the underlying
-// implementation is actually wired up. ENABLE_PAYMENTS=false is a master kill
-// switch (useful for local dev without keys); each protocol additionally needs
-// its own credentials present, otherwise it gets dropped from `protocols[]`.
+// Payments are declared in discovery files only when actually wired. Each
+// protocol's presence in `protocols[]` is gated by its own credentials; if no
+// credentials are configured, the entire payments block is omitted by the
+// generator. No master kill switch needed.
 const hasX402 = !!(process.env.EVM_ADDRESS || process.env.SOLANA_ADDRESS)
 const hasMppTempo = !!process.env.TREASURY_TEMPO
 const hasMppStripe = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_NETWORK_ID)
 const hasMpp = hasMppTempo || hasMppStripe
-const paymentsEnabled = process.env.ENABLE_PAYMENTS !== 'false' && (hasX402 || hasMpp)
 
 /** @type {import('@agentify/core').AgenticConfig} */
 export default {
@@ -17,7 +16,6 @@ export default {
   },
 
   payments: {
-    enabled: paymentsEnabled,
     protocols: [
       ...(hasX402 ? ['x402'] : []),
       ...(hasMpp ? ['mpp'] : []),
@@ -120,8 +118,8 @@ export default {
 
   skills: {
     urls: {
-      url: 'https://agentstxt.dev/skills/agents-txt-setup.md',
-      description: 'Guides agents through integrating the agentify CLI into any website: init wizard, config fields, middleware wiring for Express/Next.js/Hono, and payment protocol setup.',
+      url: 'https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md',
+      description: 'Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result.',
     },
   },
 }

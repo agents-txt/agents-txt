@@ -6,4 +6,4 @@ Authorization: agent-auth
 
 MCP: https://agentstxt.dev/mcp
 
-Skills: https://agentstxt.dev/skills/agents-txt-setup.md
+Skills: https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md

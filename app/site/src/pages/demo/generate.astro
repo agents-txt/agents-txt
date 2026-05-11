@@ -91,8 +91,8 @@ import { SPEC_VERSION } from '../../config';
         <tbody>
           <tr>
             <td><code>Payments</code></td>
-            <td><code>Payments: enabled</code> + <code>Protocols:</code></td>
-            <td><code>payments.protocols</code> · <code>x402.chains</code> · <code>payments.pricing</code></td>
+            <td><code>Protocols:</code> + optional <code>Payments: required</code></td>
+            <td><code>payments.x402.chains</code> · <code>payments.mpp.methods</code> · <code>payments.pricing</code></td>
           </tr>
           <tr>
             <td><code>Authorization</code></td>
@@ -207,7 +207,7 @@ import { SPEC_VERSION } from '../../config';
                         class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                     </div>
                     <p class="text-[11px] text-[#999] leading-relaxed">
-                      Wallet addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in the declaration files. Pricing is surfaced in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> so agents can pre-screen affordability.
+                      Wallet addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in the declaration files. Pricing is surfaced in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code>. Accepted chains as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.chains</code>. The optional description (what the agent is paying for) is surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.description</code> in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only.
                     </p>
                   </div>
                 </div>
@@ -242,7 +242,7 @@ import { SPEC_VERSION } from '../../config';
                           class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                       </div>
                       <p class="text-[11px] text-[#999] leading-relaxed">
-                        Default price appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>. Payment method details (Stripe, Tempo) are advertised in the MPP <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> challenge at request time.
+                        Default price appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>. Configured methods as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.methods</code> (recognised values: <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">tempo</code>, <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">stripe</code>). The optional description (what the agent is paying for) is surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.description</code> in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only. Per-method parameters remain in the MPP <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> challenge at request time.
                       </p>
                     </div>
                   </div>
@@ -317,7 +317,7 @@ import { SPEC_VERSION } from '../../config';
               <div class="mt-4 pl-5 flex flex-col gap-2.5">
                 <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
                   <label class="text-xs text-[#555]" for="skills-url">Package URL</label>
-                  <input id="skills-url" type="text" placeholder="https://example.com/skills/my-skill.md"
+                  <input id="skills-url" type="text" placeholder="https://example.com/skills/my-skill/SKILL.md"
                     class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                 </div>
                 <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
@@ -484,7 +484,7 @@ import { SPEC_VERSION } from '../../config';
         if (c.x402 && (c.evmAddress || c.solanaAddress)) protocols.push('x402')
         if (c.mpp)  protocols.push('mpp')
         if (protocols.length > 0) {
-          lines.push('', 'Payments: enabled', `Protocols: ${protocols.join(', ')}`)
+          lines.push('', `Protocols: ${protocols.join(', ')}`)
         }
       }
 
@@ -498,7 +498,7 @@ import { SPEC_VERSION } from '../../config';
       }
 
       if (c.skills) {
-        lines.push('', `Skills: ${c.skillsUrl || 'https://example.com/skills/my-skill.md'}`)
+        lines.push('', `Skills: ${c.skillsUrl || 'https://example.com/skills/my-skill/SKILL.md'}`)
       }
 
       return lines.join('\n') + '\n'
@@ -519,15 +519,33 @@ import { SPEC_VERSION } from '../../config';
       }
 
       if (c.payments) {
-        const protocols: string[] = []
+        const p: Record<string, unknown> = {}
         const x402Active = c.x402 && (c.evmAddress || c.solanaAddress)
-        if (x402Active) protocols.push('x402')
-        if (c.mpp)      protocols.push('mpp')
 
-        if (protocols.length > 0) {
-          const p: Record<string, unknown> = { enabled: true, protocols }
+        if (x402Active) {
+          const chains: string[] = []
+          if (c.evmAddress)    chains.push('eip155:8453')
+          if (c.solanaAddress) chains.push(SOLANA_MAINNET_CHAIN)
+          p.x402 = {
+            chains,
+            ...(c.x402Description ? { description: c.x402Description } : {}),
+          }
+        }
 
-          // pricing — from x402.pricing first, mpp.pricing as fallback
+        if (c.mpp) {
+          // The configurator has no per-method UI; emit both recognised
+          // methods so the demo shows the field shape. Real deployments
+          // emit only methods whose credentials are actually wired up.
+          p.mpp = {
+            methods: ['tempo', 'stripe'],
+            ...(c.mppDescription ? { description: c.mppDescription } : {}),
+          }
+        }
+
+        const hasProtocolBlock = 'x402' in p || 'mpp' in p
+        if (hasProtocolBlock) {
+          // Pricing reads from x402 first, then mpp as fallback. Belongs at
+          // the payments level (not inside a per-protocol block) per spec §10.
           const priceAmount = (x402Active && c.x402Price) ? c.x402Price
             : (c.mpp && c.mppPrice) ? c.mppPrice
             : ''
@@ -539,20 +557,6 @@ import { SPEC_VERSION } from '../../config';
               amount: priceAmount,
               currency: priceToken,
             }
-          }
-
-          if (x402Active) {
-            const chains: string[] = []
-            if (c.evmAddress)    chains.push('eip155:8453')
-            if (c.solanaAddress) chains.push(SOLANA_MAINNET_CHAIN)
-            p.x402 = {
-              chains,
-              ...(c.x402Description ? { description: c.x402Description } : {}),
-            }
-          }
-
-          if (c.mpp && c.mppDescription) {
-            p.mpp = { description: c.mppDescription }
           }
 
           obj.payments = p
@@ -578,7 +582,7 @@ import { SPEC_VERSION } from '../../config';
 
       if (c.skills) {
         obj.skills = [{
-          url: c.skillsUrl || 'https://example.com/skills/my-skill.md',
+          url: c.skillsUrl || 'https://example.com/skills/my-skill/SKILL.md',
           ...(c.skillsDescription ? { description: c.skillsDescription } : {}),
         }]
       }

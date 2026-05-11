@@ -108,9 +108,9 @@ import { SPEC_VERSION } from '../../config';
         <div id="steps" class="divide-y divide-[#e5e5e5]">
           {[
             ['0', 'Skills index',              'GET /agents.json · skills[]'],
-            ['1', 'HTTP retrieval',             'GET /skills/agents-txt-setup.md'],
+            ['1', 'HTTP retrieval',             'GET /skills/adopt-agents-txt/SKILL.md'],
             ['2', 'MCP session initialisation', 'POST /mcp (required to obtain session ID for get_skill)'],
-            ['3', 'MCP tool invocation',        'tools/call · get_skill("agents-txt-setup")'],
+            ['3', 'MCP tool invocation',        'tools/call · get_skill("adopt-agents-txt")'],
           ].map(([num, label, hint]) => (
             <div class="step" data-step={num} data-state="idle">
               <div class="flex items-start justify-between gap-4 px-5 py-3">
@@ -285,9 +285,20 @@ async function run() {
 
     if (skills.length === 0) throw new Error('No skills declared in agents.json. Nothing to retrieve.');
     const skillUrl = skills[0].url;
-    const skillName = skillUrl.split('/').pop()?.replace('.md', '') ?? 'unknown';
+    // Canonical agentskills.io layout is `<base>/<skill-name>/SKILL.md`, so the
+    // skill identifier lives in the path segment before the trailing SKILL.md.
+    // Fallback for the legacy single-file pattern strips the trailing `.md`.
+    const segments = new URL(skillUrl).pathname.split('/').filter(Boolean);
+    const lastSegment = segments[segments.length - 1] ?? '';
+    const skillName = (lastSegment.toUpperCase() === 'SKILL.MD' && segments.length >= 2)
+      ? segments[segments.length - 2]
+      : lastSegment.replace(/\.md$/i, '') || 'unknown';
 
     // ── Step 1: HTTP retrieval ────────────────────────────────────────────────
+    // Use the path from the canonical URL but fetch against the demo's own
+    // origin. agents.json advertises absolute URLs against the production
+    // origin (e.g. https://agentstxt.dev/...); when the demo runs on
+    // localhost we still need to fetch from the local dev server.
     setRunning('1');
     const skillPath = new URL(skillUrl).pathname;
     const skillRes = await fetch(`${origin}${skillPath}`);

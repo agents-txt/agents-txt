@@ -21,8 +21,8 @@
   ],
   "skills": [
     {
-      "url": "https://agentstxt.dev/skills/agents-txt-setup.md",
-      "description": "Guides agents through integrating the agentify CLI into any website: init wizard, config fields, middleware wiring for Express/Next.js/Hono, and payment protocol setup."
+      "url": "https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md",
+      "description": "Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result."
     }
   ]
 }

@@ -172,7 +172,7 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 
 ## Common pitfalls
 
-- **Capability declaration without backing implementation.** If the user adds `Payments: x402` to their `agents.txt` but has no `402` response handler, agents will fail. Always confirm the protocol they're declaring is actually wired up at the URL surface.
+- **Capability declaration without backing implementation.** If the user adds `Protocols: x402` to their `agents.txt` but has no `402` response handler, agents will fail. Always confirm the protocol they're declaring is actually wired up at the URL surface.
 - **Wallet addresses in discovery files.** Wallet addresses, Stripe keys, MPP secret keys must **never** appear in `agents.txt` or `agents.json`. Those live in `402` response bodies and server env only.
 - **Path inconsistency.** If they put `agents.txt` at `/static/agents.txt` instead of `/agents.txt`, agents won't find it. The standard requires the file at the root path.
 - **Stale generated files.** If using a generator, run it on every deploy, not just locally. CI integration matters.

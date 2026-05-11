@@ -71,7 +71,6 @@ The `# JSON:` line is an optional comment that points agents to the structured c
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
 ```
 
@@ -91,7 +90,6 @@ Identity: required
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
 
 Authorization: agent-auth
@@ -104,8 +102,8 @@ Identity: required
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
+Payments: required
 
 Authorization: agent-auth
 Identity: required
@@ -121,7 +119,6 @@ MCP: https://example.com/mcp-premium
 # Standard: https://agentstxt.dev
 # JSON: https://example.com/agents.json
 
-Payments: enabled
 Protocols: x402, mpp
 
 Authorization: agent-auth
@@ -130,22 +127,22 @@ Identity: required
 MCP: https://example.com/mcp
 MCP: https://example.com/mcp-premium
 
-Skills: https://example.com/.well-known/skills/main.md
-Skills: https://example.com/.well-known/skills/premium.md
+Skills: https://example.com/skills/main/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
 ```
 
 ### 3.1 Directives
 
 | Directive | Block | Required | Values | Meaning |
 |-----------|-------|----------|--------|---------|
-| `Payments:` | Payments | No | `enabled` | Site accepts agent payments via declared protocols |
-| `Protocols:` | Payments | When `Payments: enabled` | comma-separated list | Supported payment protocol identifiers |
-| `Authorization:` | Authorization | No | comma-separated list | Supported authorization protocol identifiers |
+| `Protocols:` | Payments | Opens the block | comma-separated list | Supported payment protocol identifiers |
+| `Payments:` | Payments | No | `required` | Site-level policy: every interaction requires payment (no free path) |
+| `Authorization:` | Authorization | Opens the block | comma-separated list | Supported authorization protocol identifiers |
 | `Identity:` | Authorization | No | `required` | Agents MUST authenticate before any interaction |
 | `MCP:` | MCP | No | URL | One MCP server endpoint; repeat for multiple servers |
 | `Skills:` | Skills | No | URL | One skill package URL (SKILL.md or index); repeat for multiple packages |
 
-Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §5 and §6 respectively.
+Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §5 and §6 respectively.
 
 ### 3.2 Parsing Rules
 
@@ -248,7 +245,18 @@ Agent → GET /api/content + Authorization: Payment <credential>
 Server ← 200 + Payment-Receipt: ...
 ```
 
-### 5.3 Protocol Selection
+### 5.3 `Payments: required`
+
+When a site emits `Payments: required` in the Payments block, it signals a site-level policy: every interaction requires payment, and no free path exists. Absent this directive, payments are presumed to be gated per-endpoint via 402 responses and free paths may exist.
+
+```
+Protocols: x402, mpp
+Payments: required
+```
+
+This is symmetric with `Identity: required` in the Authorization block (§6.2): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
+
+### 5.4 Protocol Selection
 
 Sites SHOULD support both protocols when possible. Agents SHOULD prefer MPP when available (lower per-request latency after first auth; supports fiat). x402 is the fallback for anonymous one-shot payments.
 
@@ -345,7 +353,7 @@ Sites that also serve the deprecated SSE transport for backwards compatibility w
 
 ## 8. Skills (Agent Skills Protocol)
 
-[Agent Skills](https://agentskills.io) is an open standard (originally from Anthropic, now multi-vendor) for packaging reusable instructions for AI agents. A skill is a `SKILL.md` file with `name` + `description` frontmatter and markdown instructions. Adopted by 30+ tools including Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, and OpenCode.
+[Agent Skills](https://agentskills.io) is an open standard (originally from Anthropic, now multi-vendor) for packaging reusable instructions for AI agents. A skill is a folder named after the skill (the same name appears in YAML frontmatter as the `name` field) containing a required `SKILL.md` file with `name` and `description` frontmatter plus markdown instructions, and OPTIONALLY a sibling `REFERENCE.md` and any supporting scripts or assets the skill needs. Adopted by 30+ tools including Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, and OpenCode.
 
 ### 8.1 Two Kinds of Skills — Why Only One Belongs Here
 
@@ -362,13 +370,13 @@ The `Skills:` directive is for type 2 only. Type 1 skills are a developer-facing
 One `Skills:` line per skill package URL. Repeat for multiple packages:
 
 ```
-Skills: https://example.com/.well-known/skills/main.md
-Skills: https://example.com/.well-known/skills/premium.md
+Skills: https://example.com/skills/main/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
 ```
 
-Each URL SHOULD point to a `SKILL.md` file or a skill index following the [agentskills.io](https://agentskills.io) standard. URLs SHOULD use HTTPS.
+Each URL SHOULD point directly to a `SKILL.md` file at the root of an agentskills.io-conformant skill folder. URLs SHOULD use HTTPS. Companion files (`REFERENCE.md`, scripts, assets) live in sibling positions inside the same folder and are discovered by the skill's own internal links once the agent has fetched `SKILL.md`. `agents.txt` does not enumerate them; one `Skills:` line per skill is sufficient.
 
-There is no mandated well-known path for skill packages; the URL is fully site-specific. `agents.txt` is the discovery mechanism.
+**The skill package URL is fully site-specific.** This specification governs only the discovery directive, not the path where skills are served or the internal layout of a skill package; those are defined by the agentskills.io standard, by individual site operators, or both. The `/skills/<skill-name>/SKILL.md` shape in the examples reflects the canonical agentskills.io layout (folder per skill, named after the skill), but the path is illustrative: sites publish skills at whatever path their content layout prefers, and `agents.txt` is the mechanism that lets agents find them without prior knowledge.
 
 ### 8.3 Skills and Payment
 
@@ -409,12 +417,12 @@ If skill URLs require authentication, the `Authorization:` block (e.g. `Authoriz
 `agents.txt` is the announcement layer: minimal, human-friendly, easy to serve anywhere. `agents.json` is the full machine-readable catalog: structured, schema-validatable, and richer per block. The relationship intentionally mirrors `llms.txt` and `llms-full.txt` (a terse signal file paired with a comprehensive structured companion), adapted here for the agent interaction layer rather than content curation. Where `llms-full.txt` expands page content for LLM inference, `agents.json` expands protocol metadata for agent decision-making: pricing, chain identifiers, discovery pointers, and capability descriptions that would be too verbose for a plain-text file.
 
 The key additions agents.json makes over agents.txt:
-- **Pricing upfront** — agents can check affordability before making any request.
-- **Payment method details** — chains, session budget. Payment method types (Stripe, Lightning, Tempo, etc.) are not listed here; MPP's own 402 challenge advertises them.
-- **Authorization discovery pointer** — the `/.well-known/agent-configuration` path, so agents don't need to know the spec.
-- **MCP transport type** — always `streamable-http`; clarifies what the endpoint supports.
-- **MCP and skill descriptions** — optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
-- **Site metadata** — name, url, description from the site config.
+- **Pricing upfront.** Agents can check affordability before making any request.
+- **Per-protocol structured detail.** Each payment protocol declares its own nested object inside `payments`, carrying the fields an agent needs to pre-screen support: `x402.chains` (CAIP-2 network identifiers), `mpp.methods` (the configured MPP method set, currently `tempo` and `stripe`). Presence of a per-protocol object IS the support signal; there is no top-level `protocols` array.
+- **Authorization discovery pointer.** The `/.well-known/agent-configuration` path, so agents don't need to know the spec.
+- **MCP transport type.** Always `streamable-http`; clarifies what the endpoint supports.
+- **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
+- **Site metadata.** Name, url, description from the site config.
 
 ### 10.2 Schema
 
@@ -428,11 +436,16 @@ The key additions agents.json makes over agents.txt:
     "description": "Optional site description"
   },
   "payments": {
-    "enabled": true,
-    "protocols": ["x402", "mpp"],
-    "defaultPrice": { "amount": "0.001", "currency": "USDC" },
-    "x402": { "chains": ["eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"] },
-    "mpp": { "sessionBudget": "5.00" }
+    "x402": {
+      "chains": ["eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
+      "description": "Access to premium API endpoints."
+    },
+    "mpp": {
+      "methods": ["tempo", "stripe"],
+      "description": "Premium content access."
+    },
+    "required": false,
+    "pricing": { "amount": "0.001", "currency": "USDC" }
   },
   "authorization": {
     "protocols": ["agent-auth"],
@@ -448,27 +461,31 @@ The key additions agents.json makes over agents.txt:
   ],
   "skills": [
     {
-      "url": "https://example.com/.well-known/skills/main.md",
+      "url": "https://example.com/skills/main/SKILL.md",
       "description": "Optional: brief description of what this skill package teaches."
     },
-    { "url": "https://example.com/.well-known/skills/premium.md" }
+    { "url": "https://example.com/skills/premium/SKILL.md" }
   ]
 }
 ```
 
-All blocks are optional. A block is omitted entirely when the capability is not configured.
+All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
 
 ### 10.3 Field notes
 
 **`version`** — the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
 
-**`payments.defaultPrice`** — default price for gated resources. Agents use this to pre-screen affordability before making any request. The field uses `amount` (decimal string) and `currency` (token symbol, e.g. `"USDC"`). Wallet addresses are NOT included; they appear only in `402 Payment Required` responses.
+**`payments.required`** — OPTIONAL boolean. When `true`, mirrors the `Payments: required` directive (§5.3): every interaction requires payment, no free path exists. Omit (or `false`) when payments are gated per-endpoint via 402.
+
+**`payments.pricing`**. Default price for gated resources. Agents use this to pre-screen affordability before making any request. The field uses `amount` (decimal string) and `currency` (token symbol, e.g. `"USDC"`). Wallet addresses are NOT included; they appear only in `402 Payment Required` responses.
 
 **`payments.x402.chains`** — CAIP-2 chain IDs accepted for x402 payments. Agents need this to know if they support the chain before attempting payment. Two formats are used depending on the blockchain:
 - **EVM chains** use `eip155:<chainId>`, e.g. `"eip155:8453"` for Base mainnet.
 - **Solana networks** use `solana:<genesis-hash>`; the genesis block hash is the canonical CAIP-2 reference for Solana. Known values: mainnet `"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"`, devnet `"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"`, testnet `"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z"`.
 
-**`payments.mpp.sessionBudget`** — the maximum amount an agent can authorize per session (decimal string, e.g. `"5.00"`). This is the only MPP field surfaced here. MPP supports many payment methods (Stripe, Lightning, Tempo stablecoins, Solana, Monad, Stellar, RedotPay); the specific methods available are advertised by the server's own `402 WWW-Authenticate: Payment` challenge at request time, not in this discovery file.
+**`payments.mpp.methods`**. OPTIONAL array of MPP method identifiers that the site has wired up. Currently recognised values are `"tempo"` (Tempo USDC stablecoin) and `"stripe"` (Stripe fiat cards, Link, Solana USDC via SPT). The list reflects only configured methods, so an agent without a Tempo wallet learns from this field that Stripe is available before issuing the request and receiving the `402 WWW-Authenticate: Payment` challenge. The challenge remains the authoritative source for per-method parameters (network identifiers, recipient identifiers, currency codes); this field exists solely for pre-screening.
+
+**`payments.x402.description`** and **`payments.mpp.description`**. OPTIONAL human-readable strings describing what the agent is paying for under each protocol (the product, service, or resource the site sells). Agents MAY surface this string to users when requesting payment authorisation. The same string typically appears in the corresponding `402` response too (as `accepts[].extra.description` for x402 v2, or in the MPP `WWW-Authenticate` challenge), but this field exists so an agent can pre-screen the offer before issuing the gated request. The field is plain text; SHOULD be one short sentence.
 
 **`authorization.discovery`** — always `/.well-known/agent-configuration`. This is the RFC 8414-style discovery endpoint defined by the Agent Auth Protocol. It is hardcoded in the output so agents don't need to know the spec path.
 
@@ -515,7 +532,6 @@ This spec follows semver. The current version is `v1.0-draft`, the first publish
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
 ```
 
@@ -533,7 +549,6 @@ Identity: required
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
 
 Authorization: agent-auth
@@ -552,7 +567,7 @@ MCP: https://example.com/mcp
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Skills: https://example.com/.well-known/skills/main.md
+Skills: https://example.com/skills/main/SKILL.md
 ```
 
 **Skills with free and paid tiers:**
@@ -560,11 +575,10 @@ Skills: https://example.com/.well-known/skills/main.md
 # agents.txt
 # Standard: https://agentstxt.dev
 
-Payments: enabled
 Protocols: x402, mpp
 
-Skills: https://example.com/.well-known/skills/free.md
-Skills: https://example.com/.well-known/skills/premium.md
+Skills: https://example.com/skills/free/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
 ```
 
 **Full stack (payments + authorization + MCP + skills):**
@@ -573,7 +587,6 @@ Skills: https://example.com/.well-known/skills/premium.md
 # Standard: https://agentstxt.dev
 # JSON: https://example.com/agents.json
 
-Payments: enabled
 Protocols: x402, mpp
 
 Authorization: agent-auth
@@ -582,8 +595,8 @@ Identity: required
 MCP: https://example.com/mcp
 MCP: https://example.com/mcp-premium
 
-Skills: https://example.com/.well-known/skills/main.md
-Skills: https://example.com/.well-known/skills/premium.md
+Skills: https://example.com/skills/main/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
 ```
 
 **No capabilities declared (discovery file only):**

@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 export type ParsedAgentsTxt = {
-  payments?: { enabled: boolean; protocols: string[] };
+  payments?: { protocols: string[]; required?: true };
   authorization?: { protocols: string[]; identity?: 'required' };
   mcp: string[];
   skills: string[];
@@ -23,12 +23,12 @@ export function parseAgentsTxt(content: string): ParsedAgentsTxt {
 
     switch (key) {
       case 'Payments':
-        result.payments ??= { enabled: false, protocols: [] };
-        result.payments.enabled = value === 'enabled';
+        result.payments ??= { protocols: [] };
+        if (value === 'required') result.payments.required = true;
         break;
 
       case 'Protocols':
-        result.payments ??= { enabled: false, protocols: [] };
+        result.payments ??= { protocols: [] };
         result.payments.protocols = value.split(',').map((v) => v.trim()).filter(Boolean);
         break;
 
@@ -50,6 +50,10 @@ export function parseAgentsTxt(content: string): ParsedAgentsTxt {
         result.skills.push(value);
         break;
     }
+  }
+
+  if (result.payments && result.payments.protocols.length === 0) {
+    delete result.payments;
   }
 
   return result;

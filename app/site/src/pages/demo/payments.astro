@@ -85,7 +85,7 @@ import { SPEC_VERSION } from '../../config';
             <tr><th>Step</th><th>Action</th><th>Result</th></tr>
           </thead>
           <tbody>
-            <tr><td class="font-mono">0</td><td>Read payment configuration from <code>agents.json</code></td><td class="text-[#999]">protocols, chains, declared pricing</td></tr>
+            <tr><td class="font-mono">0</td><td>Read payment configuration from <code>agents.json</code></td><td class="text-[#999]">per-protocol blocks, chains, declared pricing</td></tr>
             <tr><td class="font-mono">1</td><td>Request gated resource (no <code>Payment-Signature</code> header)</td><td>402 · four <code>accepts[]</code> entries (Base · ETH · Avax · Solana)</td></tr>
             <tr><td class="font-mono text-[#ccc]">—</td><td class="text-[#999]">Agent selects a network, constructs and signs payment payload</td><td class="text-[#999]">off-chain · not executable in browser</td></tr>
             <tr><td class="font-mono text-[#ccc]">—</td><td class="text-[#999]">Agent retries with <code>Payment-Signature</code> · public facilitator settles · responds 200</td><td class="text-[#999]">200 · <code>X-Payment-Response</code></td></tr>
@@ -308,17 +308,22 @@ async function run() {
     const agentsRes = await fetch(`${origin}/agents.json`);
     const agentsJson = await agentsRes.json() as {
       payments?: {
-        enabled?: boolean;
-        protocols?: string[];
         x402?: { chains?: string[] };
+        mpp?: { methods?: string[] };
+        required?: boolean;
+        pricing?: { amount?: string; currency?: string };
       };
     };
     const payments = agentsJson.payments;
     const chains = payments?.x402?.chains ?? [];
-    const paymentSummary = payments?.enabled
+    const declaredProtocols = payments
+      ? (Object.keys(payments).filter((k) => k === 'x402' || k === 'mpp'))
+      : [];
+    const paymentsDeclared = declaredProtocols.length > 0;
+    const paymentSummary = paymentsDeclared
       ? [
           `declared      yes`,
-          `protocols     ${(payments.protocols ?? []).join(', ') || '(none)'}`,
+          `protocols     ${declaredProtocols.join(', ')}`,
           `chains        ${chains.join(', ') || '(none)'}`,
         ].join('\n')
       : [
@@ -331,7 +336,7 @@ async function run() {
         ].join('\n');
     setDone('0',
       `GET /agents.json · payments{}\n\n${paymentSummary}\n\nFull response:\n${fmt(agentsJson)}`,
-      payments?.enabled ? `${chains.length} chain${chains.length !== 1 ? 's' : ''}` : 'not declared',
+      paymentsDeclared ? `${chains.length} chain${chains.length !== 1 ? 's' : ''}` : 'not declared',
     );
 
     // ── Step 1: Payment negotiation — hit /payment-test without Payment-Signature
@@ -382,7 +387,7 @@ async function run() {
 
     const networks = accepts.map(a => a.network).filter(Boolean).join(' · ');
     if (accepts.length > 0) {
-      resultText.textContent = payments?.enabled
+      resultText.textContent = paymentsDeclared
         ? `Payment requirements received: ${accepts.length} network option${accepts.length !== 1 ? 's' : ''} (${networks}). An x402-capable agent selects one and constructs the appropriate payment payload.`
         : `Endpoint returned a 402 with ${accepts.length} accepts[] option${accepts.length !== 1 ? 's' : ''} (${networks}) even though agents.json declares no payments. The endpoint serves placeholder treasury addresses in dev for wire-shape demonstration; production deployments should declare what they serve.`;
     } else {

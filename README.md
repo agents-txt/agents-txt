@@ -38,10 +38,10 @@ This repository contains:
 Site-Name: My Site
 Site-URL: https://mysite.com
 
-Payments: x402, mpp
+Protocols: x402, mpp
 Authorization: agent-auth
 MCP: https://mysite.com/mcp
-Skills: https://mysite.com/.well-known/skills.json
+Skills: https://mysite.com/skills/main/SKILL.md
 ```
 
 That's it. Six directives, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; the protocol-specific details (pricing, scopes, transport, skill manifests) live in the protocol's own discovery surface.
