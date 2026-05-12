@@ -64,6 +64,12 @@ function validateParsed(parsed: ReturnType<typeof parseAgentsTxt>): ValidationRe
     }
   }
 
+  for (const url of parsed.ucp) {
+    if (!isHttpsUrl(url)) {
+      errors.push(`UCP URL must be a valid HTTPS URL — got: "${url}"`);
+    }
+  }
+
   for (const key of Object.keys(parsed.extensions)) {
     warnings.push(`Unknown directive "${key}:" — ignored. Use \`x-\` prefix for experimental identifiers; new block-level directives require a spec update.`);
   }
@@ -160,6 +166,23 @@ function validateAgentsJson(obj: unknown): ValidationResult {
           const e = entry as Record<string, unknown>;
           if (!isHttpsUrl(String(e.url))) {
             errors.push(`a2a[].url must be a valid HTTPS URL — got: "${e.url}"`);
+          }
+        }
+      }
+    }
+  }
+
+  if ('ucp' in json && json.ucp) {
+    if (!Array.isArray(json.ucp)) {
+      errors.push('"ucp" must be an array');
+    } else {
+      for (const entry of json.ucp as unknown[]) {
+        if (typeof entry !== 'object' || entry === null || !('url' in (entry as object))) {
+          errors.push('Each ucp entry must have a "url" field');
+        } else {
+          const e = entry as Record<string, unknown>;
+          if (!isHttpsUrl(String(e.url))) {
+            errors.push(`ucp[].url must be a valid HTTPS URL — got: "${e.url}"`);
           }
         }
       }

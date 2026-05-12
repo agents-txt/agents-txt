@@ -20,6 +20,11 @@
         "uri": "https://github.com/google-agentic-commerce/a2a-x402/blob/main/spec/v0.2",
         "description": "Supports payments using the x402 protocol for on-chain settlement. Mirrors the x402 declaration in this site's agents.txt and agents.json.",
         "required": false
+      },
+      {
+        "uri": "https://github.com/google-agentic-commerce/AP2",
+        "description": "Supports the Agent Payments Protocol (AP2) mandate layer (CheckoutMandate, PaymentMandate) for non-repudiable agent-initiated payments. Mirrors the ap2 declaration in this site's agents.txt and agents.json.",
+        "required": false
       }
     ]
   },
@@ -48,6 +53,19 @@
       ],
       "inputModes": ["text", "text/plain"],
       "outputModes": ["text", "text/plain", "application/json"]
+    },
+    {
+      "id": "explain_payment_protocol",
+      "name": "Explain an announced payment protocol",
+      "description": "Returns a plain-language explanation of any payment protocol the site declares (x402, mpp, ap2): what it is, what role it plays, where the runtime details live, and how it composes with the others.",
+      "tags": ["payments", "x402", "mpp", "ap2", "documentation"],
+      "examples": [
+        "What does ap2 mean in this site's agents.txt?",
+        "How does AP2 compose with x402?",
+        "Explain MPP versus x402."
+      ],
+      "inputModes": ["text", "text/plain"],
+      "outputModes": ["text", "text/plain"]
     },
     {
       "id": "summarize_capabilities",

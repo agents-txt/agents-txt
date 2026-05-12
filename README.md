@@ -121,7 +121,7 @@ When a payment protocol or authorization protocol has a stable specification of 
 - Add a subsection describing what the identifier signals to an agent and where the protocol's own details live (well-known path, response challenge, SDK).
 - Bump the `Version:` line because semantics change.
 - Mirror the addition in the reference deployment: append the identifier to [`mcp/src/protocols.ts`](mcp/src/protocols.ts) so the MCP validators and `audit_site` tool accept it without warnings.
-- If the protocol has structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §11.2 and §11.3.
+- If the protocol has structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §12.2 and §12.3.
 
 Discussion happens in the PR. Two reviewer approvals are required for structural spec changes.
 
@@ -133,7 +133,7 @@ The **A2A block (§9), added in v1.0**, is the most recent worked example. The s
 
 1. **Spec section** in `AGENTS-TXT-STANDARD.md`. New section that defines the directive (`A2A:`), the wire format (one HTTPS URL per line, repeatable), the discovery gap it fills (multi-agent sites, non-canonical AgentCard paths), and the relationship to existing blocks (independent: `A2A:` and `Authorization:` do not constrain each other).
 2. **Directive table entry** in §3.1.
-3. **Companion entry in `agents.json` schema** (§11.2). For A2A: an `a2a: [ { url, description? } ]` array, symmetric with `mcp[]` and `skills[]`. The description field is `agents.json`-only; `agents.txt` carries only the URL because the announcement layer stays terse.
+3. **Companion entry in `agents.json` schema** (§12.2). For A2A: an `a2a: [ { url, description? } ]` array, symmetric with `mcp[]` and `skills[]`. The description field is `agents.json`-only; `agents.txt` carries only the URL because the announcement layer stays terse.
 4. **Reference deployment update**:
    - [`mcp/src/protocols.ts`](mcp/src/protocols.ts) registers the directive in `BLOCK_OPENERS` so parsers and audit tools treat it as a known block opener (not as an unknown directive surfaced under `extensions`).
    - [`mcp/src/tools/parse_agents_txt.ts`](mcp/src/tools/parse_agents_txt.ts) collects the values into the structured output.
@@ -213,7 +213,7 @@ Each sub-package owns its own toolchain: Astro for the site, Wrangler + `tsc --n
 
 ## Architecture
 
-The reference deployment is **three independent Cloudflare Workers** plus the static Astro build. They share no internal modules; coupling is limited to service-binding `fetch()` calls at the edge, and each worker can be redeployed without touching the others. The `site` worker is the Backend-For-Frontend at `agentstxt.dev`: it serves the static spec artifacts, proxies a fixed prefix list into the `mcp` and `auth` workers via Wrangler service bindings, and exposes two synthetic gated routes that demonstrate the wire shape of each payment protocol independently. `/x402` returns an x402 v2 `402` with `payTo` from `SOLANA_ADDRESS`. `/mpp` returns a `WWW-Authenticate: Payment` challenge composed by `mppx` from `TREASURY_TEMPO` (Tempo) and/or `STRIPE_SECRET_KEY`+`STRIPE_NETWORK_ID` (Stripe). Per spec §5.1 / §5.2 / §11.4 the recipient wallet appears only in the 402 response (in `accepts[].payTo` for x402, inside the base64-encoded `request` parameter of the `WWW-Authenticate` header for MPP) and never in `agents.json`.
+The reference deployment is **three independent Cloudflare Workers** plus the static Astro build. They share no internal modules; coupling is limited to service-binding `fetch()` calls at the edge, and each worker can be redeployed without touching the others. The `site` worker is the Backend-For-Frontend at `agentstxt.dev`: it serves the static spec artifacts, proxies a fixed prefix list into the `mcp` and `auth` workers via Wrangler service bindings, and exposes two synthetic gated routes that demonstrate the wire shape of each payment protocol independently. `/x402` returns an x402 v2 `402` with `payTo` from `SOLANA_ADDRESS`. `/mpp` returns a `WWW-Authenticate: Payment` challenge composed by `mppx` from `TREASURY_TEMPO` (Tempo) and/or `STRIPE_SECRET_KEY`+`STRIPE_NETWORK_ID` (Stripe). Per spec §5.1 / §5.2 / §12.4 the recipient wallet appears only in the 402 response (in `accepts[].payTo` for x402, inside the base64-encoded `request` parameter of the `WWW-Authenticate` header for MPP) and never in `agents.json`.
 
 The site **self-validates** through a closed loop. The `audit_site` MCP tool fetches `agentstxt.dev`'s own `/agents.txt`, `/agents.json`, and `/robots.txt`, then runs them through the same `validate_agents_txt` and `validate_agents_json` validators that any third party would use. The shared source of truth for accepted directives lives in [`mcp/src/protocols.ts`](app/mcp/src/protocols.ts) (`BLOCK_OPENERS`, `PAYMENT_PROTOCOLS`, `AUTH_PROTOCOLS`); changing a registered identifier there immediately affects every parser, validator, and audit pass.
 

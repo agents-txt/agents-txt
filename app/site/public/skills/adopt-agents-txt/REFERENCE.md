@@ -370,7 +370,7 @@ The reference MCP server at `mcp.agentstxt.dev` exposes:
 |---|---|---|
 | `validate_agents_txt` | `{ content: string }` | Compliance report against the v1.0 spec |
 | `validate_agents_json` | `{ content: string }` | JSON schema check |
-| `audit_site` | `{ url: string }` | End-to-end live audit: §4.5 serving headers, §3-§8 directive validation, §10 schema validation, §10.4/§12 secret-leak scan, and `agents.txt ↔ agents.json` cross-file consistency. Returns a `summary` block with `compliant: boolean` for one-line pass/fail. |
+| `audit_site` | `{ url: string }` | End-to-end live audit: §4.5 serving headers, §3-§10 directive validation, §12 schema validation, §12.4 / §14 secret-leak scan, and `agents.txt ↔ agents.json` cross-file consistency. Returns a `summary` block with `compliant: boolean` for one-line pass/fail. |
 | `parse_agents_txt` | `{ content: string }` | Returns the parsed directive map |
 | `get_spec` | `{ section?: string }` | Returns the spec text or a specific section |
 

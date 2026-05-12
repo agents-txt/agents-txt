@@ -8,7 +8,7 @@
  * This is the runway for new protocols before they are formally registered.
  */
 
-export const PAYMENT_PROTOCOLS = ['x402', 'mpp'] as const;
+export const PAYMENT_PROTOCOLS = ['x402', 'mpp', 'ap2'] as const;
 export type PaymentProtocol = (typeof PAYMENT_PROTOCOLS)[number];
 
 export const AUTH_PROTOCOLS = ['agent-auth'] as const;
@@ -28,6 +28,7 @@ export const BLOCK_OPENERS = {
   MCP: 'mcp',
   Skills: 'skills',
   A2A: 'a2a',
+  UCP: 'ucp',
 } as const;
 
 export type BlockOpener = keyof typeof BLOCK_OPENERS;

@@ -13,6 +13,13 @@
       ],
       "description": "Synthetic gated route /x402 demonstrating the x402 v2 wire shape on Solana mainnet. Demo charge only; the spec and docs remain free."
     },
+    "ap2": {
+      "presentations": [
+        "sd-jwt-vc"
+      ],
+      "spec": "https://ap2-protocol.org",
+      "description": "Reference declaration of AP2 mandate support. Mandate exchange (CheckoutMandate, PaymentMandate) is not wired on this demo deployment; the field exists so an agent can pre-screen the announcement layer end to end."
+    },
     "mpp": {
       "methods": [
         "tempo",
@@ -48,6 +55,12 @@
     {
       "url": "https://agentstxt.dev/.well-known/agent-card.json",
       "description": "Reference A2A AgentCard describing a meta-agent that explains the agents.txt spec, validates discovery files, and points clients at the live MCP tools."
+    }
+  ],
+  "ucp": [
+    {
+      "url": "https://agentstxt.dev/.well-known/ucp",
+      "description": "Reference UCP profile demonstrating the discovery shape: declared services, transport bindings, payment handlers including the AP2 mandate extension, and signing keys. No live UCP server runs at the declared endpoint; the profile exists as a discovery artifact."
     }
   ]
 }

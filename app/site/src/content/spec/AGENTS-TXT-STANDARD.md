@@ -25,7 +25,7 @@ The existing layers handle access policies, page indexes, and content guidance f
 
 **Design principle:** `agents.txt` is the announcement layer. It tells an agent which protocols a site speaks. The implementation details always live in the protocol's own layer: 402 response bodies for payment protocols, `/.well-known/agent-configuration` for authorization protocols. Nothing in `agents.txt` duplicates those details.
 
-Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §11 defines the full schema.
+Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §12 defines the full schema.
 
 A live reference deployment of this specification is available at `https://agentstxt.dev`.
 
@@ -142,6 +142,7 @@ Skills: https://example.com/skills/premium/SKILL.md
 | `MCP:` | MCP | No | URL | One MCP server endpoint; repeat for multiple servers |
 | `Skills:` | Skills | No | URL | One skill package URL (SKILL.md or index); repeat for multiple packages |
 | `A2A:` | A2A | No | URL | One A2A AgentCard URL; repeat for multiple agents (§9) |
+| `UCP:` | UCP | No | URL | One UCP profile URL; repeat for multiple profiles (§10) |
 
 Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §5 and §6 respectively.
 
@@ -272,7 +273,26 @@ Agent → GET /api/content + Authorization: Payment <credential>
 Server ← 200 + Payment-Receipt: ...
 ```
 
-### 5.3 `Payments: required`
+### 5.3 ap2 — Agent Payments Protocol (Mandate Layer)
+
+[AP2 (Agent Payments Protocol)](https://ap2-protocol.org) is an open protocol that adds a verifiable mandate layer on top of existing payment rails. AP2 does not move funds; it carries cryptographic proof of user intent (a `CheckoutMandate` bound to the cart state and a `PaymentMandate` carrying the payment authorisation, both expressed as Verifiable Digital Credentials, typically `sd-jwt-vc`). It is designed to compose with A2A, MCP, and UCP, and to sit alongside per-request rails such as x402 or MPP rather than replace them.
+
+**Discovery:** Advertised in `agents.txt` as `ap2`. The accepted mandate presentation formats and the AP2 spec version a site implements are NOT carried in `agents.txt`; they live under `payments.ap2` in `agents.json` (§12.3) and are negotiated in the checkout flow itself per the AP2 specification.
+
+**Composition:** A site that accepts AP2 mandates typically also declares the underlying rail it settles on (`x402`, `mpp`, or a UCP payment handler). AP2 is the trust layer; the rail handles fund movement. The two declarations are independent: a `Protocols:` line may list `x402, ap2` to signal "x402 rail with AP2 mandates", or `mpp, ap2` for "MPP rail with AP2 mandates".
+
+**Flow summary (informative):**
+```
+Agent → POST /checkout-sessions (AP2 activated)
+Server ← { checkoutSignature, supportedPresentations: ["sd-jwt-vc"] }
+Agent → [obtain user consent; build CheckoutMandate + PaymentMandate VDCs]
+Agent → POST /checkout/complete + { CheckoutMandate, PaymentMandate }
+Server ← verifies CheckoutMandate; PSP verifies PaymentMandate; 200 on success
+```
+
+The full protocol, mandate schemas, and verification rules are defined by the AP2 specification.
+
+### 5.4 `Payments: required`
 
 When a site emits `Payments: required` in the Payments block, it signals a site-level policy: every interaction requires payment, and no free path exists. Absent this directive, payments are presumed to be gated per-endpoint via 402 responses and free paths may exist.
 
@@ -283,9 +303,9 @@ Payments: required
 
 This is symmetric with `Identity: required` in the Authorization block (§6.2): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
 
-### 5.4 Protocol Selection
+### 5.5 Protocol Selection
 
-Sites SHOULD support both protocols when possible. Agents SHOULD prefer MPP when available (lower per-request latency after first auth; supports fiat). x402 is the fallback for anonymous one-shot payments.
+Sites SHOULD support more than one protocol when possible. Agents SHOULD prefer MPP when available (lower per-request latency after first auth; supports fiat). x402 is the fallback for anonymous one-shot payments. AP2 is a mandate layer that composes with either rail; sites that need non-repudiable proof of user intent declare it alongside the rail they settle on.
 
 ---
 
@@ -451,7 +471,41 @@ The `A2A:` directive complements, rather than replaces, the canonical well-known
 
 ---
 
-## 10. Relationship to Existing Standards
+## 10. UCP (Universal Commerce Protocol)
+
+[UCP](https://ucp.dev) is an open A2P (agent-to-platform) protocol for commerce capabilities: checkout, cart, catalog, order, fulfillment, identity linking, and the AP2 mandate extension. A UCP-capable business publishes a **profile** at `<origin>/.well-known/ucp` declaring which services it supports, which transport bindings (REST, MCP, A2A, Embedded) it serves them over, and which payment handlers it accepts. Platforms (apps, agents, procurement systems) advertise their own profile via a `UCP-Agent` request header and negotiate the active capability set per session.
+
+### 10.1 The Discovery Gap
+
+UCP specifies a canonical well-known path for a *single* profile at the origin: `<origin>/.well-known/ucp`. Two cases fall outside that single canonical path:
+
+1. **Multiple UCP profiles on one origin.** A business that serves more than one commerce profile (for example, a B2C profile and a B2B profile under the same domain) needs a way to point platforms at each profile URL.
+2. **Non-canonical hosting.** A site may serve its UCP profile at a path other than the well-known default (e.g. `/commerce/profile.json`).
+
+The `UCP:` directive fills both gaps, mirroring the way `A2A:` (§9) handles AgentCard discovery.
+
+### 10.2 `UCP:` Directive
+
+```
+UCP: https://example.com/.well-known/ucp
+UCP: https://example.com/profiles/b2b.json
+```
+
+Each `UCP:` line declares the URL of one UCP profile. The directive is repeatable; sites with multiple profiles emit one line per profile. The value MUST be an HTTPS URL pointing to a valid UCP profile JSON document.
+
+The block carries URLs only. Everything else (declared services, capabilities, extensions including [AP2 mandates](https://ucp.dev/documentation/ucp-and-ap2/), supported transport bindings, payment handlers, signing keys) lives in the UCP profile itself, exactly as UCP specifies. `agents.txt` does not duplicate or summarise profile fields.
+
+### 10.3 Discovery Precedence
+
+The `UCP:` directive complements, rather than replaces, the canonical well-known path. Clients that already probe `/.well-known/ucp` directly continue to work for sites with a single profile at the default path. `agents.txt` exists so that clients without that knowledge, or sites with multiple or relocated profiles, can still discover every UCP profile the site publishes.
+
+### 10.4 Payments and Authentication
+
+`agents.txt` is silent on per-profile payment or authentication configuration: each UCP profile already declares its own `payment_handlers`, capabilities, and signing keys, and clients verify via HTTP Message Signatures or any other mechanism UCP defines. The site-level `Protocols:` and `Authorization:` blocks in `agents.txt` describe site-wide policy for the rails declared there and remain independent of the `UCP:` block.
+
+---
+
+## 11. Relationship to Existing Standards
 
 | Standard | Relationship |
 |----------|-------------|
@@ -465,15 +519,17 @@ The `A2A:` directive complements, rather than replaces, the canonical well-known
 | Agent Skills (agentskills.io) | `agents.txt` provides discovery of service-consumption skill packages via `Skills:` directives. Repo-level developer skills (AGENTS.md, CLAUDE.md, `/.claude/skills/`) are out of scope for `agents.txt`. |
 | Cloudflare Pay-per-Crawl | Complementary. This spec is open and self-hosted; Cloudflare's service is proprietary. Both may advertise via `agents.txt` in future. |
 | A2A (Agent2Agent Protocol) | `agents.txt` provides AgentCard discovery via `A2A:` directives (§9), covering sites with multiple agents or non-canonical paths. The well-known path `/.well-known/agent-card.json` remains the primary discovery surface for single-agent sites. The protocol itself (AgentCard schema, JSON-RPC transport, extension mechanism including [x402 payments](https://github.com/google-agentic-commerce/a2a-x402)) is defined by the A2A spec. |
+| AP2 (Agent Payments Protocol) | `agents.txt` advertises AP2 mandate support via the `ap2` identifier in the `Protocols:` line (§5.3). AP2 is a trust layer carrying signed `CheckoutMandate` and `PaymentMandate` Verifiable Digital Credentials; it composes with x402, MPP, and UCP rather than replacing them. The protocol itself (mandate schemas, presentation formats, verification) is defined by the AP2 specification. |
+| UCP (Universal Commerce Protocol) | `agents.txt` provides UCP profile discovery via `UCP:` directives (§10), covering sites with multiple profiles or non-canonical paths. The well-known path `/.well-known/ucp` remains the primary discovery surface for single-profile sites. The protocol itself (service catalogue, capability negotiation, payment handlers, signing keys, AP2 mandate extension) is defined by the UCP specification. |
 | ERC-8004 (Trustless Agents Registry) | Compatible. `agents.txt` operates entirely off-chain. Sites that anchor agent identity on-chain via ERC-8004 remain compatible; this spec imposes no constraint. |
 
 ---
 
-## 11. JSON Format (`/agents.json`)
+## 12. JSON Format (`/agents.json`)
 
 `/agents.json` is a **strongly recommended** structured companion to `/agents.txt`. It is generated from the same config and served at `<origin>/agents.json`. It is not a replacement; `agents.txt` remains the canonical plain-text format. Sites SHOULD serve both; agents that support structured formats SHOULD prefer `agents.json` for its richer detail and machine-parsability.
 
-### 11.1 Why both formats?
+### 12.1 Why both formats?
 
 `agents.txt` is the announcement layer: minimal, human-friendly, easy to serve anywhere. `agents.json` is the full machine-readable catalog: structured, schema-validatable, and richer per block. The relationship intentionally mirrors `llms.txt` and `llms-full.txt` (a terse signal file paired with a comprehensive structured companion), adapted here for the agent interaction layer rather than content curation. Where `llms-full.txt` expands page content for LLM inference, `agents.json` expands protocol metadata for agent decision-making: pricing, chain identifiers, discovery pointers, and capability descriptions that would be too verbose for a plain-text file.
 
@@ -485,7 +541,7 @@ The key additions agents.json makes over agents.txt:
 - **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
 - **Site metadata.** Name, url, description from the site config.
 
-### 11.2 Schema
+### 12.2 Schema
 
 ```json
 {
@@ -504,6 +560,11 @@ The key additions agents.json makes over agents.txt:
     "mpp": {
       "methods": ["tempo", "stripe"],
       "description": "Premium content access."
+    },
+    "ap2": {
+      "presentations": ["sd-jwt-vc"],
+      "spec": "https://ap2-protocol.org/specification/v0.1",
+      "description": "AP2 mandates accepted alongside x402 settlement."
     },
     "required": false,
     "pricing": { "amount": "0.001", "currency": "USDC" }
@@ -532,17 +593,23 @@ The key additions agents.json makes over agents.txt:
       "url": "https://example.com/.well-known/agent-card.json",
       "description": "Optional: brief description of this agent's capability or role."
     }
+  ],
+  "ucp": [
+    {
+      "url": "https://example.com/.well-known/ucp",
+      "description": "Optional: brief description of this UCP profile."
+    }
   ]
 }
 ```
 
 All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
 
-### 11.3 Field notes
+### 12.3 Field notes
 
 **`version`** — the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
 
-**`payments.required`** — OPTIONAL boolean. When `true`, mirrors the `Payments: required` directive (§5.3): every interaction requires payment, no free path exists. Omit (or `false`) when payments are gated per-endpoint via 402.
+**`payments.required`** — OPTIONAL boolean. When `true`, mirrors the `Payments: required` directive (§5.4): every interaction requires payment, no free path exists. Omit (or `false`) when payments are gated per-endpoint via 402.
 
 **`payments.pricing`**. Default price for gated resources. Agents use this to pre-screen affordability before making any request. The field uses `amount` (decimal string) and `currency` (token symbol, e.g. `"USDC"`). Wallet addresses are NOT included; they appear only in `402 Payment Required` responses.
 
@@ -553,6 +620,16 @@ All blocks are optional. A block is omitted entirely when the capability is not 
 **`payments.mpp.methods`**. OPTIONAL array of MPP method identifiers that the site has wired up. Currently recognised values are `"tempo"` (Tempo USDC stablecoin) and `"stripe"` (Stripe fiat cards, Link, Solana USDC via SPT). The list reflects only configured methods, so an agent without a Tempo wallet learns from this field that Stripe is available before issuing the request and receiving the `402 WWW-Authenticate: Payment` challenge. The challenge remains the authoritative source for per-method parameters (network identifiers, recipient identifiers, currency codes); this field exists solely for pre-screening.
 
 **`payments.x402.description`** and **`payments.mpp.description`**. OPTIONAL human-readable strings describing what the agent is paying for under each protocol (the product, service, or resource the site sells). Agents MAY surface this string to users when requesting payment authorisation. The same string typically appears in the corresponding `402` response too (as `accepts[].extra.description` for x402 v2, or in the MPP `WWW-Authenticate` challenge), but this field exists so an agent can pre-screen the offer before issuing the gated request. The field is plain text; SHOULD be one short sentence.
+
+**`payments.ap2`**. OPTIONAL per-protocol object signalling AP2 mandate support (§5.3). Presence of the key is the support signal; agents.txt carries the identifier in the `Protocols:` line. All fields are OPTIONAL:
+- `presentations`: array of Verifiable Digital Credential presentation formats the site accepts for AP2 mandates (e.g. `["sd-jwt-vc"]`). Defined by the AP2 specification; this field exists for pre-screening so agents that hold credentials in one format only learn compatibility before issuing the checkout.
+- `spec`: URL pointing to the AP2 specification version the site implements (e.g. `https://ap2-protocol.org/specification/v0.1`). Lets agents pin against the same revision.
+- `description`: short human-readable note about what AP2 covers on this site, symmetric with `payments.x402.description` and `payments.mpp.description`.
+The block carries no mandate content, no signing keys, and no `CheckoutSignature` material. Those are exchanged during checkout per the AP2 specification.
+
+**`ucp[].url`**. URL of a UCP profile JSON document (typically `/.well-known/ucp`). The set of entries in this array MUST match the set of `UCP:` lines in `agents.txt` (§10).
+
+**`ucp[].description`**. OPTIONAL. A brief human-readable summary of what the UCP profile covers (e.g. "B2C shopping", "B2B procurement"). This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed profile metadata (services, capabilities, payment handlers, signing keys) lives in the UCP profile itself.
 
 **`authorization.discovery`** — always `/.well-known/agent-configuration`. This is the RFC 8414-style discovery endpoint defined by the Agent Auth Protocol. It is hardcoded in the output so agents don't need to know the spec path.
 
@@ -566,7 +643,7 @@ All blocks are optional. A block is omitted entirely when the capability is not 
 
 **`a2a[].description`** — OPTIONAL. A brief human-readable summary of the agent's capability or role. This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed agent metadata (skills, capabilities, extensions, transport) lives in the AgentCard itself.
 
-### 11.4 Security
+### 12.4 Security
 
 The same rules as `agents.txt` apply:
 - No wallet/treasury addresses; stay in `402` responses only.
@@ -575,7 +652,7 @@ The same rules as `agents.txt` apply:
 
 ---
 
-## 12. Versioning and Extensibility
+## 13. Versioning and Extensibility
 
 This spec follows semver. The current version is `v1.0`, the first published release.
 
@@ -587,7 +664,7 @@ This spec follows semver. The current version is `v1.0`, the first published rel
 
 ---
 
-## 13. Security Considerations
+## 14. Security Considerations
 
 - `agents.txt` contains no sensitive data. Do not include wallet addresses, API keys, JWKs, pricing, capability schemas, or any credentials in the file.
 - Payment details (wallet address, chain, amount) MUST only appear in `402 Payment Required` responses, never in `agents.txt`.
@@ -596,7 +673,7 @@ This spec follows semver. The current version is `v1.0`, the first published rel
 
 ---
 
-## 14. Examples
+## 15. Examples
 
 **Payments only (x402 + MPP):**
 ```
@@ -678,13 +755,13 @@ Skills: https://example.com/skills/premium/SKILL.md
 
 ---
 
-## 15. Contributing
+## 16. Contributing
 
 See `CONTRIBUTING.md` in the repository. Changes to this spec require a PR with at least two reviewer approvals. The spec is CC0; anyone may implement it without restriction.
 
 ---
 
-## 16. References
+## 17. References
 
 ### Normative
 

@@ -137,7 +137,7 @@ After the file is in place, validate it (regardless of path). Two ways:
 
 [`mcp.agentstxt.dev`](https://mcp.agentstxt.dev) exposes `validate_agents_txt` and `validate_agents_json` tools over Model Context Protocol for offline content validation, and the comprehensive `audit_site` tool for end-to-end checks of a live URL. Any MCP-aware client (Claude Desktop, mcp-inspector, etc.) can call them.
 
-`audit_site` is what to run after deploy. It validates §4.5 serving headers (Content-Type, CORS, Cache-Control), runs the §3-§8 directive validators on `agents.txt`, schema-validates `agents.json` per §10, scans both for accidental treasury / secret leaks per §10.4 / §12, and cross-checks consistency between `agents.txt` and `agents.json`. Output includes a roll-up `summary` block with `compliant` (boolean) and `errorCount` so it reads as a single pass/fail signal.
+`audit_site` is what to run after deploy. It validates §4.5 serving headers (Content-Type, CORS, Cache-Control), runs the §3-§10 directive validators on `agents.txt`, schema-validates `agents.json` per §12, scans both for accidental treasury / secret leaks per §12.4 / §14, and cross-checks consistency between `agents.txt` and `agents.json`. Output includes a roll-up `summary` block with `compliant` (boolean) and `errorCount` so it reads as a single pass/fail signal.
 
 ### B. Manual checks
 

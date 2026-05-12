@@ -1,0 +1,562 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="UCP Demo · agents.txt"
+  description="Live demonstration of UCP profile discovery via the UCP directive in agents.txt. Reads agents.json, fetches the declared profile, parses its services, capabilities, payment_handlers (including the AP2 mandate extension), and signing keys, then confirms cross-file consistency via the MCP audit_site tool. Executed in your browser."
+  canonicalUrl="https://agentstxt.dev/demo/ucp"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">UCP</span>
+      </div>
+      <div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
+        <a href="/spec" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Spec</a>
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxt/agents.txt" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          UCP Profile Discovery: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">agents.txt · UCP directive · ucp.dev</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">
+            <a href="https://ucp.dev" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              ucp.dev
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/agents.json · ucp[] · UCP: directive (spec §10)</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTP · /.well-known/ucp · MCP audit_site</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page executes the full UCP profile discovery flow against this server. The <code>UCP:</code> directive in <code>agents.txt</code> (spec §10) advertises one or more profile URLs. <code>agents.json</code> mirrors the same URLs under <code>ucp[]</code> with optional human-readable descriptions. The demo reads both files, fetches each profile, parses its services, capabilities, declared payment handlers (including the AP2 mandate extension), and signing keys, and confirms cross-file consistency using the MCP <code>audit_site</code> tool.
+        </p>
+        <p>
+          The UCP profile is the discovery artifact. Each profile describes one business's commerce capabilities: which services it exposes (shopping, fulfillment, identity linking), which transport bindings it serves them over (REST, MCP, A2A, Embedded), which payment handlers it accepts, and the signing keys clients verify its responses against. The agents.txt standard governs only how the profile URL is discovered. The capability negotiation, request schemas, and authentication mechanisms inside the profile belong to the UCP protocol and are layered on top.
+        </p>
+
+        <h2>Discovery flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Transport</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Read profile index from <code>agents.json</code></td><td class="text-[#999]">HTTP GET · no auth</td></tr>
+            <tr><td class="font-mono">1</td><td>Fetch the UCP profile JSON document</td><td>HTTP GET · /.well-known/ucp</td></tr>
+            <tr><td class="font-mono">2</td><td>Parse services, capabilities, payment_handlers, signing_keys</td><td>JSON parse · UCP schema</td></tr>
+            <tr><td class="font-mono">3</td><td>Cross-file consistency check via MCP <code>audit_site</code></td><td>tools/call · agents.txt vs agents.json UCP set</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">UCP discovery runner</p>
+            <p class="text-xs text-[#999] mt-0.5">agents.json · profile fetch · MCP audit · all requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'UCP index',                   'GET /agents.json · ucp[]'],
+            ['1', 'Profile retrieval',           'GET /.well-known/ucp'],
+            ['2', 'Profile parsing',             'services · capabilities · payment_handlers · signing_keys'],
+            ['3', 'Cross-file consistency',      'MCP audit_site · agents.txt UCP set vs agents.json ucp[] set'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">UCP profiles are indexed in <code>/agents.json</code> under <code>ucp[]</code> and served at the URLs they advertise. This site serves a single reference profile at <code>/.well-known/ucp</code>.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Discovery layer vs commerce protocol</h3>
+        <p>
+          The agents.txt <code>UCP:</code> directive is a discovery hint. Once a client has a profile URL it fetches the profile to learn the business's declared services, supported capability versions, transport bindings, payment handlers, and signing keys. Calling any of those services is a separate protocol layer governed by the UCP specification, with its own capability negotiation (server-selects intersection), HTTP Message Signature verification, and per-service request schemas. This demo exercises the discovery layer end to end. It does not open a capability session against any declared service.
+        </p>
+        <h3>When the <code>UCP:</code> block is worth declaring</h3>
+        <p>
+          UCP defines a canonical well-known path at <code>/.well-known/ucp</code>. A client that already knows about UCP can probe that path directly, without help from agents.txt. The <code>UCP:</code> directive exists for the two cases the well-known path does not cover: businesses that publish more than one profile on the same origin (one <code>UCP:</code> line per profile), and businesses that serve a profile at a non-canonical path. A single-profile site at the default location can omit the block; agents.txt remains forward-compatible because parsers ignore directives they do not recognise.
+        </p>
+        <h3>The reference profile served here</h3>
+        <p>
+          This site publishes a single profile at <code>/.well-known/ucp</code> describing a reference shopping business. The profile declares the <code>dev.ucp.shopping</code> service (MCP transport, pointing at the existing <code>/mcp</code> endpoint), three capabilities (<code>catalog.lookup</code>, <code>checkout</code>, and the <code>ap2_mandate</code> extension that extends <code>checkout</code>), and two payment handlers (x402 on Solana, MPP). No live UCP server runs at any declared endpoint; the profile exists to demonstrate the discovery shape and the wire format. Negotiating a real UCP session is the responsibility of an actual UCP server implementation, which is out of scope for an agents.txt demo.
+        </p>
+        <h3>Composition with AP2 and the underlying rails</h3>
+        <p>
+          The profile's <code>payment_handlers</code> array lists the rails the business accepts (x402, MPP); its <code>capabilities</code> list declares <code>dev.ucp.shopping.ap2_mandate</code> as an extension on top of <code>checkout</code>. Read together: the rails handle fund movement, and the AP2 extension carries signed <code>CheckoutMandate</code> and <code>PaymentMandate</code> Verifiable Digital Credentials over whichever rail the platform negotiates. agents.txt at the site level says "this site speaks x402, mpp, and ap2"; the UCP profile composes the three into one coherent commerce surface; the AgentCard at <code>/.well-known/agent-card.json</code> mirrors the same declarations for the A2A side. Three independent discovery surfaces, one consistent capability story.
+        </p>
+      </div>
+
+      <!-- AP2 reference -->
+      <div class="prose max-w-none mt-12">
+        <h2 id="ap2">AP2 reference</h2>
+        <p>
+          The <a href="https://ap2-protocol.org" target="_blank" rel="noopener noreferrer">Agent Payments Protocol (AP2)</a> is an open trust-layer protocol for agent-initiated commerce. It is designed as an extension to A2A, MCP, and UCP and does not move funds itself. AP2 sits on top of an existing rail (x402, MPP, cards, real-time bank transfers) and adds non-repudiable, cryptographically signed proof of user intent in the form of <strong>Verifiable Digital Credentials (VDCs)</strong> called <em>mandates</em>. The protocol is stewarded by the <a href="https://github.com/google-agentic-commerce/AP2" target="_blank" rel="noopener noreferrer">google-agentic-commerce/AP2</a> repository, and standardisation will continue inside the FIDO Alliance Agentic Authentication and Payments Technical Working Groups.
+        </p>
+
+        <h3>What AP2 answers that existing rails do not</h3>
+        <p>
+          Today's payment systems assume a human is clicking buy on a trusted website. When an autonomous agent initiates a payment, that assumption breaks. Three concrete questions become unanswerable without a mandate layer:
+        </p>
+        <ul>
+          <li><strong>Authorization.</strong> What verifiable proof shows that the user granted the agent specific authority for this particular purchase, with these constraints, against this instrument?</li>
+          <li><strong>Authenticity of intent.</strong> How does a merchant know the agent's request accurately reflects what the user actually asked for, with no LLM error or hallucination in between?</li>
+          <li><strong>Accountability.</strong> If a transaction is disputed, where is the audit trail that assigns liability between the user, the agent developer, the merchant, the credential provider, the network, and the merchant payment processor?</li>
+        </ul>
+        <p>
+          AP2 answers all three by anchoring every transaction to a chain of signed mandates that any party can verify offline, after the fact, with public keys alone.
+        </p>
+
+        <h3>The five roles</h3>
+        <table>
+          <thead>
+            <tr><th>Role</th><th>Responsibility</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Shopping Agent (SA)</strong></td><td>The agent the user delegates to. Performs product discovery, assembles the cart, drives checkout. Assumed to be agentic (LLM-backed).</td></tr>
+            <tr><td><strong>Credential Provider (CP)</strong></td><td>Source of payment credentials. Verifies the agent is authorized to access the instrument and scopes the credential to the purchase.</td></tr>
+            <tr><td><strong>Merchant (M)</strong></td><td>Provides and completes the checkout. Verifies the shopping agent is approved to purchase, owns inventory and pricing integrity.</td></tr>
+            <tr><td><strong>Merchant Payment Processor (MPP)</strong></td><td>Processes the payment. Verifies the payment credential the CP shared has been authorized to pay this specific checkout instance.</td></tr>
+            <tr><td><strong>Trusted Surface (TS)</strong></td><td>A UI surface trusted to obtain informed user consent before any user-signed mandate is created. MUST be non-agentic (deterministic code only, no LLM in the consent path).</td></tr>
+          </tbody>
+        </table>
+        <p>
+          A single entity MAY play multiple roles; the responsibilities then merge. Roles MAY delegate. The Shopping Agent is the only role that MUST be agentic; the Trusted Surface is the only role that MUST be non-agentic.
+        </p>
+
+        <h3>The two mandate types</h3>
+        <p>
+          Each mandate is a tamper-evident, cryptographically signed VDC. Each exists in two stages, <em>open</em> (used for autonomous human-not-present execution) and <em>closed</em> (a finalised, hash-bound authorisation).
+        </p>
+        <table>
+          <thead>
+            <tr><th>Mandate</th><th>Captures</th><th>Shared with</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CheckoutMandate</strong></td>
+              <td><em>Open</em>: user constraints and goals (budget caps, allowed merchants, item categories) before any cart exists. <em>Closed</em>: user (or agent) authorisation for a specific, finalised checkout, bound to the merchant's <code>checkoutSignature</code>.</td>
+              <td>Merchant</td>
+            </tr>
+            <tr>
+              <td><strong>PaymentMandate</strong></td>
+              <td><em>Open</em>: user constraints on payment itself (allowed instruments, per-transaction limits). <em>Closed</em>: authorisation for a specific transaction amount, cryptographically linked to the CheckoutMandate via the checkout JWT hash.</td>
+              <td>Credential Provider, network, Merchant Payment Processor</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          The CheckoutMandate hash is the bridge between the two: the PaymentMandate references it, so the payment authorisation is mathematically tied to one specific cart state. The merchant cannot change price or terms mid-flow without invalidating the chain. The agent cannot replay a payment authorisation against a different cart.
+        </p>
+
+        <h3>Human-present vs human-not-present flows</h3>
+        <p>
+          AP2 defines two flow shapes. They share the mandate model and differ only in how user consent is obtained.
+        </p>
+        <ul>
+          <li><strong>Human Present (direct).</strong> The user is online at checkout time. The shopping agent assembles the cart, the merchant issues a signed checkout, the agent constructs the mandate content, and a Trusted Surface renders it to the user for direct biometric or password authentication. The user's signing key produces a closed CheckoutMandate and a closed PaymentMandate in one consent step. The merchant verifies the CheckoutMandate; the payment processor verifies the PaymentMandate; the order completes.</li>
+          <li><strong>Human Not Present (autonomous).</strong> The user pre-authorises an open CheckoutMandate and open PaymentMandate (budget caps, allowed merchants, allowed instruments). The agent then executes autonomously against those constraints, generating agent-signed closed CheckoutMandates and PaymentMandates inside the limits the user set. If the agent attempts a transaction outside the open constraints, the merchant or CP returns an <code>unresolved_constraint</code> error, which kicks the flow back into the Human Present path so the user can sign the closed mandates directly.</li>
+        </ul>
+
+        <h3>How AP2 composes with the rails on this site</h3>
+        <p>
+          AP2 itself does not specify the rail. The rail is what actually moves money. This site declares two rails (x402 and MPP) and the AP2 mandate layer on top:
+        </p>
+        <ul>
+          <li><strong>x402 + AP2.</strong> An autonomous agent receives a 402 challenge from a gated route, settles via the public x402 facilitator on Solana, and presents an AP2 PaymentMandate alongside the on-chain transfer so the merchant has cryptographic proof the user authorised this specific charge. See <a href="/demo/payments">/demo/payments</a> for the x402 rail without AP2; AP2 layers on by attaching mandate content to the same flow. The <a href="https://github.com/google-agentic-commerce/AP2/tree/main/code/samples/python/scenarios/a2a/human-not-present/x402/" target="_blank" rel="noopener noreferrer">AP2 x402 sample</a> shows the combined flow end to end.</li>
+          <li><strong>MPP + AP2.</strong> Same idea on the MPP side: the WWW-Authenticate: Payment challenge composed by mppx is the rail (Tempo, Stripe), and the AP2 mandates carry the trust layer the rail itself does not provide. See <a href="/demo/mpp">/demo/mpp</a> for the rail in isolation.</li>
+          <li><strong>UCP + AP2.</strong> The UCP profile served at <a href="/.well-known/ucp">/.well-known/ucp</a> declares <code>dev.ucp.shopping.ap2_mandate</code> as a capability extension on top of <code>dev.ucp.shopping.checkout</code>. Once a platform negotiates AP2 in the UCP capability intersection, the checkout flow produces a closed CheckoutMandate hash-bound to the negotiated cart, and the payment flow attaches a PaymentMandate against whichever payment handler in <code>payment_handlers</code> the platform picked. See <a href="https://ucp.dev/documentation/ucp-and-ap2/" target="_blank" rel="noopener noreferrer">UCP and AP2</a> for the integration spec.</li>
+        </ul>
+
+        <h3>Where AP2 is declared on this site</h3>
+        <p>
+          The four discovery surfaces below all advertise AP2 support. Each surface serves a different audience and is consumed by a different kind of client; the consistent declaration across all four is what lets any compliant agent confirm support without prior knowledge of this deployment.
+        </p>
+        <table>
+          <thead>
+            <tr><th>Surface</th><th>Where</th><th>Field</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>agents.txt</td><td><a href="/agents.txt">/agents.txt</a></td><td><code>Protocols: x402, mpp, ap2</code></td></tr>
+            <tr><td>agents.json</td><td><a href="/agents.json">/agents.json</a></td><td><code>{"payments.ap2 { presentations, spec, description }"}</code></td></tr>
+            <tr><td>A2A AgentCard</td><td><a href="/.well-known/agent-card.json">/.well-known/agent-card.json</a></td><td><code>capabilities.extensions[].uri = "https://github.com/google-agentic-commerce/AP2"</code></td></tr>
+            <tr><td>UCP profile</td><td><a href="/.well-known/ucp">/.well-known/ucp</a></td><td><code>capabilities["dev.ucp.shopping.ap2_mandate"]</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3>Status on this deployment</h3>
+        <p>
+          No AP2 mandate exchange runs on this site. The mandate flow (server signs a <code>checkoutSignature</code> on the cart, the agent obtains user consent through a Trusted Surface, both the CheckoutMandate and PaymentMandate are presented at the merchant's complete endpoint, the merchant and PSP verify them independently) happens at checkout time per the AP2 specification, not at discovery time. This deployment is a discovery-layer demonstration: it announces AP2 across all four surfaces correctly, but the runtime mandate exchange requires a real shopping flow with a real cart, a Trusted Surface for consent, a Credential Provider, and a payment processor wired against the AP2 SDK. See the <a href="https://github.com/google-agentic-commerce/AP2/tree/main/code/samples/python/scenarios" target="_blank" rel="noopener noreferrer">AP2 sample scenarios</a> for end-to-end runnable examples.
+        </p>
+        <h3>Further reading</h3>
+        <ul>
+          <li><a href="https://ap2-protocol.org" target="_blank" rel="noopener noreferrer">AP2 protocol homepage</a></li>
+          <li><a href="https://github.com/google-agentic-commerce/AP2" target="_blank" rel="noopener noreferrer">AP2 specification and reference SDK</a></li>
+          <li><a href="https://ucp.dev/documentation/ucp-and-ap2/" target="_blank" rel="noopener noreferrer">UCP and AP2 integration guide</a></li>
+          <li><a href="https://github.com/google-agentic-commerce/a2a-x402" target="_blank" rel="noopener noreferrer">a2a-x402 extension</a> (the rail-side companion to AP2 inside A2A)</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+function truncate(text: string, limit = 1600): string {
+  if (text.length <= limit) return text;
+  return text.slice(0, limit) + `\n\n… (${text.length.toLocaleString()} bytes total)`;
+}
+
+function parseSSE(text: string): unknown {
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      try { return JSON.parse(line.slice(6)); } catch {}
+    }
+  }
+  return null;
+}
+
+async function mcpPost(
+  path: string,
+  body: unknown,
+  sessionId: string | null = null,
+): Promise<{ raw: unknown; sessionId: string | null; status: number }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream',
+  };
+  if (sessionId) headers['Mcp-Session-Id'] = sessionId;
+  const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
+  const text = await res.text();
+  const raw = parseSSE(text) ?? JSON.parse(text);
+  const returnedSession = res.headers.get('mcp-session-id');
+  return { raw, sessionId: returnedSession ?? sessionId, status: res.status };
+}
+
+type UcpVersionedEntry = {
+  version?: string;
+  spec?: string;
+  schema?: string;
+  transport?: string;
+  endpoint?: string;
+  extends?: string;
+  id?: string;
+};
+
+type UcpProfile = {
+  ucp?: {
+    version?: string;
+    services?: Record<string, UcpVersionedEntry[]>;
+    capabilities?: Record<string, UcpVersionedEntry[]>;
+    payment_handlers?: Record<string, UcpVersionedEntry[]>;
+    supported_versions?: string[];
+  };
+  signing_keys?: Array<{ kid?: string; kty?: string; crv?: string; alg?: string }>;
+};
+
+function summariseProfile(profile: UcpProfile): string {
+  const lines: string[] = [];
+  const ucp = profile.ucp ?? {};
+  lines.push(`profile version    ${ucp.version ?? '(missing)'}`);
+  if (ucp.supported_versions) lines.push(`supported_versions ${ucp.supported_versions.join(', ')}`);
+  lines.push('');
+
+  const services = ucp.services ?? {};
+  const serviceKeys = Object.keys(services);
+  lines.push(`services           ${serviceKeys.length} declared`);
+  for (const key of serviceKeys) {
+    const versions = services[key] ?? [];
+    for (const v of versions) {
+      lines.push(`  · ${key}`);
+      lines.push(`    version    ${v.version ?? '(unspecified)'}`);
+      if (v.transport) lines.push(`    transport  ${v.transport}`);
+      if (v.endpoint)  lines.push(`    endpoint   ${v.endpoint}`);
+    }
+  }
+  lines.push('');
+
+  const capabilities = ucp.capabilities ?? {};
+  const capKeys = Object.keys(capabilities);
+  lines.push(`capabilities       ${capKeys.length} declared`);
+  for (const key of capKeys) {
+    const versions = capabilities[key] ?? [];
+    for (const v of versions) {
+      lines.push(`  · ${key}`);
+      lines.push(`    version    ${v.version ?? '(unspecified)'}`);
+      if (v.extends) lines.push(`    extends    ${v.extends}`);
+    }
+  }
+  lines.push('');
+
+  const handlers = ucp.payment_handlers ?? {};
+  const handlerKeys = Object.keys(handlers);
+  lines.push(`payment_handlers   ${handlerKeys.length} declared`);
+  for (const key of handlerKeys) {
+    const versions = handlers[key] ?? [];
+    for (const v of versions) {
+      lines.push(`  · ${key}`);
+      lines.push(`    id         ${v.id ?? '(unspecified)'}`);
+      lines.push(`    version    ${v.version ?? '(unspecified)'}`);
+    }
+  }
+  lines.push('');
+
+  const keys = profile.signing_keys ?? [];
+  lines.push(`signing_keys       ${keys.length} declared`);
+  for (const k of keys) {
+    lines.push(`  · kid=${k.kid ?? '(no kid)'} kty=${k.kty ?? '?'} ${k.crv ? 'crv=' + k.crv : ''} ${k.alg ? 'alg=' + k.alg : ''}`.trim());
+  }
+
+  return lines.join('\n');
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── Step 0: agents.json ucp[] index ──────────────────────────────────────
+    setRunning('0');
+    const agentsRes = await fetch(`${origin}/agents.json`);
+    const agentsJson = await agentsRes.json() as { ucp?: Array<{ url: string; description?: string }> };
+    const profiles = agentsJson.ucp ?? [];
+    const profilesSummary = profiles.map(p =>
+      `url          ${p.url}\ndescription  ${p.description ?? '(none)'}`
+    ).join('\n\n');
+    setDone('0',
+      `GET /agents.json · ucp[]\n\n${profiles.length} UCP profile${profiles.length !== 1 ? 's' : ''} declared\n\n${profilesSummary}`,
+      `${profiles.length} profile${profiles.length !== 1 ? 's' : ''}`,
+    );
+
+    if (profiles.length === 0) {
+      throw new Error('No UCP profiles declared in agents.json. Nothing to fetch.');
+    }
+
+    // ── Step 1: HTTP retrieval ───────────────────────────────────────────────
+    // agents.json advertises absolute URLs against the production origin
+    // (e.g. https://agentstxt.dev/...). Resolve to the local origin for
+    // dev preview parity, like the a2a and skills demos do.
+    setRunning('1');
+    const firstUrl = profiles[0].url;
+    const profilePath = new URL(firstUrl).pathname;
+    const profileRes = await fetch(`${origin}${profilePath}`);
+    const profileText = await profileRes.text();
+    const contentType = profileRes.headers.get('content-type') ?? '(missing)';
+    setDone('1',
+      `GET ${profilePath}\nContent-Type: ${contentType}\nStatus: ${profileRes.status}\n\n${truncate(profileText)}`,
+      `${profileRes.status} · ${profileText.length.toLocaleString()} bytes`,
+    );
+
+    // ── Step 2: Parse the UCP profile ────────────────────────────────────────
+    setRunning('2');
+    let profile: UcpProfile;
+    try {
+      profile = JSON.parse(profileText) as UcpProfile;
+    } catch (err) {
+      throw new Error(`UCP profile is not valid JSON: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    const serviceCount = Object.keys(profile.ucp?.services ?? {}).length;
+    const capCount = Object.keys(profile.ucp?.capabilities ?? {}).length;
+    const handlerCount = Object.keys(profile.ucp?.payment_handlers ?? {}).length;
+    setDone('2',
+      summariseProfile(profile),
+      `${serviceCount} svc · ${capCount} cap · ${handlerCount} ph`,
+    );
+
+    // ── Step 3: Cross-file consistency check via MCP audit_site ─────────────
+    setRunning('3');
+    const init = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 1, method: 'initialize',
+      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'agentstxt-ucp-demo', version: '1.0.0' } },
+    });
+    if (!init.sessionId) throw new Error(`MCP session not established:\n${fmt(init.raw)}`);
+    const sessionId = init.sessionId;
+
+    const auditCall = await mcpPost(`${origin}/mcp`, {
+      jsonrpc: '2.0', id: 2, method: 'tools/call',
+      params: { name: 'audit_site', arguments: { url: origin } },
+    }, sessionId);
+    const auditContent = (auditCall.raw as { result?: { content?: Array<{ text?: string }> } }).result?.content?.[0]?.text;
+    let consistency = 'UCP consistency block not present in audit output.';
+    if (auditContent) {
+      try {
+        const audit = JSON.parse(auditContent) as {
+          consistency?: { issues?: string[] };
+          summary?: { compliant?: boolean; errors?: number; warnings?: number };
+        };
+        const issues = audit.consistency?.issues ?? [];
+        const ucpIssues = issues.filter(i => i.toLowerCase().includes('ucp'));
+        if (ucpIssues.length === 0) {
+          consistency = `agents.txt UCP set matches agents.json ucp[] set.\nNo cross-file mismatches reported.\nOverall compliance: ${audit.summary?.compliant ? 'pass' : 'fail'} (errors: ${audit.summary?.errors ?? 0}, warnings: ${audit.summary?.warnings ?? 0}).`;
+        } else {
+          consistency = `UCP consistency issues:\n${ucpIssues.map(i => '  · ' + i).join('\n')}`;
+        }
+      } catch {
+        consistency = `audit_site output (raw):\n${truncate(auditContent)}`;
+      }
+    }
+    setDone('3',
+      `tools/call audit_site  url=${origin}\nSession: ${sessionId.slice(0, 16)}…\n\n${consistency}`,
+      `${auditCall.status}`,
+    );
+
+    resultText.textContent = `Reference UCP profile discovered via agents.json, fetched, parsed (${serviceCount} service${serviceCount !== 1 ? 's' : ''}, ${capCount} capabilit${capCount !== 1 ? 'ies' : 'y'}, ${handlerCount} payment handler${handlerCount !== 1 ? 's' : ''}), and confirmed consistent across agents.txt and agents.json.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

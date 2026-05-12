@@ -92,7 +92,7 @@ import { SPEC_VERSION } from '../../config';
           <tr>
             <td><code>Payments</code></td>
             <td><code>Protocols:</code> + optional <code>Payments: required</code></td>
-            <td><code>payments.x402.chains</code> · <code>payments.mpp.methods</code> · <code>payments.pricing</code></td>
+            <td><code>payments.x402.chains</code> · <code>payments.mpp.methods</code> · <code>payments.ap2</code> · <code>payments.pricing</code></td>
           </tr>
           <tr>
             <td><code>Authorization</code></td>
@@ -108,6 +108,11 @@ import { SPEC_VERSION } from '../../config';
             <td><code>Skills</code></td>
             <td><code>Skills: &lt;url&gt;</code></td>
             <td><code>skills[].url</code></td>
+          </tr>
+          <tr>
+            <td><code>UCP</code></td>
+            <td><code>UCP: &lt;url&gt;</code></td>
+            <td><code>ucp[].url</code></td>
           </tr>
         </tbody>
       </table>
@@ -207,7 +212,7 @@ import { SPEC_VERSION } from '../../config';
                         class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                     </div>
                     <p class="text-[11px] text-[#999] leading-relaxed">
-                      No wallet address is requested here, by design: per spec §5.1 and §11.4, treasury addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. The form just collects the *capability* declarations: chains under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.chains</code>, optional <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.description</code>. Your wallet stays in your server's 402 handler.
+                      No wallet address is requested here, by design: per spec §5.1 and §12.4, treasury addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. The form just collects the *capability* declarations: chains under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.chains</code>, optional <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.description</code>. Your wallet stays in your server's 402 handler.
                     </p>
                   </div>
                 </div>
@@ -255,7 +260,48 @@ import { SPEC_VERSION } from '../../config';
                           class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                       </div>
                       <p class="text-[11px] text-[#999] leading-relaxed">
-                        No recipient address is requested here, by design: per spec §5.2 and §11.4, the recipient (Tempo wallet or Stripe Business Network profile) appears inside the <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">WWW-Authenticate: Payment</code> challenge at request time, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. Selected methods are surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.methods</code>; optional pricing as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>; optional description as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.description</code>. Your credentials stay in your server's MPP handler.
+                        No recipient address is requested here, by design: per spec §5.2 and §12.4, the recipient (Tempo wallet or Stripe Business Network profile) appears inside the <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">WWW-Authenticate: Payment</code> challenge at request time, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. Selected methods are surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.methods</code>; optional pricing as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>; optional description as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.description</code>. Your credentials stay in your server's MPP handler.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AP2 sub-toggle -->
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer select-none mb-3">
+                    <input type="checkbox" id="chk-ap2" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+                    <span class="text-xs font-semibold text-[#111]">AP2</span>
+                    <span class="font-mono text-[11px] text-[#999]">mandate layer · VDC · composes with x402 / MPP / UCP</span>
+                  </label>
+                  <div id="ap2-sub" class="hidden">
+                    <div class="pl-5 flex flex-col gap-2.5">
+                      <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                        <span class="text-xs text-[#555]">Presentations</span>
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                          <label class="flex items-center gap-1.5 cursor-pointer" for="chk-ap2-sdjwt">
+                            <input type="checkbox" id="chk-ap2-sdjwt" class="w-3.5 h-3.5 accent-[#111] shrink-0" checked />
+                            <span class="text-xs text-[#111]">sd-jwt-vc <span class="text-[#999] font-mono text-[10px]">(SD-JWT Verifiable Credential)</span></span>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                        <label class="text-xs text-[#555]" for="ap2-spec">
+                          Spec URL
+                          <span class="text-[#bbb] font-normal">opt.</span>
+                        </label>
+                        <input id="ap2-spec" type="text" placeholder="https://ap2-protocol.org/specification/v0.1"
+                          class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                      </div>
+                      <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                        <label class="text-xs text-[#555]" for="ap2-description">
+                          Description
+                          <span class="text-[#bbb] font-normal">opt.</span>
+                        </label>
+                        <input id="ap2-description" type="text" placeholder="AP2 mandates accepted alongside x402 settlement"
+                          class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                      </div>
+                      <p class="text-[11px] text-[#999] leading-relaxed">
+                        AP2 is a mandate trust layer per spec §5.3. It carries signed <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">CheckoutMandate</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">PaymentMandate</code> Verifiable Digital Credentials over an existing rail (x402, MPP, or a UCP payment handler), not a rail of its own. The fields here surface in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.ap2</code> for pre-screening; the mandate exchange itself happens during checkout per the AP2 specification.
                       </p>
                     </div>
                   </div>
@@ -314,6 +360,35 @@ import { SPEC_VERSION } from '../../config';
                 </div>
                 <p class="text-[11px] text-[#999] leading-relaxed">
                   Must support both POST and GET (MCP spec 2025-03-26+). Transport is always <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">streamable-http</code>. Description appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── UCP ────────────────────────────────────────────────────────── -->
+          <div class="px-5 py-4">
+            <label class="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" id="chk-ucp" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+              <span class="text-sm font-medium text-[#111]">UCP</span>
+              <span class="font-mono text-[11px] text-[#999]">Universal Commerce Protocol · profile discovery</span>
+            </label>
+            <div id="ucp-sub" class="hidden">
+              <div class="mt-4 pl-5 flex flex-col gap-2.5">
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="ucp-url">Profile URL</label>
+                  <input id="ucp-url" type="text" placeholder="https://example.com/.well-known/ucp"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
+                  <label class="text-xs text-[#555]" for="ucp-desc">
+                    Description
+                    <span class="text-[#bbb] font-normal">opt.</span>
+                  </label>
+                  <input id="ucp-desc" type="text" placeholder="What this UCP profile covers (e.g. B2C shopping)"
+                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+                </div>
+                <p class="text-[11px] text-[#999] leading-relaxed">
+                  UCP is an A2P protocol for commerce capabilities (checkout, cart, catalog, order, fulfillment, AP2 mandates). The well-known path <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">/.well-known/ucp</code> covers single-profile sites; this directive (spec §10) handles multi-profile sites and non-canonical paths. Description appears in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> only.
                 </p>
               </div>
             </div>
@@ -420,9 +495,11 @@ import { SPEC_VERSION } from '../../config';
     wireToggle('chk-payments', 'payments-sub')
     wireToggle('chk-x402',    'x402-sub')
     wireToggle('chk-mpp',     'mpp-sub')
+    wireToggle('chk-ap2',     'ap2-sub')
     wireToggle('chk-auth',    'auth-sub')
     wireToggle('chk-mcp',     'mcp-sub')
     wireToggle('chk-skills',  'skills-sub')
+    wireToggle('chk-ucp',     'ucp-sub')
 
     // ── Generator state ────────────────────────────────────────────────────────
     interface GenConfig {
@@ -442,6 +519,10 @@ import { SPEC_VERSION } from '../../config';
       mppPrice:         string
       mppToken:         string
       mppDescription:   string
+      ap2:              boolean
+      ap2SdJwt:         boolean
+      ap2Spec:          string
+      ap2Description:   string
       authorization:    boolean
       authProtocol:     string
       identityRequired: boolean
@@ -451,6 +532,9 @@ import { SPEC_VERSION } from '../../config';
       skills:           boolean
       skillsUrl:        string
       skillsDescription: string
+      ucp:              boolean
+      ucpUrl:           string
+      ucpDescription:   string
     }
 
     function readConfig(): GenConfig {
@@ -475,6 +559,10 @@ import { SPEC_VERSION } from '../../config';
         mppPrice:          v('mpp-price'),
         mppToken:          v('mpp-token'),
         mppDescription:    v('mpp-description'),
+        ap2:               c('chk-ap2'),
+        ap2SdJwt:          c('chk-ap2-sdjwt'),
+        ap2Spec:           v('ap2-spec'),
+        ap2Description:    v('ap2-description'),
         authorization:     c('chk-auth'),
         authProtocol:      v('auth-protocol') || 'agent-auth',
         identityRequired:  c('chk-identity'),
@@ -484,6 +572,9 @@ import { SPEC_VERSION } from '../../config';
         skills:            c('chk-skills'),
         skillsUrl:         v('skills-url'),
         skillsDescription: v('skills-desc'),
+        ucp:               c('chk-ucp'),
+        ucpUrl:            v('ucp-url'),
+        ucpDescription:    v('ucp-desc'),
       }
     }
 
@@ -500,6 +591,7 @@ import { SPEC_VERSION } from '../../config';
         const protocols: string[] = []
         if (c.x402 && (c.evmChain || c.solanaChain)) protocols.push('x402')
         if (c.mpp && (c.mppTempo || c.mppStripe)) protocols.push('mpp')
+        if (c.ap2) protocols.push('ap2')
         if (protocols.length > 0) {
           lines.push('', `Protocols: ${protocols.join(', ')}`)
         }
@@ -516,6 +608,10 @@ import { SPEC_VERSION } from '../../config';
 
       if (c.skills) {
         lines.push('', `Skills: ${c.skillsUrl || 'https://example.com/skills/my-skill/SKILL.md'}`)
+      }
+
+      if (c.ucp) {
+        lines.push('', `UCP: ${c.ucpUrl || 'https://example.com/.well-known/ucp'}`)
       }
 
       return lines.join('\n') + '\n'
@@ -560,10 +656,18 @@ import { SPEC_VERSION } from '../../config';
           }
         }
 
-        const hasProtocolBlock = 'x402' in p || 'mpp' in p
+        if (c.ap2) {
+          const ap2: Record<string, unknown> = {}
+          if (c.ap2SdJwt) ap2.presentations = ['sd-jwt-vc']
+          if (c.ap2Spec) ap2.spec = c.ap2Spec
+          if (c.ap2Description) ap2.description = c.ap2Description
+          p.ap2 = ap2
+        }
+
+        const hasProtocolBlock = 'x402' in p || 'mpp' in p || 'ap2' in p
         if (hasProtocolBlock) {
           // Pricing reads from x402 first, then mpp as fallback. Belongs at
-          // the payments level (not inside a per-protocol block) per spec §11.3.
+          // the payments level (not inside a per-protocol block) per spec §12.3.
           const priceAmount = (x402Active && c.x402Price) ? c.x402Price
             : (mppActive && c.mppPrice) ? c.mppPrice
             : ''
@@ -595,6 +699,13 @@ import { SPEC_VERSION } from '../../config';
           url: c.mcpUrl || 'https://example.com/mcp',
           type: 'streamable-http',
           ...(c.mcpDescription ? { description: c.mcpDescription } : {}),
+        }]
+      }
+
+      if (c.ucp) {
+        obj.ucp = [{
+          url: c.ucpUrl || 'https://example.com/.well-known/ucp',
+          ...(c.ucpDescription ? { description: c.ucpDescription } : {}),
         }]
       }
 

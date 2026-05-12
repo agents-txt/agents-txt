@@ -31,6 +31,7 @@ export default {
     protocols: [
       ...(hasX402 ? ['x402'] : []),
       ...(hasMpp ? ['mpp'] : []),
+      'ap2',
     ],
     ...(hasX402 && {
       x402: {
@@ -60,6 +61,17 @@ export default {
         description: MPP_DESCRIPTION,
       },
     }),
+    // AP2 (Agent Payments Protocol) mandate layer. Spec §5.3. Presence of
+    // this object is the announcement signal; the mandate exchange itself
+    // (CheckoutMandate, PaymentMandate) happens during checkout per the AP2
+    // specification and is not wired on this demo deployment. The fields
+    // surface in agents.json so an agent can pre-screen before issuing a
+    // checkout request.
+    ap2: {
+      presentations: ['sd-jwt-vc'],
+      spec: 'https://ap2-protocol.org',
+      description: 'Reference declaration of AP2 mandate support. Mandate exchange (CheckoutMandate, PaymentMandate) is not wired on this demo deployment; the field exists so an agent can pre-screen the announcement layer end to end.',
+    },
   },
 
   // Opinionated crawler policy:
@@ -98,6 +110,7 @@ export default {
             { url: 'https://agentstxt.dev/demo/payments',  title: 'Payments demo',              description: 'Announcement-then-wire walkthrough: reads agents.json, then fetches the synthetic /x402 gated route to show the payTo recipient in a real 402.' },
             { url: 'https://agentstxt.dev/demo/mpp',       title: 'MPP demo',                   description: 'Announcement-then-wire walkthrough: reads agents.json, then probes /mpp for a real 402 + WWW-Authenticate: Payment challenge composed by mppx. Tempo and/or Stripe methods activate per the credentials configured on the worker.' },
             { url: 'https://agentstxt.dev/demo/a2a',       title: 'A2A discovery demo',         description: 'A2A AgentCard discovery flow: reads the A2A: directive from agents.txt and the a2a[] block from agents.json, fetches the declared AgentCard, parses its capabilities and skills, then confirms cross-file consistency via the MCP audit_site tool.' },
+            { url: 'https://agentstxt.dev/demo/ucp',       title: 'UCP discovery demo',         description: 'UCP profile discovery flow: reads the UCP: directive from agents.txt and the ucp[] block from agents.json, fetches the declared profile, parses its services / capabilities / payment_handlers (including the AP2 mandate extension) and signing keys, then confirms cross-file consistency via the MCP audit_site tool.' },
             { url: 'https://agentstxt.dev/demo/skills',    title: 'Skills demo',                description: 'agents.json skills index → MCP get_skill → installable skill package.' },
             { url: 'https://agentstxt.dev/demo/llms',      title: 'Content declarations demo',  description: 'Renders /llms.txt and /llms-full.txt content live from this server.' },
             { url: 'https://agentstxt.dev/demo/generate',  title: 'File Generator',             description: 'Browser-only configurator that emits agents.txt + agents.json from form input.' },
@@ -137,6 +150,18 @@ export default {
     cards: {
       url: 'https://agentstxt.dev/.well-known/agent-card.json',
       description: 'Reference A2A AgentCard describing a meta-agent that explains the agents.txt spec, validates discovery files, and points clients at the live MCP tools.',
+    },
+  },
+
+  // UCP profile discovery (ucp.dev). Spec §10. The profile JSON is served as
+  // a static file from public/.well-known/ucp and demonstrates the discovery
+  // shape: declared services, transport bindings, payment handlers (including
+  // the AP2 mandate extension), and signing keys. No live UCP server runs at
+  // the declared endpoint; the profile exists as a discovery artifact.
+  ucp: {
+    profiles: {
+      url: 'https://agentstxt.dev/.well-known/ucp',
+      description: 'Reference UCP profile demonstrating the discovery shape: declared services, transport bindings, payment handlers including the AP2 mandate extension, and signing keys. No live UCP server runs at the declared endpoint; the profile exists as a discovery artifact.',
     },
   },
 }

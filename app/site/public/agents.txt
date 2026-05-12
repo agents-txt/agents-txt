@@ -2,7 +2,7 @@
 # Standard: https://agentstxt.dev
 # JSON: https://agentstxt.dev/agents.json
 
-Protocols: x402, mpp
+Protocols: x402, mpp, ap2
 
 Authorization: agent-auth
 
@@ -11,3 +11,5 @@ MCP: https://agentstxt.dev/mcp
 Skills: https://agentstxt.dev/skills/adopt-agents-txt/SKILL.md
 
 A2A: https://agentstxt.dev/.well-known/agent-card.json
+
+UCP: https://agentstxt.dev/.well-known/ucp
