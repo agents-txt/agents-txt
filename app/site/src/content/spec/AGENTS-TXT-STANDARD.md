@@ -651,6 +651,7 @@ Absence of `Identity: required` does not mean identity is optional; it means the
 | AP2 (Agent Payments Protocol) | `agents.txt` advertises AP2 mandate support via the `ap2` identifier in the `Protocols:` line (§8.3). AP2 is a trust layer carrying signed `CheckoutMandate` and `PaymentMandate` Verifiable Digital Credentials; it composes with x402, MPP, and UCP rather than replacing them. The protocol itself (mandate schemas, presentation formats, verification) is defined by the AP2 specification. |
 | UCP (Universal Commerce Protocol) | `agents.txt` provides UCP profile discovery via `UCP:` directives (§10), covering sites with multiple profiles or non-canonical paths. The well-known path `/.well-known/ucp` remains the primary discovery surface for single-profile sites. The protocol itself (service catalogue, capability negotiation, payment handlers, signing keys, AP2 mandate extension) is defined by the UCP specification. |
 | ERC-8004 (Trustless Agents Registry) | Compatible. `agents.txt` operates entirely off-chain. Sites that anchor agent identity on-chain via ERC-8004 remain compatible; this spec imposes no constraint. |
+| security.txt (RFC 9116) | Independent. `security.txt` is a human-readable vulnerability disclosure channel published at `/.well-known/security.txt`; `agents.txt` is a machine-readable capability declaration. Sites that take agent payments or authentication SHOULD publish both. |
 
 ---
 
@@ -853,6 +854,7 @@ See `CONTRIBUTING.md` in the repository. Changes to this spec require a PR with 
 
 ### Informative
 
+- **[RFC9116]** Foudil, E. and Shafranovich, Y., "A File Format to Aid in Security Vulnerability Disclosure", RFC 9116, April 2022. <https://www.rfc-editor.org/info/rfc9116>
 - **[RFC9309]** Koster, M., Illyes, G., Zeller, H., and Whittaker, L., "Robots Exclusion Protocol", RFC 9309, September 2022. <https://www.rfc-editor.org/info/rfc9309>
 - **[LLMS-TXT]** "llms.txt — A Proposal to Standardise LLM-Friendly Documentation", 2024. <https://llmstxt.org/>
 - **[X402]** Coinbase, "x402: HTTP Payment Protocol", 2025. <https://github.com/coinbase/x402>
