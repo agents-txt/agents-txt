@@ -13,8 +13,8 @@ import {
 // ---------------------------------------------------------------------------
 // Audits a live site for compliance with the agents.txt specification.
 // Scope:
-//   - `agents.txt` (§3, §5–§10): structural validation of every directive
-//   - `agents.json` (§12): JSON schema validation
+//   - `agents.txt` (§3, §6–§11): structural validation of every directive
+//   - `agents.json` (§5): JSON schema validation
 //   - §4.5 serving requirements: Content-Type, CORS, Cache-Control on both
 //   - cross-file consistency: anything declared in agents.txt must also
 //     appear in agents.json (when both are served)
@@ -124,25 +124,25 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
 
   const parsed = parseAgentsTxt(content);
 
-  // §3.1 + §5: Payments block requires a non-empty Protocols: line. (Note:
+  // §3.1 + §8: Payments block requires a non-empty Protocols: line. (Note:
   // parseAgentsTxt already drops the payments record when protocols is empty,
   // so reaching this branch with a parsed.payments means protocols is non-empty.)
-  // §5: payment protocols must parse to recognized identifiers (warn-only per §13)
+  // §8: payment protocols must parse to recognized identifiers (warn-only per §13)
   if (parsed.payments?.protocols) {
     for (const p of parsed.payments.protocols) {
       if (!isAcceptedPaymentIdentifier(p)) {
-        warnings.push(`§5: unrecognized payment protocol "${p}" (recognized: ${PAYMENT_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
+        warnings.push(`§8: unrecognized payment protocol "${p}" (recognized: ${PAYMENT_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
       }
     }
   }
-  // §6: authorization protocols
+  // §11: authorization protocols
   if (parsed.authorization?.protocols) {
     if (parsed.authorization.protocols.length === 0) {
-      errors.push('§6: "Authorization:" must list at least one protocol');
+      errors.push('§11: "Authorization:" must list at least one protocol');
     }
     for (const p of parsed.authorization.protocols) {
       if (!isAcceptedAuthIdentifier(p)) {
-        warnings.push(`§6: unrecognized authorization protocol "${p}" (recognized: ${AUTH_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
+        warnings.push(`§11: unrecognized authorization protocol "${p}" (recognized: ${AUTH_PROTOCOLS.join(', ')}; use \`x-\` prefix for experimental)`);
       }
     }
   }
@@ -150,15 +150,15 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
   for (const key of Object.keys(parsed.extensions)) {
     warnings.push(`§13: unknown directive "${key}:" (ignored). Use \`x-\` prefix for experimental identifiers; new block-level directives require a spec update.`);
   }
-  // §7: MCP URLs must be valid HTTPS
+  // §6: MCP URLs must be valid HTTPS
   for (const u of parsed.mcp) {
-    if (!isHttpsUrl(u)) errors.push(`§7: invalid MCP URL "${u}"`);
-    else if (!u.startsWith('https://')) warnings.push(`§7: MCP URL should use HTTPS: "${u}"`);
+    if (!isHttpsUrl(u)) errors.push(`§6: invalid MCP URL "${u}"`);
+    else if (!u.startsWith('https://')) warnings.push(`§6: MCP URL should use HTTPS: "${u}"`);
   }
-  // §8: Skills URLs must be valid
+  // §7: Skills URLs must be valid
   for (const u of parsed.skills) {
-    if (!isHttpsUrl(u)) errors.push(`§8: invalid Skills URL "${u}"`);
-    else if (!u.startsWith('https://')) warnings.push(`§8: Skills URL should use HTTPS: "${u}"`);
+    if (!isHttpsUrl(u)) errors.push(`§7: invalid Skills URL "${u}"`);
+    else if (!u.startsWith('https://')) warnings.push(`§7: Skills URL should use HTTPS: "${u}"`);
   }
   // §9: A2A URLs must be valid HTTPS
   for (const u of parsed.a2a) {
@@ -195,149 +195,149 @@ function auditAgentsJson(text: string, headers: ResponseHeaders, origin: string)
 
   checkServingHeaders(headers, /^application\/json\b/i, errors, warnings);
 
-  // §12.4 / §14: forbidden content (wallet addresses, anything that smells like a secret)
+  // §5.4 / §14: forbidden content (wallet addresses, anything that smells like a secret)
   const treasuryHit = text.match(TREASURY_REGEX);
   if (treasuryHit) {
-    errors.push(`§12.4 / §14: agents.json contains what looks like an EVM wallet address "${treasuryHit[0]}"; treasury addresses must only appear in 402 responses`);
+    errors.push(`§5.4 / §14: agents.json contains what looks like an EVM wallet address "${treasuryHit[0]}"; treasury addresses must only appear in 402 responses`);
   }
   if (/\b(sk_live_|sk_test_|whsec_|rk_live_)[a-zA-Z0-9]{8,}/i.test(text)) {
-    errors.push('§12.4 / §14: agents.json contains what looks like a Stripe-style secret key; secrets must never appear in discovery files');
+    errors.push('§5.4 / §14: agents.json contains what looks like a Stripe-style secret key; secrets must never appear in discovery files');
   }
 
   let parsed: Record<string, unknown> | null = null;
   try {
     parsed = JSON.parse(text) as Record<string, unknown>;
   } catch (err) {
-    return { parsed: null, parseError: String(err), errors: [...errors, '§12: agents.json is not valid JSON'], warnings };
+    return { parsed: null, parseError: String(err), errors: [...errors, '§5: agents.json is not valid JSON'], warnings };
   }
 
-  // §12.4 / §14: Solana wallet leak. Walks parsed values so CAIP-2 chain IDs
+  // §5.4 / §14: Solana wallet leak. Walks parsed values so CAIP-2 chain IDs
   // (`solana:5eyk...`) are exempt by construction — the colon prevents a
   // whole-string match against the base58 regex.
   const solanaHit = findSolanaWalletInJson(parsed);
   if (solanaHit) {
-    errors.push(`§12.4 / §14: agents.json contains what looks like a Solana wallet address "${solanaHit.value}" at ${solanaHit.path}; wallet addresses must only appear in 402 responses`);
+    errors.push(`§5.4 / §14: agents.json contains what looks like a Solana wallet address "${solanaHit.value}" at ${solanaHit.path}; wallet addresses must only appear in 402 responses`);
   }
 
-  // §12.2: required top-level fields
+  // §5.2: required top-level fields
   if (typeof parsed.version !== 'string') {
-    errors.push('§12.2: "version" (string) is required');
+    errors.push('§5.2: "version" (string) is required');
   } else if (!/^\d+\.\d+$/.test(parsed.version)) {
-    warnings.push(`§12.3: "version" "${parsed.version}" should match numeric \`<major>.<minor>\` (no pre-release suffix)`);
+    warnings.push(`§5.3: "version" "${parsed.version}" should match numeric \`<major>.<minor>\` (no pre-release suffix)`);
   }
   if (typeof parsed.standard !== 'string') {
-    errors.push('§12.2: "standard" (string) is required');
+    errors.push('§5.2: "standard" (string) is required');
   } else if (parsed.standard !== SPEC_URL) {
-    warnings.push(`§12.2: "standard" is "${parsed.standard}" (canonical value is "${SPEC_URL}")`);
+    warnings.push(`§5.2: "standard" is "${parsed.standard}" (canonical value is "${SPEC_URL}")`);
   }
   const site = parsed.site as Record<string, unknown> | undefined;
   if (!site || typeof site !== 'object') {
-    errors.push('§12.2: "site" object is required');
+    errors.push('§5.2: "site" object is required');
   } else {
-    if (typeof site.name !== 'string' || !site.name.trim()) errors.push('§12.2: "site.name" must be a non-empty string');
+    if (typeof site.name !== 'string' || !site.name.trim()) errors.push('§5.2: "site.name" must be a non-empty string');
     if (typeof site.url !== 'string' || !isHttpsUrl(site.url)) {
-      errors.push('§12.2: "site.url" must be a valid URL');
+      errors.push('§5.2: "site.url" must be a valid URL');
     } else if (new URL(site.url).origin !== origin) {
-      warnings.push(`§12.2: "site.url" origin "${new URL(site.url).origin}" does not match audited origin "${origin}"`);
+      warnings.push(`§5.2: "site.url" origin "${new URL(site.url).origin}" does not match audited origin "${origin}"`);
     }
   }
 
-  // §12.2 / §12.3: payments block shape
+  // §5.2 / §5.3: payments block shape
   const payments = parsed.payments as Record<string, unknown> | undefined;
   if (payments) {
     if ('required' in payments && typeof payments.required !== 'boolean') {
-      errors.push('§12.2: "payments.required" must be a boolean when present');
+      errors.push('§5.2: "payments.required" must be a boolean when present');
     }
     const protocolKeys = Object.keys(payments).filter(
       (k) => (PAYMENT_PROTOCOLS as readonly string[]).includes(k) || k.startsWith('x-'),
     );
     if (protocolKeys.length === 0) {
-      errors.push(`§12.2: "payments" must include at least one per-protocol object (${PAYMENT_PROTOCOLS.join(' or ')}, or an x- prefixed experimental key)`);
+      errors.push(`§5.2: "payments" must include at least one per-protocol object (${PAYMENT_PROTOCOLS.join(' or ')}, or an x- prefixed experimental key)`);
     }
     const mpp = payments.mpp as Record<string, unknown> | undefined;
     if (mpp && 'methods' in mpp) {
       const methods = mpp.methods;
       if (!Array.isArray(methods) || methods.length === 0) {
-        errors.push('§12.3: "payments.mpp.methods" must be a non-empty array when present');
+        errors.push('§5.3: "payments.mpp.methods" must be a non-empty array when present');
       } else {
         const recognised = new Set<string>(MPP_METHODS);
         for (const m of methods as unknown[]) {
           if (typeof m !== 'string' || !recognised.has(m)) {
-            warnings.push(`§12.3: unrecognised MPP method "${String(m)}" (recognised: ${MPP_METHODS.join(', ')})`);
+            warnings.push(`§5.3: unrecognised MPP method "${String(m)}" (recognised: ${MPP_METHODS.join(', ')})`);
           }
         }
       }
     }
   }
 
-  // §12.2: authorization block
+  // §5.2: authorization block
   const authorization = parsed.authorization as Record<string, unknown> | undefined;
   if (authorization) {
     if (!Array.isArray(authorization.protocols) || authorization.protocols.length === 0) {
-      errors.push('§12.2: "authorization.protocols" must be a non-empty array');
+      errors.push('§5.2: "authorization.protocols" must be a non-empty array');
     }
     if (typeof authorization.discovery !== 'string') {
-      warnings.push('§12.3: "authorization.discovery" should be set (e.g. "/.well-known/agent-configuration")');
+      warnings.push('§5.3: "authorization.discovery" should be set (e.g. "/.well-known/agent-configuration")');
     }
     if (authorization.identity !== undefined && authorization.identity !== 'required') {
-      errors.push('§12.2: "authorization.identity" must be "required" if present');
+      errors.push('§5.2: "authorization.identity" must be "required" if present');
     }
   }
 
-  // §12.2: mcp[]
+  // §5.2: mcp[]
   const mcp = parsed.mcp as Array<Record<string, unknown>> | undefined;
   if (mcp !== undefined) {
     if (!Array.isArray(mcp)) {
-      errors.push('§12.2: "mcp" must be an array');
+      errors.push('§5.2: "mcp" must be an array');
     } else {
       mcp.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§12.2: "mcp[${i}].url" must be a valid URL`);
+          errors.push(`§5.2: "mcp[${i}].url" must be a valid URL`);
         }
         if (entry?.type !== 'streamable-http') {
-          warnings.push(`§12.3: "mcp[${i}].type" is "${entry?.type ?? '(missing)'}" (always "streamable-http" for HTTP MCP endpoints)`);
+          warnings.push(`§5.3: "mcp[${i}].type" is "${entry?.type ?? '(missing)'}" (always "streamable-http" for HTTP MCP endpoints)`);
         }
       });
     }
   }
 
-  // §12.2: skills[]
+  // §5.2: skills[]
   const skills = parsed.skills as Array<Record<string, unknown>> | undefined;
   if (skills !== undefined) {
     if (!Array.isArray(skills)) {
-      errors.push('§12.2: "skills" must be an array');
+      errors.push('§5.2: "skills" must be an array');
     } else {
       skills.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§12.2: "skills[${i}].url" must be a valid URL`);
+          errors.push(`§5.2: "skills[${i}].url" must be a valid URL`);
         }
       });
     }
   }
 
-  // §12.2: a2a[]
+  // §5.2: a2a[]
   const a2a = parsed.a2a as Array<Record<string, unknown>> | undefined;
   if (a2a !== undefined) {
     if (!Array.isArray(a2a)) {
-      errors.push('§12.2: "a2a" must be an array');
+      errors.push('§5.2: "a2a" must be an array');
     } else {
       a2a.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§12.2: "a2a[${i}].url" must be a valid URL`);
+          errors.push(`§5.2: "a2a[${i}].url" must be a valid URL`);
         }
       });
     }
   }
 
-  // §12.2: ucp[]
+  // §5.2: ucp[]
   const ucp = parsed.ucp as Array<Record<string, unknown>> | undefined;
   if (ucp !== undefined) {
     if (!Array.isArray(ucp)) {
-      errors.push('§12.2: "ucp" must be an array');
+      errors.push('§5.2: "ucp" must be an array');
     } else {
       ucp.forEach((entry, i) => {
         if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
-          errors.push(`§12.2: "ucp[${i}].url" must be a valid URL`);
+          errors.push(`§5.2: "ucp[${i}].url" must be a valid URL`);
         }
       });
     }
@@ -443,7 +443,7 @@ export function registerAuditSite(server: McpServer) {
     'audit_site',
     {
       description:
-        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3-§10, the JSON schema in §12, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
+        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3, §6–§11, the JSON schema in §5, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
       inputSchema: {
         url: z.string().describe('Site origin or URL to audit (e.g. "https://example.com" or "example.com")'),
       },

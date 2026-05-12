@@ -212,7 +212,7 @@ import { SPEC_VERSION } from '../../config';
                         class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                     </div>
                     <p class="text-[11px] text-[#999] leading-relaxed">
-                      No wallet address is requested here, by design: per spec §5.1 and §12.4, treasury addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. The form just collects the *capability* declarations: chains under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.chains</code>, optional <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.description</code>. Your wallet stays in your server's 402 handler.
+                      No wallet address is requested here, by design: per spec §8.1 and §5.4, treasury addresses appear in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">402</code> responses only, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. The form just collects the *capability* declarations: chains under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.chains</code>, optional <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">pricing</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.x402.description</code>. Your wallet stays in your server's 402 handler.
                     </p>
                   </div>
                 </div>
@@ -260,7 +260,7 @@ import { SPEC_VERSION } from '../../config';
                           class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                       </div>
                       <p class="text-[11px] text-[#999] leading-relaxed">
-                        No recipient address is requested here, by design: per spec §5.2 and §12.4, the recipient (Tempo wallet or Stripe Business Network profile) appears inside the <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">WWW-Authenticate: Payment</code> challenge at request time, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. Selected methods are surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.methods</code>; optional pricing as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>; optional description as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.description</code>. Your credentials stay in your server's MPP handler.
+                        No recipient address is requested here, by design: per spec §8.2 and §5.4, the recipient (Tempo wallet or Stripe Business Network profile) appears inside the <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">WWW-Authenticate: Payment</code> challenge at request time, never in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.txt</code> or <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code>. Selected methods are surfaced as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.methods</code>; optional pricing as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.pricing</code>; optional description as <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.mpp.description</code>. Your credentials stay in your server's MPP handler.
                       </p>
                     </div>
                   </div>
@@ -301,7 +301,7 @@ import { SPEC_VERSION } from '../../config';
                           class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
                       </div>
                       <p class="text-[11px] text-[#999] leading-relaxed">
-                        AP2 is a mandate trust layer per spec §5.3. It carries signed <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">CheckoutMandate</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">PaymentMandate</code> Verifiable Digital Credentials over an existing rail (x402, MPP, or a UCP payment handler), not a rail of its own. The fields here surface in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.ap2</code> for pre-screening; the mandate exchange itself happens during checkout per the AP2 specification.
+                        AP2 is a mandate trust layer per spec §8.3. It carries signed <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">CheckoutMandate</code> and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">PaymentMandate</code> Verifiable Digital Credentials over an existing rail (x402, MPP, or a UCP payment handler), not a rail of its own. The fields here surface in <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">agents.json</code> under <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">payments.ap2</code> for pre-screening; the mandate exchange itself happens during checkout per the AP2 specification.
                       </p>
                     </div>
                   </div>
@@ -667,7 +667,7 @@ import { SPEC_VERSION } from '../../config';
         const hasProtocolBlock = 'x402' in p || 'mpp' in p || 'ap2' in p
         if (hasProtocolBlock) {
           // Pricing reads from x402 first, then mpp as fallback. Belongs at
-          // the payments level (not inside a per-protocol block) per spec §12.3.
+          // the payments level (not inside a per-protocol block) per spec §5.3.
           const priceAmount = (x402Active && c.x402Price) ? c.x402Price
             : (mppActive && c.mppPrice) ? c.mppPrice
             : ''

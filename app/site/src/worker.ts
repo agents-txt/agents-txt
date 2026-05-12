@@ -74,7 +74,7 @@ const MPP_TEST_DESCRIPTION = 'agents.txt MPP demo charge (0.01 USDC / USD).';
 // Parse a WWW-Authenticate: Payment header (RFC 7235 multi-challenge form) into
 // an array of structured challenge objects, decoding the base64 `request` blob
 // into JSON when present. The raw header value remains the canonical wire form
-// for agents per spec §5.2; this structured array is emitted alongside it in
+// for agents per spec §8.2; this structured array is emitted alongside it in
 // the JSON body for demo readability only.
 function parseMppChallenges(headerValue: string | null | undefined): Array<Record<string, unknown>> {
   if (!headerValue) return [];
@@ -281,7 +281,7 @@ export default {
             mimeType:    'application/json',
           },
           // The canonical wire form is the WWW-Authenticate: Payment header
-          // (RFC 7235 multi-challenge per spec §5.2). This body field is the
+          // (RFC 7235 multi-challenge per spec §8.2). This body field is the
           // same data parsed and decoded for human inspection; agents should
           // read the header, not the body.
           mpp: { challenges },

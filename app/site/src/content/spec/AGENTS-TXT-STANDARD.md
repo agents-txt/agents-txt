@@ -25,7 +25,7 @@ The existing layers handle access policies, page indexes, and content guidance f
 
 **Design principle:** `agents.txt` is the announcement layer. It tells an agent which protocols a site speaks. The implementation details always live in the protocol's own layer: 402 response bodies for payment protocols, `/.well-known/agent-configuration` for authorization protocols. Nothing in `agents.txt` duplicates those details.
 
-Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §12 defines the full schema.
+Its companion, `agents.json`, is the structured catalog layer: where `agents.txt` carries the minimum viable signal, `agents.json` aggregates all declared capabilities into a single machine-readable document with richer detail: pricing, chain identifiers, transport types, and capability descriptions. The relationship mirrors `llms.txt` and `llms-full.txt`: a terse plain-text signal file paired with a comprehensive structured companion. Sites SHOULD serve both; §5 defines the full schema.
 
 A live reference deployment of this specification is available at `https://agentstxt.dev`.
 
@@ -144,7 +144,7 @@ Skills: https://example.com/skills/premium/SKILL.md
 | `A2A:` | A2A | No | URL | One A2A AgentCard URL; repeat for multiple agents (§9) |
 | `UCP:` | UCP | No | URL | One UCP profile URL; repeat for multiple profiles (§10) |
 
-Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §5 and §6 respectively.
+Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §8 and §11 respectively.
 
 **Experimental identifiers.** A protocol that has not yet been formally registered in this specification MAY be advertised using the `x-` prefix (e.g. `x-mypay`, `x-myauth`). Parsers MUST accept `x-`-prefixed identifiers; validators MUST NOT warn on them. This gives new protocols a runway to be tested in the wild before being promoted to a registered identifier in a future spec version. The same convention applies to per-protocol object keys in `agents.json` (e.g. `payments["x-mypay"]`). Once an identifier is registered in the spec, the `x-` form for the same protocol is retired in favour of the registered name.
 
@@ -223,7 +223,7 @@ The mechanism by which a server sets these headers is unspecified. Two patterns 
 
 A single deployment MAY mix both patterns across different routes. §4.5 governs the headers emitted at request time, not the path that produces them.
 
-The same choice applies to every other discovery surface a deployment serves alongside `agents.txt` and `agents.json`: the AgentCard URL declared by an `A2A:` directive (§9), the agent-configuration document referenced by an `Authorization:` directive (§6), and any future block-level URL. §4.5 does not mandate headers for those paths, but a route backed by a file on disk uses the static asset pipeline, and a route produced by code uses the code that produces it. The static configuration mechanism has no effect on dynamic routes; an entry placed there for a dynamically served path is silently ignored.
+The same choice applies to every other discovery surface a deployment serves alongside `agents.txt` and `agents.json`: the AgentCard URL declared by an `A2A:` directive (§9), the agent-configuration document referenced by an `Authorization:` directive (§11), and any future block-level URL. §4.5 does not mandate headers for those paths, but a route backed by a file on disk uses the static asset pipeline, and a route produced by code uses the code that produces it. The static configuration mechanism has no effect on dynamic routes; an entry placed there for a dynamically served path is silently ignored.
 
 #### Reference deployment
 
@@ -240,11 +240,215 @@ Three of the four routes share the same `_headers` configuration because they ar
 
 ---
 
-## 5. Payment Protocols
+## 5. JSON Format (`/agents.json`)
+
+`/agents.json` is a **strongly recommended** structured companion to `/agents.txt`. It is generated from the same config and served at `<origin>/agents.json`. It is not a replacement; `agents.txt` remains the canonical plain-text format. Sites SHOULD serve both; agents that support structured formats SHOULD prefer `agents.json` for its richer detail and machine-parsability.
+
+### 5.1 Why both formats?
+
+`agents.txt` is the announcement layer: minimal, human-friendly, easy to serve anywhere. `agents.json` is the full machine-readable catalog: structured, schema-validatable, and richer per block. The relationship intentionally mirrors `llms.txt` and `llms-full.txt` (a terse signal file paired with a comprehensive structured companion), adapted here for the agent interaction layer rather than content curation. Where `llms-full.txt` expands page content for LLM inference, `agents.json` expands protocol metadata for agent decision-making: pricing, chain identifiers, discovery pointers, and capability descriptions that would be too verbose for a plain-text file.
+
+The key additions agents.json makes over agents.txt:
+- **Pricing upfront.** Agents can check affordability before making any request.
+- **Per-protocol structured detail.** Each payment protocol declares its own nested object inside `payments`, carrying the fields an agent needs to pre-screen support: `x402.chains` (CAIP-2 network identifiers), `mpp.methods` (the configured MPP method set, currently `tempo` and `stripe`). Presence of a per-protocol object IS the support signal; there is no top-level `protocols` array.
+- **Authorization discovery pointer.** The `/.well-known/agent-configuration` path, so agents don't need to know the spec.
+- **MCP transport type.** Always `streamable-http`; clarifies what the endpoint supports.
+- **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
+- **Site metadata.** Name, url, description from the site config.
+
+### 5.2 Schema
+
+```json
+{
+  "version": "1.0",
+  "standard": "https://agentstxt.dev",
+  "site": {
+    "name": "My Site",
+    "url": "https://example.com",
+    "description": "Optional site description"
+  },
+  "payments": {
+    "x402": {
+      "chains": ["eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
+      "description": "Access to premium API endpoints."
+    },
+    "mpp": {
+      "methods": ["tempo", "stripe"],
+      "description": "Premium content access."
+    },
+    "ap2": {
+      "presentations": ["sd-jwt-vc"],
+      "spec": "https://ap2-protocol.org/specification/v0.1",
+      "description": "AP2 mandates accepted alongside x402 settlement."
+    },
+    "required": false,
+    "pricing": { "amount": "0.001", "currency": "USDC" }
+  },
+  "authorization": {
+    "protocols": ["agent-auth"],
+    "identity": "required",
+    "discovery": "/.well-known/agent-configuration"
+  },
+  "mcp": [
+    {
+      "url": "https://example.com/mcp",
+      "type": "streamable-http",
+      "description": "Optional: brief description of what this MCP server exposes."
+    }
+  ],
+  "skills": [
+    {
+      "url": "https://example.com/skills/main/SKILL.md",
+      "description": "Optional: brief description of what this skill package teaches."
+    },
+    { "url": "https://example.com/skills/premium/SKILL.md" }
+  ],
+  "a2a": [
+    {
+      "url": "https://example.com/.well-known/agent-card.json",
+      "description": "Optional: brief description of this agent's capability or role."
+    }
+  ],
+  "ucp": [
+    {
+      "url": "https://example.com/.well-known/ucp",
+      "description": "Optional: brief description of this UCP profile."
+    }
+  ]
+}
+```
+
+All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
+
+### 5.3 Field notes
+
+**`version`**: the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
+
+**`payments.required`**: OPTIONAL boolean. When `true`, mirrors the `Payments: required` directive (§8.4): every interaction requires payment, no free path exists. Omit (or `false`) when payments are gated per-endpoint via 402.
+
+**`payments.pricing`**. Default price for gated resources. Agents use this to pre-screen affordability before making any request. The field uses `amount` (decimal string) and `currency` (token symbol, e.g. `"USDC"`). Wallet addresses are NOT included; they appear only in `402 Payment Required` responses.
+
+**`payments.x402.chains`**: CAIP-2 chain IDs accepted for x402 payments. Agents need this to know if they support the chain before attempting payment. Two formats are used depending on the blockchain:
+- **EVM chains** use `eip155:<chainId>`, e.g. `"eip155:8453"` for Base mainnet.
+- **Solana networks** use `solana:<genesis-hash>`; the genesis block hash is the canonical CAIP-2 reference for Solana. Known values: mainnet `"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"`, devnet `"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"`, testnet `"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z"`.
+
+**`payments.mpp.methods`**. OPTIONAL array of MPP method identifiers that the site has wired up. Currently recognised values are `"tempo"` (Tempo USDC stablecoin) and `"stripe"` (Stripe fiat cards, Link, Solana USDC via SPT). The list reflects only configured methods, so an agent without a Tempo wallet learns from this field that Stripe is available before issuing the request and receiving the `402 WWW-Authenticate: Payment` challenge. The challenge remains the authoritative source for per-method parameters (network identifiers, recipient identifiers, currency codes); this field exists solely for pre-screening.
+
+**`payments.x402.description`** and **`payments.mpp.description`**. OPTIONAL human-readable strings describing what the agent is paying for under each protocol (the product, service, or resource the site sells). Agents MAY surface this string to users when requesting payment authorisation. The same string typically appears in the corresponding `402` response too (as `accepts[].extra.description` for x402 v2, or in the MPP `WWW-Authenticate` challenge), but this field exists so an agent can pre-screen the offer before issuing the gated request. The field is plain text; SHOULD be one short sentence.
+
+**`payments.ap2`**. OPTIONAL per-protocol object signalling AP2 mandate support (§8.3). Presence of the key is the support signal; agents.txt carries the identifier in the `Protocols:` line. All fields are OPTIONAL:
+- `presentations`: array of Verifiable Digital Credential presentation formats the site accepts for AP2 mandates (e.g. `["sd-jwt-vc"]`). Defined by the AP2 specification; this field exists for pre-screening so agents that hold credentials in one format only learn compatibility before issuing the checkout.
+- `spec`: URL pointing to the AP2 specification version the site implements (e.g. `https://ap2-protocol.org/specification/v0.1`). Lets agents pin against the same revision.
+- `description`: short human-readable note about what AP2 covers on this site, symmetric with `payments.x402.description` and `payments.mpp.description`.
+The block carries no mandate content, no signing keys, and no `CheckoutSignature` material. Those are exchanged during checkout per the AP2 specification.
+
+**`ucp[].url`**. URL of a UCP profile JSON document (typically `/.well-known/ucp`). The set of entries in this array MUST match the set of `UCP:` lines in `agents.txt` (§10).
+
+**`ucp[].description`**. OPTIONAL. A brief human-readable summary of what the UCP profile covers (e.g. "B2C shopping", "B2B procurement"). This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed profile metadata (services, capabilities, payment handlers, signing keys) lives in the UCP profile itself.
+
+**`authorization.discovery`**: always `/.well-known/agent-configuration`. This is the RFC 8414-style discovery endpoint defined by the Agent Auth Protocol. It is hardcoded in the output so agents don't need to know the spec path.
+
+**`mcp[].type`**: always `streamable-http` for HTTP MCP endpoints (MCP spec 2025-03-26+). The value is hardcoded by the generator.
+
+**`mcp[].description`**: OPTIONAL. A brief human-readable summary of what the MCP server exposes (tools, resources, prompts). Agents MAY use this to pre-screen relevance before connecting. This field is `agents.json`-only; `agents.txt` carries only the URL.
+
+**`skills[].description`**: OPTIONAL. A brief human-readable summary of what the skill package teaches agents. Agents MAY use this to pre-screen whether the skill applies to their current task. This field is `agents.json`-only; `agents.txt` carries only the URL.
+
+**`a2a[].url`**: URL of an A2A AgentCard JSON document. The set of entries in this array MUST match the set of `A2A:` lines in `agents.txt` (§9).
+
+**`a2a[].description`**: OPTIONAL. A brief human-readable summary of the agent's capability or role. This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed agent metadata (skills, capabilities, extensions, transport) lives in the AgentCard itself.
+
+### 5.4 Security
+
+The same rules as `agents.txt` apply:
+- No wallet/treasury addresses; stay in `402` responses only.
+- No API keys, Stripe secret keys, JWKs, or credentials of any kind.
+- Serve without authentication. It is a public discovery artifact.
+
+---
+
+## 6. MCP (Model Context Protocol)
+
+[Model Context Protocol](https://modelcontextprotocol.io) (MCP) is an open protocol from Anthropic that enables AI agents to connect to external tools, data sources, and services via a standardized JSON-RPC interface. MCP servers expose **tools** (callable functions), **resources** (readable data), and **prompts** (templated workflows) to any compatible AI host (Claude, Cursor, ChatGPT, etc.).
+
+### 6.1 The Discovery Gap
+
+The MCP spec (2025-03-26+) defines no standard well-known path for server discovery. The MCP endpoint URL is site-specific: it could be `/mcp`, `/api/mcp`, or anything else. The MCP Registry (modelcontextprotocol.io/registry) is a manually curated directory, not something an agent can probe autonomously. Without prior configuration, an agent has no way to know a site has an MCP server.
+
+`agents.txt` fills this gap. The `MCP:` directive is the only machine-readable way for a site to advertise its MCP endpoint URL without requiring an agent to have prior knowledge.
+
+### 6.2 `MCP:` Directive
+
+One `MCP:` line per endpoint. Repeat for multiple servers:
+
+```
+MCP: https://example.com/mcp
+MCP: https://example.com/mcp-premium
+```
+
+Each URL MUST point to a Streamable HTTP MCP endpoint, one that supports both `POST` (for JSON-RPC requests) and `GET` (for SSE streams), as defined by the MCP spec. Endpoints SHOULD use HTTPS.
+
+### 6.3 Authentication
+
+Authentication for MCP endpoints is NOT declared in the `MCP:` block. Two paths:
+
+1. **Site-level agent auth**: if the `Authorization:` block is present (e.g. `Authorization: agent-auth`), agents understand authentication is required before connecting to anything on the site, including MCP endpoints.
+2. **MCP-native auth**: if the MCP endpoint has its own OAuth 2.0 protection, the server communicates this at connection time via standard HTTP auth challenges. The agent handles it through the MCP protocol. `agents.txt` is silent on this.
+
+This keeps the blocks independent: adding or removing the `Authorization:` block never requires changing the `MCP:` block, and vice versa.
+
+### 6.4 Transport
+
+The `MCP:` directive is specific to the **Streamable HTTP** transport (MCP spec 2025-03-26+). The `stdio` transport is a local subprocess model and is not relevant to HTTP-based agent discovery.
+
+Sites that also serve the deprecated SSE transport for backwards compatibility with pre-2025-03-26 clients MAY do so at an alternative path. They SHOULD still advertise only the Streamable HTTP endpoint in `agents.txt`: Streamable HTTP supersedes SSE as the interoperability baseline for this spec, and agents that support only SSE are outside its compatibility scope.
+
+---
+
+## 7. Skills (Agent Skills Protocol)
+
+[Agent Skills](https://agentskills.io) is an open standard (originally from Anthropic, now multi-vendor) for packaging reusable instructions for AI agents. A skill is a folder named after the skill (the same name appears in YAML frontmatter as the `name` field) containing a required `SKILL.md` file with `name` and `description` frontmatter plus markdown instructions, and OPTIONALLY a sibling `REFERENCE.md` and any supporting scripts or assets the skill needs. Adopted by 30+ tools including Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, and OpenCode.
+
+### 7.1 Two Kinds of Skills — Why Only One Belongs Here
+
+There are two distinct use cases for skills:
+
+1. **Repo-level developer skills**: stored in `/.claude/skills/`, `AGENTS.md`, or `CLAUDE.md`. These teach agents how to _work on the codebase_ as a developer (run tests, make a PR, follow the branching policy). They live in the repository and are not relevant to agents consuming the site's service.
+
+2. **Service-consumption skills**: published by the site operator to teach agents how to _use the site's service, API, or MCP tools_. These need discovery: an agent fetching your site for the first time has no way to know a skill package exists. `agents.txt` fills this gap.
+
+The `Skills:` directive is for type 2 only. Type 1 skills are a developer-facing artifact and should never be advertised in `agents.txt`.
+
+### 7.2 `Skills:` Directive
+
+One `Skills:` line per skill package URL. Repeat for multiple packages:
+
+```
+Skills: https://example.com/skills/main/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
+```
+
+Each URL SHOULD point directly to a `SKILL.md` file at the root of an agentskills.io-conformant skill folder. URLs SHOULD use HTTPS. Companion files (`REFERENCE.md`, scripts, assets) live in sibling positions inside the same folder and are discovered by the skill's own internal links once the agent has fetched `SKILL.md`. `agents.txt` does not enumerate them; one `Skills:` line per skill is sufficient.
+
+**The skill package URL is fully site-specific.** This specification governs only the discovery directive, not the path where skills are served or the internal layout of a skill package; those are defined by the agentskills.io standard, by individual site operators, or both. The `/skills/<skill-name>/SKILL.md` shape in the examples reflects the canonical agentskills.io layout (folder per skill, named after the skill), but the path is illustrative: sites publish skills at whatever path their content layout prefers, and `agents.txt` is the mechanism that lets agents find them without prior knowledge.
+
+### 7.3 Skills and Payment
+
+Skill URLs are ordinary HTTP endpoints. A site operator MAY gate a skill URL behind a payment (x402 or MPP). When an agent fetches a gated skill URL and receives a `402 Payment Required` response, it handles payment using the standard payment flow and retries. `agents.txt` does not need to pre-declare whether a skill requires payment; the 402 response carries that signal.
+
+This enables a natural tiering: free skills and premium skills can coexist as separate `Skills:` lines pointing to different endpoints.
+
+### 7.4 Authentication
+
+If skill URLs require authentication, the `Authorization:` block (e.g. `Authorization: agent-auth`) declares the site-level auth requirement. The `Skills:` block itself carries only URLs, with no auth signaling. This keeps the blocks fully independent.
+
+---
+
+## 8. Payment Protocols
 
 This section defines the protocol identifiers currently recognized by the `Protocols:` directive. `agents.txt` carries only the identifier; it does not replicate the protocol's configuration, wallet addresses, pricing, or cryptographic details. Each subsection describes what the identifier signals to an agent and where the agent finds the protocol's own details after reading `agents.txt`. New identifiers may be registered in future spec versions; parsers MUST warn on (not fail for) unrecognized values.
 
-### 5.1 x402 — Per-Request Crypto Micropayments
+### 8.1 x402 — Per-Request Crypto Micropayments
 
 [x402](https://x402.org) is an HTTP 402-based payment protocol. Agents pay per request using on-chain USDC signatures; the server verifies via a facilitator (no private keys required server-side).
 
@@ -258,7 +462,7 @@ Agent → GET /api/content + X-PAYMENT: <base64-proof>
 Server ← 200 + X-Payment-Response
 ```
 
-### 5.2 MPP — Session-Based Fiat + Stablecoin Payments
+### 8.2 MPP — Session-Based Fiat + Stablecoin Payments
 
 [MPP (Machine Payments Protocol)](https://mpp.dev) is an IETF draft (`draft-ryan-httpauth-payment`) that uses a challenge/credential flow over standard HTTP `WWW-Authenticate: Payment`. Supports fiat cards (Stripe) and stablecoins (Tempo/USDC). Session-based: agents authorize a budget once, then make multiple requests.
 
@@ -273,11 +477,11 @@ Agent → GET /api/content + Authorization: Payment <credential>
 Server ← 200 + Payment-Receipt: ...
 ```
 
-### 5.3 ap2 — Agent Payments Protocol (Mandate Layer)
+### 8.3 ap2 — Agent Payments Protocol (Mandate Layer)
 
 [AP2 (Agent Payments Protocol)](https://ap2-protocol.org) is an open protocol that adds a verifiable mandate layer on top of existing payment rails. AP2 does not move funds; it carries cryptographic proof of user intent (a `CheckoutMandate` bound to the cart state and a `PaymentMandate` carrying the payment authorisation, both expressed as Verifiable Digital Credentials, typically `sd-jwt-vc`). It is designed to compose with A2A, MCP, and UCP, and to sit alongside per-request rails such as x402 or MPP rather than replace them.
 
-**Discovery:** Advertised in `agents.txt` as `ap2`. The accepted mandate presentation formats and the AP2 spec version a site implements are NOT carried in `agents.txt`; they live under `payments.ap2` in `agents.json` (§12.3) and are negotiated in the checkout flow itself per the AP2 specification.
+**Discovery:** Advertised in `agents.txt` as `ap2`. The accepted mandate presentation formats and the AP2 spec version a site implements are NOT carried in `agents.txt`; they live under `payments.ap2` in `agents.json` (§5.3) and are negotiated in the checkout flow itself per the AP2 specification.
 
 **Composition:** A site that accepts AP2 mandates typically also declares the underlying rail it settles on (`x402`, `mpp`, or a UCP payment handler). AP2 is the trust layer; the rail handles fund movement. The two declarations are independent: a `Protocols:` line may list `x402, ap2` to signal "x402 rail with AP2 mandates", or `mpp, ap2` for "MPP rail with AP2 mandates".
 
@@ -292,7 +496,7 @@ Server ← verifies CheckoutMandate; PSP verifies PaymentMandate; 200 on success
 
 The full protocol, mandate schemas, and verification rules are defined by the AP2 specification.
 
-### 5.4 `Payments: required`
+### 8.4 `Payments: required`
 
 When a site emits `Payments: required` in the Payments block, it signals a site-level policy: every interaction requires payment, and no free path exists. Absent this directive, payments are presumed to be gated per-endpoint via 402 responses and free paths may exist.
 
@@ -301,139 +505,11 @@ Protocols: x402, mpp
 Payments: required
 ```
 
-This is symmetric with `Identity: required` in the Authorization block (§6.2): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
+This is symmetric with `Identity: required` in the Authorization block (§11.2): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
 
-### 5.5 Protocol Selection
+### 8.5 Protocol Selection
 
 Sites SHOULD support more than one protocol when possible. Agents SHOULD prefer MPP when available (lower per-request latency after first auth; supports fiat). x402 is the fallback for anonymous one-shot payments. AP2 is a mandate layer that composes with either rail; sites that need non-repudiable proof of user intent declare it alongside the rail they settle on.
-
----
-
-## 6. Authorization Protocols
-
-This section defines the protocol identifiers currently recognized by the `Authorization:` directive. As with payment protocols, `agents.txt` names the authorization scheme a site uses; all identity, capability, and credential details remain at the protocol's own discovery endpoint, never in `agents.txt`. New identifiers may be registered in future spec versions.
-
-### 6.1 agent-auth — Agent Auth Protocol
-
-[Agent Auth Protocol](https://agentauthprotocol.com) (v1.0-draft) establishes AI agents as first-class authenticated principals with scoped capability grants. Each agent has a persistent identity, operates under a host, and receives fine-grained grants (with optional constraints) for specific server capabilities.
-
-**Discovery:** Advertised in `agents.txt` as `agent-auth`. Implementation details (capability schemas, endpoint URLs, supported modes, approval flows) are NOT in `agents.txt`. They are served at the protocol's own well-known discovery endpoint:
-
-```
-GET /.well-known/agent-configuration
-```
-
-This endpoint follows the RFC 8414 authorization server metadata pattern and returns the issuer URL, all agent endpoint paths, supported algorithms (EdDSA/Ed25519), agent modes, and approval methods.
-
-**Two agent modes:**
-- `delegated` — agent acts on behalf of a specific user; user consent is required
-- `autonomous` — agent operates without per-request user involvement; governed by server policy
-
-**Flow summary:**
-```
-Agent → GET /.well-known/agent-configuration
-Server ← { issuer, endpoints, modes, approval_methods, capabilities }
-
-Agent → POST /agent/register          (host JWT, typ: "host+jwt")
-Server ← { agent_id, grants: [...] }  (active or pending)
-
-[if grants pending]
-Server ← { approval: { method: "device_authorization", verification_uri } }
-User   → approves at verification_uri
-
-Agent → POST /capability/execute      (agent JWT, typ: "agent+jwt", aud = capability URL)
-Server ← 200 + capability result
-```
-
-Credential and key details (JWKs, capability schemas, endpoint URLs) are NOT in `agents.txt`. They are exchanged via `/.well-known/agent-configuration` and the `/agent/register` flow, as defined by the Agent Auth Protocol specification.
-
-### 6.2 `Identity: required`
-
-When a site emits `Identity: required` in the Authorization block, it signals a site-level policy: agents MUST authenticate before any interaction, not just before capability execution. This is a stronger signal than the protocol's own capability-gating and is intended for sites where unauthenticated agent access is not acceptable under any circumstance.
-
-```
-Authorization: agent-auth
-Identity: required
-```
-
-Absence of `Identity: required` does not mean identity is optional; it means the site defers identity requirements to the protocol layer.
-
----
-
-## 7. MCP (Model Context Protocol)
-
-[Model Context Protocol](https://modelcontextprotocol.io) (MCP) is an open protocol from Anthropic that enables AI agents to connect to external tools, data sources, and services via a standardized JSON-RPC interface. MCP servers expose **tools** (callable functions), **resources** (readable data), and **prompts** (templated workflows) to any compatible AI host (Claude, Cursor, ChatGPT, etc.).
-
-### 7.1 The Discovery Gap
-
-The MCP spec (2025-03-26+) defines no standard well-known path for server discovery. The MCP endpoint URL is site-specific: it could be `/mcp`, `/api/mcp`, or anything else. The MCP Registry (modelcontextprotocol.io/registry) is a manually curated directory, not something an agent can probe autonomously. Without prior configuration, an agent has no way to know a site has an MCP server.
-
-`agents.txt` fills this gap. The `MCP:` directive is the only machine-readable way for a site to advertise its MCP endpoint URL without requiring an agent to have prior knowledge.
-
-### 7.2 `MCP:` Directive
-
-One `MCP:` line per endpoint. Repeat for multiple servers:
-
-```
-MCP: https://example.com/mcp
-MCP: https://example.com/mcp-premium
-```
-
-Each URL MUST point to a Streamable HTTP MCP endpoint, one that supports both `POST` (for JSON-RPC requests) and `GET` (for SSE streams), as defined by the MCP spec. Endpoints SHOULD use HTTPS.
-
-### 7.3 Authentication
-
-Authentication for MCP endpoints is NOT declared in the `MCP:` block. Two paths:
-
-1. **Site-level agent auth** — if the `Authorization:` block is present (e.g. `Authorization: agent-auth`), agents understand authentication is required before connecting to anything on the site, including MCP endpoints.
-2. **MCP-native auth** — if the MCP endpoint has its own OAuth 2.0 protection, the server communicates this at connection time via standard HTTP auth challenges. The agent handles it through the MCP protocol. `agents.txt` is silent on this.
-
-This keeps the blocks independent: adding or removing the `Authorization:` block never requires changing the `MCP:` block, and vice versa.
-
-### 7.4 Transport
-
-The `MCP:` directive is specific to the **Streamable HTTP** transport (MCP spec 2025-03-26+). The `stdio` transport is a local subprocess model and is not relevant to HTTP-based agent discovery.
-
-Sites that also serve the deprecated SSE transport for backwards compatibility with pre-2025-03-26 clients MAY do so at an alternative path. They SHOULD still advertise only the Streamable HTTP endpoint in `agents.txt`: Streamable HTTP supersedes SSE as the interoperability baseline for this spec, and agents that support only SSE are outside its compatibility scope.
-
----
-
-## 8. Skills (Agent Skills Protocol)
-
-[Agent Skills](https://agentskills.io) is an open standard (originally from Anthropic, now multi-vendor) for packaging reusable instructions for AI agents. A skill is a folder named after the skill (the same name appears in YAML frontmatter as the `name` field) containing a required `SKILL.md` file with `name` and `description` frontmatter plus markdown instructions, and OPTIONALLY a sibling `REFERENCE.md` and any supporting scripts or assets the skill needs. Adopted by 30+ tools including Claude Code, Cursor, GitHub Copilot, Gemini CLI, Codex, and OpenCode.
-
-### 8.1 Two Kinds of Skills — Why Only One Belongs Here
-
-There are two distinct use cases for skills:
-
-1. **Repo-level developer skills** — stored in `/.claude/skills/`, `AGENTS.md`, or `CLAUDE.md`. These teach agents how to _work on the codebase_ as a developer (run tests, make a PR, follow the branching policy). They live in the repository and are not relevant to agents consuming the site's service.
-
-2. **Service-consumption skills** — published by the site operator to teach agents how to _use the site's service, API, or MCP tools_. These need discovery: an agent fetching your site for the first time has no way to know a skill package exists. `agents.txt` fills this gap.
-
-The `Skills:` directive is for type 2 only. Type 1 skills are a developer-facing artifact and should never be advertised in `agents.txt`.
-
-### 8.2 `Skills:` Directive
-
-One `Skills:` line per skill package URL. Repeat for multiple packages:
-
-```
-Skills: https://example.com/skills/main/SKILL.md
-Skills: https://example.com/skills/premium/SKILL.md
-```
-
-Each URL SHOULD point directly to a `SKILL.md` file at the root of an agentskills.io-conformant skill folder. URLs SHOULD use HTTPS. Companion files (`REFERENCE.md`, scripts, assets) live in sibling positions inside the same folder and are discovered by the skill's own internal links once the agent has fetched `SKILL.md`. `agents.txt` does not enumerate them; one `Skills:` line per skill is sufficient.
-
-**The skill package URL is fully site-specific.** This specification governs only the discovery directive, not the path where skills are served or the internal layout of a skill package; those are defined by the agentskills.io standard, by individual site operators, or both. The `/skills/<skill-name>/SKILL.md` shape in the examples reflects the canonical agentskills.io layout (folder per skill, named after the skill), but the path is illustrative: sites publish skills at whatever path their content layout prefers, and `agents.txt` is the mechanism that lets agents find them without prior knowledge.
-
-### 8.3 Skills and Payment
-
-Skill URLs are ordinary HTTP endpoints. A site operator MAY gate a skill URL behind a payment (x402 or MPP). When an agent fetches a gated skill URL and receives a `402 Payment Required` response, it handles payment using the standard payment flow and retries. `agents.txt` does not need to pre-declare whether a skill requires payment; the 402 response carries that signal.
-
-This enables a natural tiering: free skills and premium skills can coexist as separate `Skills:` lines pointing to different endpoints.
-
-### 8.4 Authentication
-
-If skill URLs require authentication, the `Authorization:` block (e.g. `Authorization: agent-auth`) declares the site-level auth requirement. The `Skills:` block itself carries only URLs, with no auth signaling. This keeps the blocks fully independent.
 
 ---
 
@@ -505,7 +581,58 @@ The `UCP:` directive complements, rather than replaces, the canonical well-known
 
 ---
 
-## 11. Relationship to Existing Standards
+## 11. Authorization Protocols
+
+This section defines the protocol identifiers currently recognized by the `Authorization:` directive. As with payment protocols, `agents.txt` names the authorization scheme a site uses; all identity, capability, and credential details remain at the protocol's own discovery endpoint, never in `agents.txt`. New identifiers may be registered in future spec versions.
+
+### 11.1 agent-auth — Agent Auth Protocol
+
+[Agent Auth Protocol](https://agentauthprotocol.com) (v1.0-draft) establishes AI agents as first-class authenticated principals with scoped capability grants. Each agent has a persistent identity, operates under a host, and receives fine-grained grants (with optional constraints) for specific server capabilities.
+
+**Discovery:** Advertised in `agents.txt` as `agent-auth`. Implementation details (capability schemas, endpoint URLs, supported modes, approval flows) are NOT in `agents.txt`. They are served at the protocol's own well-known discovery endpoint:
+
+```
+GET /.well-known/agent-configuration
+```
+
+This endpoint follows the RFC 8414 authorization server metadata pattern and returns the issuer URL, all agent endpoint paths, supported algorithms (EdDSA/Ed25519), agent modes, and approval methods.
+
+**Two agent modes:**
+- `delegated`: agent acts on behalf of a specific user; user consent is required
+- `autonomous`: agent operates without per-request user involvement; governed by server policy
+
+**Flow summary:**
+```
+Agent → GET /.well-known/agent-configuration
+Server ← { issuer, endpoints, modes, approval_methods, capabilities }
+
+Agent → POST /agent/register          (host JWT, typ: "host+jwt")
+Server ← { agent_id, grants: [...] }  (active or pending)
+
+[if grants pending]
+Server ← { approval: { method: "device_authorization", verification_uri } }
+User   → approves at verification_uri
+
+Agent → POST /capability/execute      (agent JWT, typ: "agent+jwt", aud = capability URL)
+Server ← 200 + capability result
+```
+
+Credential and key details (JWKs, capability schemas, endpoint URLs) are NOT in `agents.txt`. They are exchanged via `/.well-known/agent-configuration` and the `/agent/register` flow, as defined by the Agent Auth Protocol specification.
+
+### 11.2 `Identity: required`
+
+When a site emits `Identity: required` in the Authorization block, it signals a site-level policy: agents MUST authenticate before any interaction, not just before capability execution. This is a stronger signal than the protocol's own capability-gating and is intended for sites where unauthenticated agent access is not acceptable under any circumstance.
+
+```
+Authorization: agent-auth
+Identity: required
+```
+
+Absence of `Identity: required` does not mean identity is optional; it means the site defers identity requirements to the protocol layer.
+
+---
+
+## 12. Relationship to Existing Standards
 
 | Standard | Relationship |
 |----------|-------------|
@@ -519,136 +646,9 @@ The `UCP:` directive complements, rather than replaces, the canonical well-known
 | Agent Skills (agentskills.io) | `agents.txt` provides discovery of service-consumption skill packages via `Skills:` directives. Repo-level developer skills (AGENTS.md, CLAUDE.md, `/.claude/skills/`) are out of scope for `agents.txt`. |
 | Cloudflare Pay-per-Crawl | Complementary. This spec is open and self-hosted; Cloudflare's service is proprietary. Both may advertise via `agents.txt` in future. |
 | A2A (Agent2Agent Protocol) | `agents.txt` provides AgentCard discovery via `A2A:` directives (§9), covering sites with multiple agents or non-canonical paths. The well-known path `/.well-known/agent-card.json` remains the primary discovery surface for single-agent sites. The protocol itself (AgentCard schema, JSON-RPC transport, extension mechanism including [x402 payments](https://github.com/google-agentic-commerce/a2a-x402)) is defined by the A2A spec. |
-| AP2 (Agent Payments Protocol) | `agents.txt` advertises AP2 mandate support via the `ap2` identifier in the `Protocols:` line (§5.3). AP2 is a trust layer carrying signed `CheckoutMandate` and `PaymentMandate` Verifiable Digital Credentials; it composes with x402, MPP, and UCP rather than replacing them. The protocol itself (mandate schemas, presentation formats, verification) is defined by the AP2 specification. |
+| AP2 (Agent Payments Protocol) | `agents.txt` advertises AP2 mandate support via the `ap2` identifier in the `Protocols:` line (§8.3). AP2 is a trust layer carrying signed `CheckoutMandate` and `PaymentMandate` Verifiable Digital Credentials; it composes with x402, MPP, and UCP rather than replacing them. The protocol itself (mandate schemas, presentation formats, verification) is defined by the AP2 specification. |
 | UCP (Universal Commerce Protocol) | `agents.txt` provides UCP profile discovery via `UCP:` directives (§10), covering sites with multiple profiles or non-canonical paths. The well-known path `/.well-known/ucp` remains the primary discovery surface for single-profile sites. The protocol itself (service catalogue, capability negotiation, payment handlers, signing keys, AP2 mandate extension) is defined by the UCP specification. |
 | ERC-8004 (Trustless Agents Registry) | Compatible. `agents.txt` operates entirely off-chain. Sites that anchor agent identity on-chain via ERC-8004 remain compatible; this spec imposes no constraint. |
-
----
-
-## 12. JSON Format (`/agents.json`)
-
-`/agents.json` is a **strongly recommended** structured companion to `/agents.txt`. It is generated from the same config and served at `<origin>/agents.json`. It is not a replacement; `agents.txt` remains the canonical plain-text format. Sites SHOULD serve both; agents that support structured formats SHOULD prefer `agents.json` for its richer detail and machine-parsability.
-
-### 12.1 Why both formats?
-
-`agents.txt` is the announcement layer: minimal, human-friendly, easy to serve anywhere. `agents.json` is the full machine-readable catalog: structured, schema-validatable, and richer per block. The relationship intentionally mirrors `llms.txt` and `llms-full.txt` (a terse signal file paired with a comprehensive structured companion), adapted here for the agent interaction layer rather than content curation. Where `llms-full.txt` expands page content for LLM inference, `agents.json` expands protocol metadata for agent decision-making: pricing, chain identifiers, discovery pointers, and capability descriptions that would be too verbose for a plain-text file.
-
-The key additions agents.json makes over agents.txt:
-- **Pricing upfront.** Agents can check affordability before making any request.
-- **Per-protocol structured detail.** Each payment protocol declares its own nested object inside `payments`, carrying the fields an agent needs to pre-screen support: `x402.chains` (CAIP-2 network identifiers), `mpp.methods` (the configured MPP method set, currently `tempo` and `stripe`). Presence of a per-protocol object IS the support signal; there is no top-level `protocols` array.
-- **Authorization discovery pointer.** The `/.well-known/agent-configuration` path, so agents don't need to know the spec.
-- **MCP transport type.** Always `streamable-http`; clarifies what the endpoint supports.
-- **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
-- **Site metadata.** Name, url, description from the site config.
-
-### 12.2 Schema
-
-```json
-{
-  "version": "1.0",
-  "standard": "https://agentstxt.dev",
-  "site": {
-    "name": "My Site",
-    "url": "https://example.com",
-    "description": "Optional site description"
-  },
-  "payments": {
-    "x402": {
-      "chains": ["eip155:8453", "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"],
-      "description": "Access to premium API endpoints."
-    },
-    "mpp": {
-      "methods": ["tempo", "stripe"],
-      "description": "Premium content access."
-    },
-    "ap2": {
-      "presentations": ["sd-jwt-vc"],
-      "spec": "https://ap2-protocol.org/specification/v0.1",
-      "description": "AP2 mandates accepted alongside x402 settlement."
-    },
-    "required": false,
-    "pricing": { "amount": "0.001", "currency": "USDC" }
-  },
-  "authorization": {
-    "protocols": ["agent-auth"],
-    "identity": "required",
-    "discovery": "/.well-known/agent-configuration"
-  },
-  "mcp": [
-    {
-      "url": "https://example.com/mcp",
-      "type": "streamable-http",
-      "description": "Optional: brief description of what this MCP server exposes."
-    }
-  ],
-  "skills": [
-    {
-      "url": "https://example.com/skills/main/SKILL.md",
-      "description": "Optional: brief description of what this skill package teaches."
-    },
-    { "url": "https://example.com/skills/premium/SKILL.md" }
-  ],
-  "a2a": [
-    {
-      "url": "https://example.com/.well-known/agent-card.json",
-      "description": "Optional: brief description of this agent's capability or role."
-    }
-  ],
-  "ucp": [
-    {
-      "url": "https://example.com/.well-known/ucp",
-      "description": "Optional: brief description of this UCP profile."
-    }
-  ]
-}
-```
-
-All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
-
-### 12.3 Field notes
-
-**`version`** — the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
-
-**`payments.required`** — OPTIONAL boolean. When `true`, mirrors the `Payments: required` directive (§5.4): every interaction requires payment, no free path exists. Omit (or `false`) when payments are gated per-endpoint via 402.
-
-**`payments.pricing`**. Default price for gated resources. Agents use this to pre-screen affordability before making any request. The field uses `amount` (decimal string) and `currency` (token symbol, e.g. `"USDC"`). Wallet addresses are NOT included; they appear only in `402 Payment Required` responses.
-
-**`payments.x402.chains`** — CAIP-2 chain IDs accepted for x402 payments. Agents need this to know if they support the chain before attempting payment. Two formats are used depending on the blockchain:
-- **EVM chains** use `eip155:<chainId>`, e.g. `"eip155:8453"` for Base mainnet.
-- **Solana networks** use `solana:<genesis-hash>`; the genesis block hash is the canonical CAIP-2 reference for Solana. Known values: mainnet `"solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"`, devnet `"solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1"`, testnet `"solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z"`.
-
-**`payments.mpp.methods`**. OPTIONAL array of MPP method identifiers that the site has wired up. Currently recognised values are `"tempo"` (Tempo USDC stablecoin) and `"stripe"` (Stripe fiat cards, Link, Solana USDC via SPT). The list reflects only configured methods, so an agent without a Tempo wallet learns from this field that Stripe is available before issuing the request and receiving the `402 WWW-Authenticate: Payment` challenge. The challenge remains the authoritative source for per-method parameters (network identifiers, recipient identifiers, currency codes); this field exists solely for pre-screening.
-
-**`payments.x402.description`** and **`payments.mpp.description`**. OPTIONAL human-readable strings describing what the agent is paying for under each protocol (the product, service, or resource the site sells). Agents MAY surface this string to users when requesting payment authorisation. The same string typically appears in the corresponding `402` response too (as `accepts[].extra.description` for x402 v2, or in the MPP `WWW-Authenticate` challenge), but this field exists so an agent can pre-screen the offer before issuing the gated request. The field is plain text; SHOULD be one short sentence.
-
-**`payments.ap2`**. OPTIONAL per-protocol object signalling AP2 mandate support (§5.3). Presence of the key is the support signal; agents.txt carries the identifier in the `Protocols:` line. All fields are OPTIONAL:
-- `presentations`: array of Verifiable Digital Credential presentation formats the site accepts for AP2 mandates (e.g. `["sd-jwt-vc"]`). Defined by the AP2 specification; this field exists for pre-screening so agents that hold credentials in one format only learn compatibility before issuing the checkout.
-- `spec`: URL pointing to the AP2 specification version the site implements (e.g. `https://ap2-protocol.org/specification/v0.1`). Lets agents pin against the same revision.
-- `description`: short human-readable note about what AP2 covers on this site, symmetric with `payments.x402.description` and `payments.mpp.description`.
-The block carries no mandate content, no signing keys, and no `CheckoutSignature` material. Those are exchanged during checkout per the AP2 specification.
-
-**`ucp[].url`**. URL of a UCP profile JSON document (typically `/.well-known/ucp`). The set of entries in this array MUST match the set of `UCP:` lines in `agents.txt` (§10).
-
-**`ucp[].description`**. OPTIONAL. A brief human-readable summary of what the UCP profile covers (e.g. "B2C shopping", "B2B procurement"). This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed profile metadata (services, capabilities, payment handlers, signing keys) lives in the UCP profile itself.
-
-**`authorization.discovery`** — always `/.well-known/agent-configuration`. This is the RFC 8414-style discovery endpoint defined by the Agent Auth Protocol. It is hardcoded in the output so agents don't need to know the spec path.
-
-**`mcp[].type`** — always `streamable-http` for HTTP MCP endpoints (MCP spec 2025-03-26+). The value is hardcoded by the generator.
-
-**`mcp[].description`** — OPTIONAL. A brief human-readable summary of what the MCP server exposes (tools, resources, prompts). Agents MAY use this to pre-screen relevance before connecting. This field is `agents.json`-only; `agents.txt` carries only the URL.
-
-**`skills[].description`** — OPTIONAL. A brief human-readable summary of what the skill package teaches agents. Agents MAY use this to pre-screen whether the skill applies to their current task. This field is `agents.json`-only; `agents.txt` carries only the URL.
-
-**`a2a[].url`** — URL of an A2A AgentCard JSON document. The set of entries in this array MUST match the set of `A2A:` lines in `agents.txt` (§9).
-
-**`a2a[].description`** — OPTIONAL. A brief human-readable summary of the agent's capability or role. This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed agent metadata (skills, capabilities, extensions, transport) lives in the AgentCard itself.
-
-### 12.4 Security
-
-The same rules as `agents.txt` apply:
-- No wallet/treasury addresses; stay in `402` responses only.
-- No API keys, Stripe secret keys, JWKs, or credentials of any kind.
-- Serve without authentication. It is a public discovery artifact.
 
 ---
 
@@ -656,7 +656,7 @@ The same rules as `agents.txt` apply:
 
 This spec follows semver. The current version is `v1.0`, the first published release.
 
-**Stability commitment:** The file format, directive names, and `agents.json` schema defined in v1.0 are stable. Breaking changes — removal of a directive, schema field rename, semantics change — require a v2.0. Additive changes (new directives, new protocol identifiers, new `agents.json` fields) are introduced in minor versions and remain backwards-compatible by design.
+**Stability commitment:** The file format, directive names, and `agents.json` schema defined in v1.0 are stable. Breaking changes (removal of a directive, schema field rename, semantics change) require a v2.0. Additive changes (new directives, new protocol identifiers, new `agents.json` fields) are introduced in minor versions and remain backwards-compatible by design.
 
 **Adding new capability blocks:** New protocol authors define a new block-opening directive and register it in a future spec version. Old parsers ignore it automatically.
 
@@ -729,6 +729,57 @@ Skills: https://example.com/skills/free/SKILL.md
 Skills: https://example.com/skills/premium/SKILL.md
 ```
 
+**A2A only (single AgentCard at the canonical path):**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+A2A: https://example.com/.well-known/agent-card.json
+```
+
+**A2A with multiple agents (non-canonical paths):**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+A2A: https://example.com/.well-known/agent-card.json
+A2A: https://example.com/agents/support/card.json
+A2A: https://example.com/agents/sales/card.json
+```
+
+**UCP only (single profile at the canonical path):**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+UCP: https://example.com/.well-known/ucp
+```
+
+**UCP with B2C and B2B profiles:**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+UCP: https://example.com/.well-known/ucp
+UCP: https://example.com/profiles/b2b.json
+```
+
+**AP2 mandates over x402 settlement:**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+Protocols: x402, ap2
+```
+
+**AP2 mandates over MPP settlement:**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+
+Protocols: mpp, ap2
+```
+
 **Full stack (payments + authorization + MCP + skills):**
 ```
 # agents.txt
@@ -745,6 +796,31 @@ MCP: https://example.com/mcp-premium
 
 Skills: https://example.com/skills/main/SKILL.md
 Skills: https://example.com/skills/premium/SKILL.md
+```
+
+**Everything (all blocks, including A2A, UCP, and AP2 mandates):**
+```
+# agents.txt
+# Standard: https://agentstxt.dev
+# JSON: https://example.com/agents.json
+
+Protocols: x402, mpp, ap2
+Payments: required
+
+Authorization: agent-auth
+Identity: required
+
+MCP: https://example.com/mcp
+MCP: https://example.com/mcp-premium
+
+Skills: https://example.com/skills/main/SKILL.md
+Skills: https://example.com/skills/premium/SKILL.md
+
+A2A: https://example.com/.well-known/agent-card.json
+A2A: https://example.com/agents/support/card.json
+
+UCP: https://example.com/.well-known/ucp
+UCP: https://example.com/profiles/b2b.json
 ```
 
 **No capabilities declared (discovery file only):**
@@ -780,5 +856,7 @@ See `CONTRIBUTING.md` in the repository. Changes to this spec require a PR with 
 - **[X402]** Coinbase, "x402: HTTP Payment Protocol", 2025. <https://github.com/coinbase/x402>
 - **[MCP]** Anthropic, "Model Context Protocol Specification", 2025. <https://modelcontextprotocol.io/>
 - **[A2A]** Google, "Agent2Agent Protocol Specification", 2025. <https://github.com/a2aproject/A2A>
+- **[AP2]** "AP2: Agent Payments Protocol", 2025. <https://ap2-protocol.org/>
+- **[UCP]** "UCP: Universal Commerce Protocol", 2025. <https://ucp.dev/>
 - **[ERC-8004]** "ERC-8004: Trustless Agents Registry", 2025. <https://eips.ethereum.org/EIPS/eip-8004>
 - **[AGENT-SKILLS]** "Agent Skills Protocol", 2025. <https://agentskills.io/>

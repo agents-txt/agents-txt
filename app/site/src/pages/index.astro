@@ -141,11 +141,11 @@ import { SPEC_VERSION } from '../config';
         <ul class="divide-y divide-[#e5e5e5] m-0 p-0 list-none">
           {[
             ['/agents.txt',                       'Plain-text capability declaration (spec §3). Site identity plus the active capability blocks.',                                                                                       '/agents.txt',                       'text/plain'],
-            ['/agents.json',                      'Structured companion to agents.txt (spec §12). Same information in JSON with richer per-block detail.',                                                                              '/agents.json',                      'application/json'],
+            ['/agents.json',                      'Structured companion to agents.txt (spec §5). Same information in JSON with richer per-block detail.',                                                                              '/agents.json',                      'application/json'],
             ['/.well-known/agent-card.json',      'A2A AgentCard for this deployment (spec §9). Describes a reference meta-agent, declared skills, and the x402 payments extension.',                                                  '/.well-known/agent-card.json',      'application/json'],
-            ['/.well-known/agent-configuration',  'Agent Auth Protocol discovery (spec §6). Served by a dynamic handler; the only well-known route on this deployment whose headers are set in code.',                                  '/.well-known/agent-configuration',  'application/json'],
-            ['/mcp',                              'Model Context Protocol endpoint (spec §7). Exposes get_spec, parse_agents_txt, validate_agents_txt, validate_agents_json, audit_site, get_skill. Streamable HTTP transport.',         '/mcp',                              'application/json · streamable-http'],
-            ['/skills/adopt-agents-txt/SKILL.md', 'Service-consumption skill package (spec §8) that walks a developer through adopting agents.txt on their own site.',                                                                  '/skills/adopt-agents-txt/SKILL.md', 'text/plain'],
+            ['/.well-known/agent-configuration',  'Agent Auth Protocol discovery (spec §11). Served by a dynamic handler; the only well-known route on this deployment whose headers are set in code.',                                  '/.well-known/agent-configuration',  'application/json'],
+            ['/mcp',                              'Model Context Protocol endpoint (spec §6). Exposes get_spec, parse_agents_txt, validate_agents_txt, validate_agents_json, audit_site, get_skill. Streamable HTTP transport.',         '/mcp',                              'application/json · streamable-http'],
+            ['/skills/adopt-agents-txt/SKILL.md', 'Service-consumption skill package (spec §7) that walks a developer through adopting agents.txt on their own site.',                                                                  '/skills/adopt-agents-txt/SKILL.md', 'text/plain'],
             ['/llms.txt',                         'Curated link inventory for LLM-friendly site browsing. Layer 3 of the stack (llmstxt.org).',                                                                                          '/llms.txt',                         'text/plain'],
             ['/llms-full.txt',                    'Expanded form of llms.txt with full markdown content inlined under each page heading.',                                                                                              '/llms-full.txt',                    'text/plain'],
           ].map(([path, description, href, contentType]) => (
@@ -180,10 +180,10 @@ import { SPEC_VERSION } from '../config';
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
-          ['Payments',      '§5',  'Protocols:',        'x402, mpp',                                       'Per-request crypto micropayments and session-based fiat / stablecoin payments. Block opens with Protocols:; site-level policy hint Payments: required is optional.'],
-          ['Authorization', '§6',  'Authorization:',    'agent-auth',                                      'Agent identity and capability grants. Discovery at /.well-known/agent-configuration. Identity: required is the optional site-level policy hint.'],
-          ['MCP',           '§7',  'MCP:',              'Streamable HTTP',                                 'Model Context Protocol server endpoint discovery. The directive is repeatable; one line per MCP server.'],
-          ['Skills',        '§8',  'Skills:',           'agentskills.io',                                  'Service-consumption skill packages. Each Skills: line points to a SKILL.md at the root of an agentskills.io-canonical folder.'],
+          ['Payments',      '§8',  'Protocols:',        'x402, mpp',                                       'Per-request crypto micropayments and session-based fiat / stablecoin payments. Block opens with Protocols:; site-level policy hint Payments: required is optional.'],
+          ['Authorization', '§11',  'Authorization:',    'agent-auth',                                      'Agent identity and capability grants. Discovery at /.well-known/agent-configuration. Identity: required is the optional site-level policy hint.'],
+          ['MCP',           '§6',  'MCP:',              'Streamable HTTP',                                 'Model Context Protocol server endpoint discovery. The directive is repeatable; one line per MCP server.'],
+          ['Skills',        '§7',  'Skills:',           'agentskills.io',                                  'Service-consumption skill packages. Each Skills: line points to a SKILL.md at the root of an agentskills.io-canonical folder.'],
           ['A2A',           '§9',  'A2A:',              'a2a-protocol.org',                                'A2A AgentCard URLs. Complements the canonical well-known path for multi-agent sites and non-canonical AgentCard locations.'],
         ].map(([name, section, directive, value, description]) => (
           <div class="border border-[#e5e5e5] px-5 py-4">

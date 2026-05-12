@@ -78,7 +78,7 @@ import { SPEC_VERSION } from '../../config';
           The demo route at <code>/x402</code> is a synthetic gated resource that exists for this page only. A real site gates the resources it actually serves, and the 402 appears on first contact with that resource. <code>agents.json</code> never publishes a "pay here" path because the protocol does not have one; gating is per-resource and the agent learns the recipient at the moment it tries the resource.
         </p>
         <p class="text-xs text-[#777] border-l-2 border-[#e5e5e5] pl-3 italic">
-          Per x402 v2, agents.txt v1.0 §5.1, and §12.4: wallet addresses are returned in the 402 response body, never in <code>agents.json</code> or any other discovery file. The demo respects this rule.
+          Per x402 v2, agents.txt v1.0 §8.1, and §5.4: wallet addresses are returned in the 402 response body, never in <code>agents.json</code> or any other discovery file. The demo respects this rule.
         </p>
 
         <h2>Protocol flow</h2>
