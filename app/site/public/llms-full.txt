@@ -11,7 +11,7 @@
 **Status:** Draft  
 **Version:** 0.5-draft  
 **Authors:** Open Agentic Web contributors  
-**Repository:** https://github.com/agentstxt/agents.txt  
+**Repository:** https://github.com/agentstxtdev/agentstxt  
 **License:** CC0 (spec), MIT (reference implementation)
 
 ---

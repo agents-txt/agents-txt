@@ -20,7 +20,7 @@ This guide covers what's specific to this repository. For overall architectural 
 ## Setup
 
 ```bash
-git clone https://github.com/agentstxt/agents.txt
+git clone https://github.com/agentstxtdev/agentstxt
 cd agents.txt/agentstxt
 
 nvm use 24

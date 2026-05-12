@@ -5,7 +5,7 @@
 [![Spec: v1.0](https://img.shields.io/badge/spec-v1.0-111?style=flat-square)](spec/AGENTS-TXT-STANDARD.md)
 [![License: CC0](https://img.shields.io/badge/license-CC0-lightgrey?style=flat-square)](spec/AGENTS-TXT-STANDARD.md)
 [![Live: agentstxt.dev](https://img.shields.io/badge/live-agentstxt.dev-7c3aed?style=flat-square)](https://agentstxt.dev)
-[![GitHub stars](https://img.shields.io/github/stars/agentstxt/agents.txt?style=flat-square&logo=github&logoColor=white&color=181717)](https://github.com/agentstxt/agents.txt)
+[![GitHub stars](https://img.shields.io/github/stars/agentstxtdev/agentstxt?style=flat-square&logo=github&logoColor=white&color=181717)](https://github.com/agentstxtdev/agentstxt)
 
 `agents.txt` is the discovery file an AI agent reads to find out what your site supports (payments, authorization, MCP servers, agent skills) without needing to know the implementation details of any particular protocol.
 
@@ -61,7 +61,7 @@ The format is plain text. Read [the spec](spec/AGENTS-TXT-STANDARD.md), copy the
 
 ### 2. Generate it
 
-The community reference generator [**herald**](https://github.com/agentstxt/agents.txt) (a sibling project, distributed via npm) emits `agents.txt`, `agents.json`, `robots.txt`, `llms.txt`, and `sitemap.xml` from a single config file. Useful if you also want the lower layers of the stack regenerated alongside, or if you're hosting on Express / Hono / Next.js and want a payment middleware wired up automatically.
+The community reference generator [**herald**](https://github.com/agentstxtdev/herald) (a sibling project, distributed via npm) emits `agents.txt`, `agents.json`, `robots.txt`, `llms.txt`, and `sitemap.xml` from a single config file. Useful if you also want the lower layers of the stack regenerated alongside, or if you're hosting on Express / Hono / Next.js and want a payment middleware wired up automatically.
 
 ```bash
 npm install -D @herald/cli
@@ -335,7 +335,7 @@ Contributions are welcome across the repo:
 
 Downstream implementations (parsers, generators, validators, middleware, CMS plugins) in any language or framework: open a PR to add yours to the implementations list in the spec.
 
-Issues, questions, and proposals: [github.com/agentstxt/agents.txt](https://github.com/agentstxt/agents.txt).
+Issues, questions, and proposals: [github.com/agentstxtdev/agentstxt](https://github.com/agentstxtdev/agentstxt).
 
 ---
 
