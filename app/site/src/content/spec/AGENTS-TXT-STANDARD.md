@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Version:** 1.0  
-**Authors:** Open Agentic Web contributors  
+**Authors:** agents.txt contributors  
 **Repository:** https://github.com/agentstxt/agents.txt  
 **License:** CC0 (spec), Apache 2.0 (reference implementation)
 

@@ -6,7 +6,7 @@ interface Env {
   MCP?:  { fetch: typeof fetch };
   AUTH?: { fetch: typeof fetch };
   // Solana wallet (Associated Token Account for USDC) used as `payTo` in the
-  // synthetic /x402 demo endpoint. Same env var name as agentify's config so a
+  // synthetic /x402 demo endpoint. Same env var name as herald's config so a
   // single value drives both the announcement (agents.json) and the wire (402).
   SOLANA_ADDRESS?: string;
   // MPP — set via `wrangler secret put` or `.dev.vars`. Each protocol path on

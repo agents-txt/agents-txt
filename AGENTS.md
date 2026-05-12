@@ -13,7 +13,7 @@ The **`agents.txt` standard** plus its **reference implementation**. Two distinc
 1. **The specification** at [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md). Formal, versioned, CC0. Defines a discovery file format that announces what an AI agent can do on a website (Payments, Authorization, MCP, Skills).
 2. **A live deployment** at [agentstxt.dev](https://agentstxt.dev) that serves the spec, hosts demos, runs an MCP server, and an agent-auth worker. Three separate Cloudflare Workers, one Astro site.
 
-Note: this repository does **not** contain the `agentify` npm toolkit. That is a sibling project (a generator + middleware that supports the spec) and lives in its own folder one level up. When working in this repo, you should not need it. If a user asks about generating files via the CLI, point them at agentify but do not import or assume it.
+Note: this repository does **not** contain the `herald` npm toolkit. That is a sibling project (a generator + middleware that supports the spec) and lives in its own folder one level up. When working in this repo, you should not need it. If a user asks about generating files via the CLI, point them at herald but do not import or assume it.
 
 ---
 
@@ -145,7 +145,7 @@ pnpm auth:deploy[:prod]
 - No npm-publishable packages. Nothing in `agentstxt/` is published.
 - No Turbo. Three independent workers; nothing to orchestrate beyond `pnpm -r`.
 - No shared TypeScript packages. Each sub-package owns its own deps.
-- No agentify code. Treat agentify as an external sibling, even though it lives one folder up.
+- No herald code. Treat herald as an external sibling, even though it lives one folder up.
 
 ---
 
@@ -162,7 +162,7 @@ These constraints exist to keep the spec credible, the reference deployment work
 ### `site/`
 
 - The site is the canonical *demonstration* of the spec. Its `public/agents.txt` and `public/agents.json` should always be valid against the latest published spec. If you change the spec, regenerate or hand-edit those files in the same PR.
-- `worker.ts` is the reference x402 v2 implementation at `/x402` and the reference MPP implementation at `/mpp`. Keep both self-contained. Do not import from `@agentify/*`. Do not move payment logic into a shared internal module.
+- `worker.ts` is the reference x402 v2 implementation at `/x402` and the reference MPP implementation at `/mpp`. Keep both self-contained. Do not import from `@herald/*`. Do not move payment logic into a shared internal module.
 - Astro pages serve user-facing content; do not put runtime logic in them. Push it into `worker.ts` or sibling workers.
 
 ### `mcp/`
@@ -200,7 +200,7 @@ Use this skill when a user is working in *their own* repository and asks how to 
 
 ## Outside the repo boundary
 
-- **`agentify`** — an npm-published toolkit (CLI + framework adapters + payment middleware) that generates and serves the discovery files defined by this spec. It lives in a sibling folder, has its own README/AGENTS/CLAUDE, and is intentionally decoupled. Do not import its code into anything in this repo. Mention it to users only when they ask about automation.
+- **`herald`** — an npm-published toolkit (CLI + framework adapters + payment middleware) that generates and serves the discovery files defined by this spec. It lives in a sibling folder, has its own README/AGENTS/CLAUDE, and is intentionally decoupled. Do not import its code into anything in this repo. Mention it to users only when they ask about automation.
 - **`mppx`**: third-party SDK for Machine Payments Protocol. Used by `site/src/worker.ts` directly via `mppx/server` for the `/mpp` route. Treat as an external dependency. Drop both `mppx` and `stripe` from `site/package.json` if MPP support is ever removed again.
 - **`@x402/*`**: Coinbase x402 v2 SDKs. **Not used by this repo.** `site/worker.ts` hand-rolls x402 v2 against the public facilitator at `https://x402.org/facilitator/settle` instead, so the reference implementation fits in one file.
 

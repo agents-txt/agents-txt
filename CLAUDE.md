@@ -6,11 +6,11 @@
 
 ## Identity of this repo
 
-This repository is the **agents.txt standard** plus its **reference deployment**. It is *not* the `agentify` toolkit. Keep the boundary clear in everything you write:
+This repository is the **agents.txt standard** plus its **reference deployment**. It is *not* the `herald` toolkit. Keep the boundary clear in everything you write:
 
 - The spec is at [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md). Treat it as canonical.
 - The reference deployment is three independent Cloudflare Workers (`site/`, `mcp/`, `auth/`) plus a marketing site (`landingpage/`).
-- agentify is a sibling project that generates files conforming to this spec. Do not import from it. Do not assume it. Mention it to users only as a *nice-to-have adoption path*, never as a dependency.
+- herald is a sibling project that generates files conforming to this spec. Do not import from it. Do not assume it. Mention it to users only as a *nice-to-have adoption path*, never as a dependency.
 
 ---
 
@@ -33,7 +33,7 @@ Do **not** use it when:
 - The user is editing files inside `agentstxt/` itself (then follow `AGENTS.md` repo rules)
 - The user wants to publish or extend the spec (that's RFC-style PR work)
 
-The skill must stay neutral on tooling. It explains the spec first, then lists the adoption paths in increasing automation, with `agentify` mentioned as one option among hand-writing and writing a custom generator.
+The skill must stay neutral on tooling. It explains the spec first, then lists the adoption paths in increasing automation, with `herald` mentioned as one option among hand-writing and writing a custom generator.
 
 - [adopt-agents-txt SKILL.md](skills/adopt-agents-txt/SKILL.md): operating instructions
 - [adopt-agents-txt REFERENCE.md](skills/adopt-agents-txt/REFERENCE.md): full spec quick-reference, validators, examples
@@ -87,9 +87,9 @@ These rules exist to keep the spec credible and the reference deployment self-co
 - **Always mirror schema changes** into `mcp/src/` validators and the `agents.json` example output in `site/public/agents.json`.
 - **Never** introduce vendor-specific assumptions (e.g. "x402 must use Coinbase facilitator" or "MPP must use Stripe"). The spec is protocol-agnostic by design.
 
-### Do not import `@agentify/*` anywhere
+### Do not import `@herald/*` anywhere
 
-`site/`, `mcp/`, `auth/` deliberately do not depend on the `agentify` npm packages. The reference site re-implements x402 v2 + MPP from scratch in `site/src/worker.ts` so a developer reading it can see the protocols at the wire level without indirection. Do not factor that out into a shared library or replace it with `@agentify/web` calls.
+`site/`, `mcp/`, `auth/` deliberately do not depend on the `herald` npm packages. The reference site re-implements x402 v2 + MPP from scratch in `site/src/worker.ts` so a developer reading it can see the protocols at the wire level without indirection. Do not factor that out into a shared library or replace it with `@herald/addon` calls.
 
 ### Do not couple the three workers
 
@@ -121,7 +121,7 @@ This includes `wrangler delete`, `wrangler kv:bulk delete`, force-pushes to a re
 
 ### …the user asks "how do I make my site readable by agents?"
 
-Trigger `/adopt-agents-txt`. The skill walks them through reading the spec, choosing an adoption path, and validating their output. Don't volunteer the agentify CLI as a default; present it as one of three adoption paths.
+Trigger `/adopt-agents-txt`. The skill walks them through reading the spec, choosing an adoption path, and validating their output. Don't volunteer the herald CLI as a default; present it as one of three adoption paths.
 
 ### …the user asks to change a directive in the spec
 
@@ -200,9 +200,9 @@ agents.txt spec §4.5 mandates headers only for `/agents.txt` and `/agents.json`
 
 The MCP `audit_site` tool lives at `mcp/src/tools/audit_site.ts` (function: `registerAuditSite`). Scope is intentionally limited to the agents.txt spec: §3-§9 directive validation, §11 schema validation, §4.5 serving headers, §11.4 / §13 secret-leak scan, and `agents.txt` vs `agents.json` cross-file consistency. A light-touch check on `robots.txt` confirms `Allow: /agents.txt` is present (the §4.3 discovery surface). RFC 9309, sitemap.xml, and llms.txt are out of scope; do not extend the tool to audit them.
 
-### …the user mentions agentify
+### …the user mentions herald
 
-Acknowledge it as a sibling project that helps adopt this spec. Mention it lives in a different folder (the user's local clone hierarchy will tell them where) and that it is not imported anywhere here. Do not run `npm install @agentify/web` or similar inside this repo. Do not assume the user is using agentify just because they're working in this repo.
+Acknowledge it as a sibling project that helps adopt this spec. Mention it lives in a different folder (the user's local clone hierarchy will tell them where) and that it is not imported anywhere here. Do not run `npm install @herald/addon` or similar inside this repo. Do not assume the user is using herald just because they're working in this repo.
 
 ### …a build fails
 
@@ -237,4 +237,4 @@ Acknowledge it as a sibling project that helps adopt this spec. Mention it lives
 | How does `/x402` serve a 402 and settle x402 v2 payments? | `site/src/worker.ts` (hand-rolled against `x402.org/facilitator/settle`) |
 | How does `/mpp` emit a `WWW-Authenticate: Payment` challenge? | `site/src/worker.ts` (`Mppx.compose(tempo, stripe)(request)` via the `mppx` SDK) |
 | Which Cloudflare bindings does each worker need? | each worker's `wrangler.json` |
-| What's the agentify CLI / middleware contract? | **Out of scope.** Go to the agentify repo. |
+| What's the herald CLI / middleware contract? | **Out of scope.** Go to the herald repo. |

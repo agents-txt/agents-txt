@@ -8,7 +8,7 @@ const hasMppStripe = !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_NETW
 const hasMpp = hasMppTempo || hasMppStripe
 
 // PoC simplification: single shared price applied to both x402 and mpp. The
-// agentify generator supports per-protocol pricing (X402Config.pricing and
+// herald generator supports per-protocol pricing (X402Config.pricing and
 // MppConfig.pricing each take their own values); this reference deployment
 // chooses one value across both rails to keep the demo readable for visitors.
 // The on-chain x402 charge and the MPP test charge both clear at this amount.
@@ -19,7 +19,7 @@ const DEMO_PRICING = {
 const X402_DESCRIPTION = 'Synthetic gated route /x402 demonstrating the x402 v2 wire shape on Solana mainnet. Demo charge only; the spec and docs remain free.'
 const MPP_DESCRIPTION  = 'Synthetic gated route /mpp demonstrating the MPP wire shape via mppx. Tempo and (when wired) Stripe SPT. Demo charge only; the spec and docs remain free.'
 
-/** @type {import('@agentify/core').AgenticConfig} */
+/** @type {import('@herald/core').AgenticConfig} */
 export default {
   site: {
     name: 'agents.txt Standard',

@@ -96,7 +96,7 @@
 - [ ] For spec PRs: RFC-style summary included (Why / Compat / Migration)
 - [ ] `pnpm build` runs cleanly across affected sub-packages
 - [ ] `pnpm auth:test` is green (only required if `auth/` changed; must not regress test count)
-- [ ] No `@agentify/*` import added to any file in this repo
+- [ ] No `@herald/*` import added to any file in this repo
 - [ ] No coupling introduced between `site/`, `mcp/`, `auth/` (they stay independent)
 - [ ] If spec changed: validators in `mcp/src/` and `site/public/agents.json` updated to match
 - [ ] No `console.log` debugging left behind

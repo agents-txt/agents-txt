@@ -361,7 +361,7 @@ async function run() {
           ``,
           `agents.json does not advertise an MPP block on this deployment.`,
           `Set TREASURY_TEMPO or STRIPE_SECRET_KEY + STRIPE_NETWORK_ID in`,
-          `.dev.vars (or environment), then run \`agentify generate --agents\``,
+          `.dev.vars (or environment), then run \`herald generate --agents\``,
           `to regenerate the announcement. The wire step still runs below.`,
         ].join('\n');
 
@@ -449,7 +449,7 @@ async function run() {
           ``,
           `Set TREASURY_TEMPO (Tempo) and/or STRIPE_SECRET_KEY + STRIPE_NETWORK_ID (Stripe)`,
           `in .dev.vars and restart dev. The agents.json mpp block reads the same env vars`,
-          `via agentify, so announcement and wire activate together.`,
+          `via herald, so announcement and wire activate together.`,
         ].join('\n'),
         '503 inactive',
       );

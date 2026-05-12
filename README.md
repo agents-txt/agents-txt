@@ -61,14 +61,15 @@ The format is plain text. Read [the spec](spec/AGENTS-TXT-STANDARD.md), copy the
 
 ### 2. Generate it
 
-The community reference generator [**agentify**](https://github.com/agentstxt/agents.txt) (a sibling project, distributed via npm) emits `agents.txt`, `agents.json`, `robots.txt`, `llms.txt`, and `sitemap.xml` from a single config file. Useful if you also want the lower layers of the stack regenerated alongside, or if you're hosting on Express / Hono / Next.js and want a payment middleware wired up automatically.
+The community reference generator [**herald**](https://github.com/agentstxt/agents.txt) (a sibling project, distributed via npm) emits `agents.txt`, `agents.json`, `robots.txt`, `llms.txt`, and `sitemap.xml` from a single config file. Useful if you also want the lower layers of the stack regenerated alongside, or if you're hosting on Express / Hono / Next.js and want a payment middleware wired up automatically.
 
 ```bash
-npx agentify init
-npx agentify generate --out ./public
+npm install -D @herald/cli
+herald init
+herald generate --out ./public
 ```
 
-agentify is **a nice-to-have, not a requirement**. The spec is implementation-agnostic; anyone can write a generator in any language. agentify exists because we needed a first-party adoption path; it shouldn't dictate yours.
+herald is **a nice-to-have, not a requirement**. The spec is implementation-agnostic; anyone can write a generator in any language. herald exists because we needed a first-party adoption path; it shouldn't dictate yours.
 
 ### 3. Look at the reference site
 

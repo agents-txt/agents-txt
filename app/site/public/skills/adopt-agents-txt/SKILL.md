@@ -71,22 +71,22 @@ Companion `/agents.json` is recommended for any site that declares more than `Si
 
 ### Path 2: Use a generator
 
-If the user already maintains a build pipeline and wants their `agents.txt` to stay in sync with config (or they want to regenerate `robots.txt` / `llms.txt` / `sitemap.xml` alongside it), recommend the **`agentify`** CLI. It is a sibling project (open-source, Apache 2.0, on npm) that emits all four discovery files from a single config object.
+If the user already maintains a build pipeline and wants their `agents.txt` to stay in sync with config (or they want to regenerate `robots.txt` / `llms.txt` / `sitemap.xml` alongside it), recommend the **`herald`** CLI. It is a sibling project (open-source, Apache 2.0, on npm) that emits all four discovery files from a single config object.
 
 ```bash
-npx agentify init
-npx agentify generate --out ./public
+herald init
+herald generate --out ./public
 ```
 
-Mention agentify as **one option among many**. It is *nice-to-have*, not required. The user is free to use any other generator (or write their own) - the spec is implementation-agnostic.
+Mention herald as **one option among many**. It is *nice-to-have*, not required. The user is free to use any other generator (or write their own) - the spec is implementation-agnostic.
 
-agentify lives in a different repository and is documented separately. Do not attempt to install or import its code into this skill's flow; defer the setup steps to its own README/skill.
+herald lives in a different repository and is documented separately. Do not attempt to install or import its code into this skill's flow; defer the setup steps to its own README/skill.
 
 ### Path 3: Serve dynamically from a server framework
 
 If the user runs a server (Express, Hono, Next.js App Router, etc.) and wants the file generated per request based on runtime state, two sub-options:
 
-1. **`@agentify/web`**: the agentify project also ships framework adapters (`createAgenticRouter`, route handlers for App Router) that serve all four files from one config. Same caveat as Path 2: mention it as one option, not the only one.
+1. **`@herald/addon`**: the herald project also ships framework adapters (`createAgenticRouter`, route handlers for App Router) that serve all four files from one config. Same caveat as Path 2: mention it as one option, not the only one.
 2. **Hand-roll a route handler.** A minimal Express handler:
 
    ```ts
@@ -121,9 +121,9 @@ Most static-asset pipelines do **not** set these by default. Help the user wire 
 | **Apache** | `Header set` in `.htaccess` or vhost config. |
 | **Caddy** | `header` directive in their Caddyfile. |
 | **AWS S3 + CloudFront** | Response Headers Policy on the distribution (or Lambda@Edge for finer control). |
-| **Express / Hono / Next.js handlers** | Set the headers in the route handler that serves the file. The `@agentify/web` middleware already does this if the user adopted via Path 2. |
+| **Express / Hono / Next.js handlers** | Set the headers in the route handler that serves the file. The `@herald/addon` middleware already does this if the user adopted via Path 2. |
 
-If the user is on Cloudflare, Netlify, or Vercel **and** they used `agentify` (Path 2), they can run `npx agentify generate --headers` and the CLI emits the right config based on its hosting-platform probe (or pass `--platform <name>` to override). For other hosts or hand-written sites, this step is manual.
+If the user is on Cloudflare, Netlify, or Vercel **and** they used `herald` (Path 2), they can run `herald generate --headers` and the CLI emits the right config based on its hosting-platform probe (or pass `--platform <name>` to override). For other hosts or hand-written sites, this step is manual.
 
 After the headers are wired, point the user at `audit_site` (Validate the result, below) to confirm.
 
@@ -183,7 +183,7 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 ## When you should hand off
 
 - **Spec questions** ("can I add a custom directive?", "what does `Authorization: agent-auth` actually mean for me?") → point them at [`spec/AGENTS-TXT-STANDARD.md`](https://agentstxt.dev/spec) and offer to read the relevant section out loud.
-- **agentify CLI deep dives** ("how do I configure the firecrawl driver?") → tell them agentify has its own setup skill and documentation in a separate repository; do not duplicate that work here.
+- **herald CLI deep dives** ("how do I configure the firecrawl driver?") → tell them herald has its own setup skill and documentation in a separate repository; do not duplicate that work here.
 - **Cloudflare / hosting setup** → out of scope; this skill assumes they have a working deploy pipeline.
 
 ---

@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "protocolVersion": "0.2",
   "provider": {
-    "organization": "Open Agentic Web contributors",
+    "organization": "agents.txt contributors",
     "url": "https://agentstxt.dev"
   },
   "documentationUrl": "https://agentstxt.dev/spec",
