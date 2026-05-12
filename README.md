@@ -157,7 +157,7 @@ agentstxt/
 │   │   ├── worker.ts            (BFF + /x402 demo route, hand-rolled x402 v2 on Solana)
 │   │   └── ...
 │   ├── public/                  (agents.txt, agents.json, llms.txt, llms-full.txt — generated artifacts)
-│   ├── agentic.config.js
+│   ├── agentsjson.config.js
 │   └── wrangler.json
 │
 ├── mcp/                         — mcp.agentstxt.dev — Cloudflare Worker

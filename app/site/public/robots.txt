@@ -12,7 +12,7 @@ User-agent: Twitterbot
 User-agent: facebot
 Allow: /
 
-# Free AI training scrapers — blocked (use x402 for paid access)
+# Free AI training scrapers
 User-agent: GPTBot
 User-agent: OAI-SearchBot
 User-agent: ChatGPT-User
@@ -33,11 +33,7 @@ User-agent: FacebookBot
 User-agent: Amazonbot
 Disallow: /
 
-# Paid agentic agents — access gated by x402 payment protocol
-User-agent: AgentstxtBot
-Allow: /
-
-# Default: allow everything (specific bots above override this)
+# Default
 User-agent: *
 Allow: /llms.txt
 Allow: /agents.txt

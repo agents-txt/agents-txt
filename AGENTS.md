@@ -40,7 +40,7 @@ agentstxt/
 │   │                             plus `_headers` (Cloudflare config that satisfies
 │   │                             spec §4.5: Content-Type charset, CORS, Cache-Control
 │   │                             on /agents.txt and /agents.json)
-│   ├── agentic.config.js       — config consumed by external generators
+│   ├── agentsjson.config.js       — config consumed by external generators
 │   ├── astro.config.mjs
 │   └── wrangler.json
 │
