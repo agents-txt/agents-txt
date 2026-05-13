@@ -13,7 +13,7 @@
     "production": {
       "name": "agents-txt-auth-production",
       "kv_namespaces": [
-        { "binding": "AUTH_KV", "id": "REPLACE_WITH_PRODUCTION_KV_ID" }
+        { "binding": "AUTH_KV", "id": "da5bf2d4aabc416e9c66c69be9bf94e5" }
       ],
       "routes": [{ "pattern": "auth.agentstxt.dev", "custom_domain": true }]
     }
