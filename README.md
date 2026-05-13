@@ -15,7 +15,7 @@
 
 </div>
 
-`agents.txt` is the discovery file an AI agent reads to find out what your site supports (payments, authorization, MCP servers, agent skills) without needing to know the implementation details of any particular protocol.
+`agents.txt` is a **lightweight, machine-readable capability declaration layer for websites in the agentic web**: a protocol-agnostic discovery file that publicly announces what agent-interaction capabilities a site supports, without embedding the implementation details of any specific protocol.
 
 It fills **Layer 4** of the agent-readiness stack:
 
