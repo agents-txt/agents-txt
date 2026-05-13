@@ -30,6 +30,23 @@ const specMeta: SpecMetaItem[] = [];
   }
 }
 const stripScheme = (url: string) => url.replace(/^https?:\/\//, '');
+
+// Parse [text](url) markdown links out of a metadata value. Returns a list of
+// {text, href?} parts; plain text parts have no href.
+type InlinePart = { text: string; href?: string };
+const parseInline = (value: string): InlinePart[] => {
+  const parts: InlinePart[] = [];
+  const re = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value)) !== null) {
+    if (m.index > last) parts.push({ text: value.slice(last, m.index) });
+    parts.push({ text: m[1], href: m[2] });
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) parts.push({ text: value.slice(last) });
+  return parts.length ? parts : [{ text: value }];
+};
 ---
 
 <BaseLayout
@@ -157,16 +174,24 @@ const stripScheme = (url: string) => url.replace(/^https?:\/\//, '');
                 ) : item.label === 'Version' ? (
                   <dd class="font-mono text-[#111]">{item.value}</dd>
                 ) : item.label === 'Repository' ? (
-                  <dd>
-                    <a
-                      href={item.value}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="font-mono text-[#111] underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all"
-                    >
-                      {stripScheme(item.value)}
-                    </a>
-                  </dd>
+                  (() => {
+                    const parts = parseInline(item.value);
+                    const linked = parts.find((p) => p.href);
+                    const href = linked?.href ?? item.value;
+                    const text = linked ? linked.text : stripScheme(item.value);
+                    return (
+                      <dd>
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="font-mono text-[#111] underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all"
+                        >
+                          {text}
+                        </a>
+                      </dd>
+                    );
+                  })()
                 ) : item.label === 'Contact' && item.value.includes('@') && !item.value.startsWith('http') ? (
                   <dd>
                     <a
@@ -179,7 +204,22 @@ const stripScheme = (url: string) => url.replace(/^https?:\/\//, '');
                 ) : item.label === 'Published' ? (
                   <dd class="font-mono text-[#111]">{item.value}</dd>
                 ) : (
-                  <dd class="text-[#111]">{item.value}</dd>
+                  <dd class="text-[#111]">
+                    {parseInline(item.value).map((part) => (
+                      part.href ? (
+                        <a
+                          href={part.href}
+                          target={part.href.startsWith('http') ? '_blank' : undefined}
+                          rel={part.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          class="underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all"
+                        >
+                          {part.text}
+                        </a>
+                      ) : (
+                        <span>{part.text}</span>
+                      )
+                    ))}
+                  </dd>
                 )}
               </>
             ))}
