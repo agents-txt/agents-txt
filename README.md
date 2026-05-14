@@ -15,7 +15,7 @@
 
 </div>
 
-`agents.txt` is a **lightweight, machine-readable capability declaration layer for websites in the agentic web**: a protocol-agnostic discovery file that publicly announces what agent-interaction capabilities a site supports, without embedding the implementation details of any specific protocol.
+Two files at the site root: `/agents.txt` (plain text, one directive per line) and `/agents.json` (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, A2A AgentCards. No crawling. No protocol probing. No SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
 
 It fills **Layer 4** of the agent-readiness stack:
 
@@ -26,14 +26,15 @@ Layer 3 — CONTENT BRIEFING    /llms.txt     (llmstxt.org)      "Here's what's 
 Layer 4 — AGENT CAPABILITIES  /agents.txt   (this spec)        "Here's what you can do here"
 ```
 
-Where the existing layers handle access policies, indexes, and content guidance, `agents.txt` declares **what an agent can do**: pay, authenticate, connect to an MCP server, fetch installable skills. The implementation always lives in the protocol's own layer (`402` response bodies, `/.well-known/agent-configuration`, MCP transport, etc.); `agents.txt` is the announcement, never the duplicate.
+Layers 1 through 3 govern access, inventory, and content. None of them say *what an agent can do once it's there*. `agents.txt` is the answer: pay, authenticate, talk to an MCP server, fetch installable skills. The how always lives in the protocol's own layer (`402` response bodies, `/.well-known/agent-configuration`, MCP transport). `agents.txt` is the announcement, never the duplicate.
 
 This repository contains:
 
-- **The spec**: [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md) (CC0)
-- **A live reference deployment** at [agentstxt.dev](https://agentstxt.dev): Astro site + Cloudflare Worker
-- **An MCP server** at [mcp.agentstxt.dev](https://mcp.agentstxt.dev): exposes the spec to agents via Model Context Protocol
+- **The spec**: [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md), CC0
+- **A live reference deployment** at [agentstxt.dev](https://agentstxt.dev): Astro site + Cloudflare Workers with demos
+- **An MCP server** at [mcp.agentstxt.dev](https://mcp.agentstxt.dev): exposes the spec to agents via Model Context Protocol; the `audit_site` tool lets any agent compliance-check any URL
 - **An agent-auth Cloudflare Worker**: Ed25519 JWT verification, `/.well-known/agent-configuration`, capability execution
+- **A live audit surface** at [agentstxt.dev/audit](https://agentstxt.dev/audit): paste any URL, get HTML / JSON / Markdown depending on the `Accept` header
 
 ---
 
@@ -41,21 +42,65 @@ This repository contains:
 
 ```
 # agents.txt
-# Spec: https://agentstxt.dev
+# Standard: https://agentstxt.dev
+# JSON: https://mysite.com/agents.json
 
-Site-Name: My Site
-Site-URL: https://mysite.com
+Protocols: x402, mpp, ap2
 
-Protocols: x402, mpp
-Authorization: agent-auth
+Authorization: agent-auth, oauth2
+
 MCP: https://mysite.com/mcp
+
 Skills: https://mysite.com/skills/main/SKILL.md
+
 A2A: https://mysite.com/.well-known/agent-card.json
+
+UCP: https://mysite.com/.well-known/ucp
 ```
 
-That's it. Seven directives, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; the protocol-specific details (pricing, scopes, transport, skill manifests, AgentCard fields) live in the protocol's own discovery surface.
+That's it. Six directive types, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; per-protocol details (pricing, scopes, transport, skill manifests, AgentCard fields) live in that protocol's own discovery surface, never duplicated here.
 
 The structured companion **`agents.json`** carries the same information in machine-friendly JSON with richer per-block detail (chain identifiers, default pricing, capability descriptions). Sites SHOULD serve both, same relationship as `llms.txt` and `llms-full.txt`.
+
+---
+
+## Your site, your discovery shape
+
+Once `/agents.txt` and `/agents.json` are live, the standard composes. Publish any extra discovery file your site needs and reference it from `agents.json`. Parsers ignore fields they do not recognise by design, so new fields layer on without breaking old ones.
+
+`/agents.json` on your site declares whatever surfaces matter to you:
+
+```json
+{
+  "version":   "1.0",
+  "mcp":       [...],
+  "skills":    [...],
+  "changelog": "https://yoursite.com/changelog.json",
+  "docs":      "https://docs.yoursite.com"
+}
+```
+
+This example shows two patterns at once. **`docs`** is a *subdomain* reference: an agent that wants documentation knows to fetch a different host. **`changelog`** is a *nested* reference: the URL resolves to a JSON index that itself points at per-version detail files, each one its own resource at its own URL. Here is what the index looks like:
+
+```json
+{
+  "version": "1.0",
+  "releases": [
+    {
+      "version": "2.4.0",
+      "date":    "2026-05-12",
+      "notes":   "https://yoursite.com/changelog/2.4.0.md"
+    },
+    {
+      "version": "2.3.0",
+      "date":    "2026-04-28",
+      "notes":   "https://yoursite.com/changelog/2.3.0.md"
+    }
+  ]
+}
+```
+
+An agent that found `/agents.json` first now knows your docs live on a sibling subdomain and your changelog has a structured index with per-version markdown. No scraping, no probing, no SDK. The same pattern works for `/openapi.json` (OpenAPI spec), `/.well-known/*` files for emerging standards, the `x-` prefix for experimental identifiers, and any custom JSON your site needs to advertise. The shape stays yours.
 
 ---
 
@@ -74,14 +119,18 @@ The community reference generator [**herald**](https://github.com/agentstxtdev/h
 ```bash
 npm install -D @herald/cli
 herald init
-herald generate --out ./public
+herald emit --out ./public
 ```
 
 herald is **a nice-to-have, not a requirement**. The spec is implementation-agnostic; anyone can write a generator in any language. herald exists because we needed a first-party adoption path; it shouldn't dictate yours.
 
 ### 3. Look at the reference site
 
-The live deployment at [agentstxt.dev](https://agentstxt.dev) is a working agentic site. Source: [`site/`](site/). It hand-rolls a synthetic gated route at `/x402` inside [`site/src/worker.ts`](site/src/worker.ts) so you can read a real, dependency-free implementation of an x402 v2 402 response on Solana. Use it as a reference when building your own server.
+The live deployment at [agentstxt.dev](https://agentstxt.dev) is a working agentic site, and the single source of truth for everything it advertises is one config file: [`app/site/agentsjson.config.js`](app/site/agentsjson.config.js). Read it to see how the composability pattern in [*Your site, your discovery shape*](#your-site-your-discovery-shape) plays out for real: every directive in the live `/agents.txt`, every block in the live `/agents.json`, and every ecosystem discovery surface (`/.well-known/api-catalog`, `/openapi.json`, the MCP server card, the agent-skills index) maps back to a single declaration.
+
+For end-to-end adopter setups in real frameworks, the herald repo ships runnable examples: [`examples/express`](https://github.com/agentstxtdev/herald/tree/main/examples/express) and [`examples/nextjs`](https://github.com/agentstxtdev/herald/tree/main/examples/nextjs). Each shows the same config-driven pattern wired into a host framework's build pipeline.
+
+Optionally, if you want the simplicity of a generator handling all of this for you — emitting the discovery files from one config and keeping them in sync on every build — `herald emit` (path 2 above) is what the reference deployment uses. You can also hand-roll your own generator or hand-write the files; the spec is implementation-agnostic.
 
 ---
 
@@ -102,119 +151,149 @@ Blocks are separated by blank lines. Unknown keys are ignored by parsers (forwar
 
 ---
 
-## Adding a new protocol
-
-The spec is **deliberately small** and protocol-agnostic. New protocols can be advertised in three ways, in increasing levels of formalization.
-
-### 1. Use the `x-` prefix (experimental, no spec change)
-
-A protocol that has not been registered in this spec yet can be advertised using the `x-` prefix (`x-mypay`, `x-myauth`) per §3.1. Parsers MUST accept it; validators MUST NOT warn. The same convention extends to `agents.json` per-protocol object keys (`payments["x-mypay"]`). This is the runway for a protocol to be tested in the wild before promotion.
-
-```
-# agents.txt
-Protocols: x402, x-mypay
-```
-
-```json
-// agents.json
-{ "payments": { "x402": { "chains": ["eip155:8453"] }, "x-mypay": {} } }
-```
-
-Site authors decide their own runtime semantics for an experimental protocol (response shape, headers, settlement). No coordination with this spec is required. Once the protocol stabilizes and there is demand, the identifier may be promoted to a registered name in a future spec version, retiring the `x-` form.
-
-### 2. Register an identifier in an existing block (PR against §8 or §11)
-
-When a payment protocol or authorization protocol has a stable specification of its own and ecosystem demand, it can be registered by adding a subsection to §8 (Payment Protocols) or §11 (Authorization Protocols). The bar is editorial:
-
-- Open a PR against [`spec/AGENTS-TXT-STANDARD.md`](spec/AGENTS-TXT-STANDARD.md).
-- Add a subsection describing what the identifier signals to an agent and where the protocol's own details live (well-known path, response challenge, SDK).
-- Bump the `Version:` line because semantics change.
-- Mirror the addition in the reference deployment: append the identifier to [`mcp/src/protocols.ts`](mcp/src/protocols.ts) so the MCP validators and `audit_site` tool accept it without warnings.
-- If the protocol has structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §5.2 and §5.3.
-
-Discussion happens in the PR. Two reviewer approvals are required for structural spec changes.
-
-### 3. Add a new capability block (RFC against the spec)
-
-When a protocol does not fit any existing block (the way A2A did not fit under Payments, Authorization, MCP, or Skills), it gets its own block and a new directive name. This is a structural change and requires RFC-style discussion in the PR.
-
-The **A2A block (§9), added in v1.0**, is the most recent worked example. The shape it takes:
-
-1. **Spec section** in `AGENTS-TXT-STANDARD.md`. New section that defines the directive (`A2A:`), the wire format (one HTTPS URL per line, repeatable), the discovery gap it fills (multi-agent sites, non-canonical AgentCard paths), and the relationship to existing blocks (independent: `A2A:` and `Authorization:` do not constrain each other).
-2. **Directive table entry** in §3.1.
-3. **Companion entry in `agents.json` schema** (§5.2). For A2A: an `a2a: [ { url, description? } ]` array, symmetric with `mcp[]` and `skills[]`. The description field is `agents.json`-only; `agents.txt` carries only the URL because the announcement layer stays terse.
-4. **Reference deployment update**:
-   - [`mcp/src/protocols.ts`](mcp/src/protocols.ts) registers the directive in `BLOCK_OPENERS` so parsers and audit tools treat it as a known block opener (not as an unknown directive surfaced under `extensions`).
-   - [`mcp/src/tools/parse_agents_txt.ts`](mcp/src/tools/parse_agents_txt.ts) collects the values into the structured output.
-   - [`mcp/src/tools/validate_agents.ts`](mcp/src/tools/validate_agents.ts) and [`audit_site.ts`](mcp/src/tools/audit_site.ts) validate URL shape, HTTPS, and the cross-file consistency rule that the URL set in `agents.txt` equals the URL set in `agents.json`.
-5. **Reference site update**: if the reference deployment itself adopts the new block, the corresponding `agents.txt` and `agents.json` artifacts in [`site/public/`](site/public/) are regenerated.
-
-The spec is forward-compatible by design: parsers ignore unknown directives, so an `A2A:` line written before a parser knew about it is silently dropped, not rejected. New blocks therefore never break existing sites or existing agents.
-
----
-
 ## Repository layout
 
 ```
 agentstxt/
-├── spec/
-│   └── AGENTS-TXT-STANDARD.md   — the formal specification (CC0)
+├── README.md                        — this file
+├── AGENTS.md                        — repo orientation for AI agents working on this codebase
+├── CLAUDE.md                        — Claude-specific operating instructions
+├── CONTRIBUTING.md                  — contribution rules + PR checklist
+├── LICENSE                          — Apache 2.0 (reference code)
+├── LICENSE-CC0                      — CC0 (spec text)
+├── package.json                     — private monorepo root, orchestrates per-package scripts
+├── pnpm-workspace.yaml              — workspace: app/site, app/mcp, app/auth
+├── pnpm-lock.yaml
 │
-├── site/                        — agentstxt.dev, Astro + Cloudflare Worker
-│   ├── src/
-│   │   ├── pages/               (homepage, /demo/*, /spec/*)
-│   │   ├── worker.ts            (BFF + /x402 demo route, hand-rolled x402 v2 on Solana)
-│   │   └── ...
-│   ├── public/                  (agents.txt, agents.json, llms.txt, llms-full.txt: generated artifacts)
-│   ├── agentsjson.config.js
-│   └── wrangler.json
+├── assets/                          — logos, OG images, brand marks
 │
-├── mcp/                         — mcp.agentstxt.dev, Cloudflare Worker
-│   └── src/                     (MCP server: get_spec, parse_agents_txt, validate_*, get_skill, check_site)
+├── app/
+│   ├── site/                        — agentstxt.dev (Astro 6 + Cloudflare Worker)
+│   │   ├── agentsjson.config.js     — source of truth for /agents.txt, /agents.json, ecosystem files
+│   │   ├── astro.config.mjs
+│   │   ├── wrangler.json
+│   │   ├── src/
+│   │   │   ├── pages/               — / · /audit · /spec · /demo/*
+│   │   │   ├── layouts/             — BaseLayout
+│   │   │   ├── components/
+│   │   │   ├── content/             — spec/AGENTS-TXT-STANDARD.md (canonical spec)
+│   │   │   ├── content.config.ts
+│   │   │   ├── config.ts            — SPEC_VERSION constant
+│   │   │   ├── styles/              — global.css + Tailwind 4
+│   │   │   └── worker.ts            — BFF: /x402, /mpp, /audit, service-binding proxy
+│   │   └── public/
+│   │       ├── agents.txt           — spec §3 (generated)
+│   │       ├── agents.json          — spec §5 (generated)
+│   │       ├── openapi.json         — Payment Discovery draft
+│   │       ├── _headers             — §4.5 CORS + MIME for static files
+│   │       ├── llms.txt
+│   │       ├── llms-full.txt
+│   │       ├── robots.txt
+│   │       ├── sitemap.xml
+│   │       ├── skills/              — SKILL.md packages (e.g. adopt-agents-txt/)
+│   │       └── .well-known/
+│   │           ├── agent-card.json          — A2A (§9)
+│   │           ├── ucp                      — UCP (§10)
+│   │           ├── api-catalog              — RFC 9727 linkset
+│   │           ├── mcp/server-card.json     — SEP-2127 server card
+│   │           ├── agent-skills/index.json  — agentskills.io v0.2.0
+│   │           └── security.txt             — RFC 9116
+│   │
+│   ├── mcp/                         — mcp.agentstxt.dev (Cloudflare Worker)
+│   │   ├── wrangler.jsonc
+│   │   └── src/
+│   │       ├── server.ts            — McpAgent over Streamable HTTP + SSE
+│   │       ├── index.ts             — /api/audit plain-HTTP companion
+│   │       ├── protocols.ts         — BLOCK_OPENERS · PAYMENT_PROTOCOLS · AUTH_PROTOCOLS registry
+│   │       └── tools/               — get_spec · get_skill · parse_agents_txt · validate_agents · audit_site
+│   │
+│   └── auth/                        — agent-auth + oauth2 (Cloudflare Worker)
+│       ├── wrangler.jsonc
+│       └── src/
+│           ├── index.ts             — Hono router
+│           ├── types.ts             — Env, host/agent records
+│           ├── jwt.ts               — Ed25519 parse + verify (@noble)
+│           ├── oauth-jwt.ts         — ES256 sign/verify + PBKDF2 client-secret hashing
+│           ├── ratelimit.ts         — Per-IP rate-limit binding wrapper
+│           ├── routes/              — discovery · agent · capability · oauth
+│           └── __tests__/           — Vitest, 81 tests
 │
-├── auth/                        — agent-auth, Cloudflare Worker
-│   └── src/                     (Ed25519 JWT, KV agent state, /.well-known/agent-configuration,
-│                                 /agent/register, /capability/execute)
-│
-├── landingpage/                 — agents-txt-landingpage (separate marketing site)
-│
-├── skills/                      — Claude/agent skills for working in this repo
-│   └── adopt-agents-txt/        (helps a developer adopt the spec)
-│
-├── package.json                 — private monorepo root, orchestrates per-sub-pkg scripts
-├── pnpm-workspace.yaml          — site, mcp, auth
-├── README.md                    — this file
-├── AGENTS.md                    — repo orientation for AI agents working on this codebase
-├── CLAUDE.md                    — Claude-specific operating instructions for this repo
+└── skills/                          — Claude / agent skills for working in this repo
+    └── adopt-agents-txt/            — walks a developer through adopting the spec on their own site
 ```
 
 ---
 
 ## Development
 
+Every Node-running command in this repo expects Node 24 via nvm and the worker-specific build-time env. Two shell prefixes that should run before any `pnpm` command:
+
 ```bash
-# Setup
-cd agentstxt
-nvm use 24
-pnpm install
-
-# Build everything (site + workers)
-pnpm build
-
-# Run tests (auth has 55, the others have none)
-pnpm test
-
-# Per sub-package
-pnpm site:dev          # Astro dev server for agentstxt.dev
-pnpm mcp:dev           # Wrangler dev for the MCP worker
-pnpm auth:dev          # Wrangler dev for the agent-auth worker
-
-pnpm site:deploy       # Astro build + wrangler deploy
-pnpm mcp:deploy        # Wrangler deploy (minified)
-pnpm mcp:deploy:prod
-pnpm auth:deploy
-pnpm auth:deploy:prod
+source ~/.nvm/nvm.sh && nvm use 24   # pin Node 24
+set -a; source .dev.vars; set +a     # export build-time env (per-worker)
 ```
+
+`.dev.vars` is a per-worker file (e.g. `app/site/.dev.vars`, `app/auth/.dev.vars`). Each carries the secrets/vars that worker's build or runtime expects (wallet addresses for the site, OAuth signing key for the auth worker, etc.). Without sourcing it, `herald emit` produces a partial `agents.json` and `wrangler deploy` ships without bound secrets.
+
+### Setup
+
+```bash
+source ~/.nvm/nvm.sh && nvm use 24
+cd agentstxt
+pnpm install
+```
+
+### Build + test from the monorepo root
+
+```bash
+pnpm build          # pnpm -r run build (Astro + tsc --noEmit per worker)
+pnpm test           # pnpm -r run test
+```
+
+### Per-worker dev
+
+```bash
+pnpm site:dev       # Astro dev server for agentstxt.dev (port 4321)
+pnpm mcp:dev        # wrangler dev for the MCP worker
+pnpm auth:dev       # wrangler dev for the agent-auth worker
+```
+
+### Deploy
+
+The site deploys with one script. The two workers each have a non-production `deploy` and a `deploy:production`; only `deploy:production` targets the real Cloudflare environment with the real KV namespaces and routes. The non-production `deploy` exists for ad-hoc smoke tests and points at the placeholder KV ids from the top-level `wrangler.json[c]` block (deploys would fail at runtime if you tried to read KV, by design).
+
+```bash
+# Site (Astro build + wrangler deploy)
+source ~/.nvm/nvm.sh && nvm use 24
+cd app/site
+set -a; source .dev.vars; set +a
+node ../../../HERALD/packages/cli/dist/cli.js emit --out ./public   # if you use herald to generate from env vars.
+pnpm run deploy
+
+# MCP worker (production)
+source ~/.nvm/nvm.sh && nvm use 24
+cd app/mcp
+pnpm build && pnpm run deploy:production
+
+# Auth worker (production)
+source ~/.nvm/nvm.sh && nvm use 24
+cd app/auth
+pnpm build && pnpm test && pnpm run deploy:production
+```
+
+The non-production `pnpm run deploy` on the MCP and auth workers (without `:production`) exists for quick checks but targets the top-level `wrangler.json[c]` block which has `id: preview_id_placeholder` on the KV binding. Cloudflare rejects that placeholder at deploy time with error 10042 against any real namespace. **Always use `:production`** for the workers; `pnpm run deploy` is reserved for the site (which has no KV binding ambiguity).
+
+### Convenience aliases at the monorepo root
+
+If you prefer not to `cd` between sub-packages, the root `package.json` mirrors each script with a `<pkg>:` prefix and forwards to the sub-package via `pnpm --filter`. Run these from `agentstxt/`:
+
+```bash
+pnpm site:deploy           # → app/site:  pnpm run deploy
+pnpm mcp:deploy:prod       # → app/mcp:   pnpm run deploy:production
+pnpm auth:deploy:prod      # → app/auth:  pnpm run deploy:production
+```
+
+`pnpm mcp:deploy` and `pnpm auth:deploy` (without `:prod`) also forward to the per-worker non-production `deploy` and are subject to the same placeholder caveat above.
 
 Each sub-package owns its own toolchain: Astro for the site, Wrangler + `tsc --noEmit` for the workers. There is no Turbo at this level because the three workers have no shared dependency graph; they're three independent edge deployments to the same domain group.
 
@@ -237,21 +316,24 @@ flowchart TB
         SW["worker.ts &nbsp; default.fetch"]
         SP["/x402 handler<br/>x402 v2 402 response<br/>payTo from SOLANA_ADDRESS env"]
         SM["/mpp handler<br/>WWW-Authenticate: Payment via mppx<br/>methods from TREASURY_TEMPO and/or STRIPE_*"]
-        SA[["Static Assets (env.ASSETS)<br/>/agents.txt &nbsp; /agents.json<br/>/llms.txt &nbsp; /llms-full.txt<br/>/.well-known/agent-card.json<br/>public/_headers &nbsp;(§4.5 CORS + MIME)"]]
-        SW -- "pathname /x402" --> SP
-        SW -- "pathname /mpp"  --> SM
+        SD["/audit route<br/>content-negotiated HTML / JSON / Markdown<br/>RL_DEMO rate limit + SESSION KV cache"]
+        SA[["Static Assets (env.ASSETS)<br/>/agents.txt &nbsp; /agents.json<br/>/llms.txt &nbsp; /llms-full.txt &nbsp; /robots.txt &nbsp; /sitemap.xml<br/>/.well-known/agent-card.json<br/>/.well-known/api-catalog (RFC 9727)<br/>/.well-known/mcp/server-card.json (SEP-2127)<br/>/.well-known/agent-skills/index.json (agentskills.io v0.2.0)<br/>/.well-known/security.txt (RFC 9116)<br/>/openapi.json (Payment Discovery)<br/>public/_headers &nbsp;(§4.5 CORS + MIME)"]]
+        SW -- "/x402" --> SP
+        SW -- "/mpp"  --> SM
+        SW -- "/audit" --> SD
         SW -- "everything else" --> SA
     end
 
     subgraph MCP["mcp worker &nbsp;·&nbsp; mcp.agentstxt.dev"]
         direction TB
         MX["server.ts &nbsp; McpAgent<br/>(Streamable HTTP + SSE)"]
+        MAPI["/api/audit (plain HTTP)<br/>thin wrapper over runAudit()"]
         MP["protocols.ts<br/>BLOCK_OPENERS<br/>PAYMENT_PROTOCOLS<br/>AUTH_PROTOCOLS"]
         M1["get_spec"]
         M2["parse_agents_txt"]
         M3["validate_agents_txt"]
         M4["validate_agents_json"]
-        M5["audit_site"]
+        M5["audit_site<br/>(MCP tool, wraps runAudit)"]
         M6["get_skill"]
         MX --> M1
         MX --> M2
@@ -266,31 +348,39 @@ flowchart TB
         M5 -. "delegates" .-> M4
     end
 
-    subgraph AUTH["auth worker &nbsp;·&nbsp; agent-auth"]
+    subgraph AUTH["auth worker &nbsp;·&nbsp; agent-auth + oauth2"]
         direction TB
         AX["index.ts &nbsp;(Hono router)"]
         AD["routes/discovery.ts<br/>GET /.well-known/agent-configuration"]
         AA["routes/agent.ts<br/>POST /agent/register<br/>GET&nbsp; /agent/status<br/>POST /agent/revoke"]
         AC["routes/capability.ts<br/>GET&nbsp; /auth<br/>GET&nbsp; /capability/list<br/>GET&nbsp; /capability/describe<br/>POST /capability/execute"]
+        AO["routes/oauth.ts &nbsp;(§11.2)<br/>POST /oauth/token (client-credentials)<br/>POST /oauth/introspect (RFC 7662)<br/>GET&nbsp; /.well-known/oauth-authorization-server<br/>GET&nbsp; /.well-known/openid-configuration (alias)<br/>GET&nbsp; /.well-known/jwks.json"]
         AJ["jwt.ts<br/>Ed25519 verify (@noble)<br/>jti replay guard"]
-        AKV[("AUTH_KV<br/>host:* &nbsp; jti:*")]
+        AOJ["oauth-jwt.ts<br/>ES256 sign + verify<br/>PBKDF2-SHA-256 secret hashing<br/>RL_AUTH rate limit"]
+        AKV[("AUTH_KV<br/>host:* &nbsp; jti:*<br/>oauth:client:* &nbsp; oauth:revoked:*")]
         AX --> AD
         AX --> AA
         AX --> AC
+        AX --> AO
         AA --> AJ
         AC --> AJ
+        AO --> AOJ
         AJ --> AKV
+        AOJ --> AKV
         AA --> AKV
     end
 
     FAC["x402.org<br/>/facilitator/settle"]
 
     Client -->|HTTPS| SW
-    SW -->|"env.MCP.fetch()<br/>/mcp &nbsp; /sse"| MX
-    SW -->|"env.AUTH.fetch()<br/>/.well-known/agent-configuration<br/>/agent/* &nbsp; /capability/* &nbsp; /auth"| AX
+    SW -->|"env.MCP.fetch()<br/>/mcp &nbsp; /sse &nbsp; /api/audit"| MX
+    SW -->|"env.AUTH.fetch()<br/>/.well-known/agent-configuration<br/>/.well-known/oauth-* &nbsp; /agent/*<br/>/capability/* &nbsp; /oauth/* &nbsp; /auth"| AX
     SP -->|"POST settle (x402 v2)"| FAC
 
-    M5 -. "fetch /agents.txt<br/>/agents.json &nbsp; /robots.txt" .-> SW
+    SD -->|"env.MCP.fetch('/api/audit?url=...')"| MAPI
+    MAPI -. "runAudit()" .-> M5
+    M5 -. "env.SITE.fetch() &nbsp;(self-targets)<br/>plain fetch() &nbsp;(third-party)" .-> SW
+
     M5 -. "report: errors, warnings,<br/>§4.5 headers,<br/>cross-file consistency" .-> Client
 ```
 
@@ -317,11 +407,68 @@ The site, the spec, and the MCP validators form a triangle that the project keep
 
 ### Where to read each piece end-to-end
 
-- **Astro → Cloudflare static serving + §4.5 headers.** [`site/public/_headers`](app/site/public/_headers), [`site/astro.config.mjs`](app/site/astro.config.mjs)
-- **x402 v2 wire shape.** [`site/src/worker.ts`](app/site/src/worker.ts), `/x402` handler, single Solana chain, no dependency indirection
-- **MPP wire shape.** [`site/src/worker.ts`](app/site/src/worker.ts), `/mpp` handler, `Mppx.compose(tempo, stripe)` via the `mppx` SDK, returns `WWW-Authenticate: Payment` with the recipient base64-encoded inside the `request` parameter
-- **MCP tool registration pattern.** [`mcp/src/server.ts`](app/mcp/src/server.ts) plus the six `registerXxx(server)` functions in [`mcp/src/tools/`](app/mcp/src/tools/)
-- **Ed25519 agent-auth handshake.** [`auth/src/jwt.ts`](app/auth/src/jwt.ts) verifies, [`routes/agent.ts`](app/auth/src/routes/agent.ts) registers + revokes, [`routes/capability.ts`](app/auth/src/routes/capability.ts) gates execution; KV holds `host:{thumbprint}` records and `jti:{id}` replay markers
+| Spec | Concern | Where it lives |
+|------|---------|----------------|
+| §4.5 | Static serving + response headers | [`site/public/_headers`](app/site/public/_headers) · [`site/astro.config.mjs`](app/site/astro.config.mjs) |
+| §6 | MCP tools | [`mcp/src/server.ts`](app/mcp/src/server.ts) + six `registerXxx(server)` files in [`mcp/src/tools/`](app/mcp/src/tools/). `audit_site` exports `runAudit(url, env?)` so [`mcp/src/index.ts`](app/mcp/src/index.ts)'s plain-HTTP `/api/audit` shares one implementation. |
+| §7 | Skills | Declared in [`agentsjson.config.js`](app/site/agentsjson.config.js) `skills.urls`. Served from [`site/public/skills/`](app/site/public/skills/). Resolved by the `get_skill` tool at [`mcp/src/tools/get_skill.ts`](app/mcp/src/tools/get_skill.ts). |
+| §8.1 | x402 v2 wire shape | [`site/src/worker.ts`](app/site/src/worker.ts) `/x402` handler. Single Solana chain, no dependency indirection. |
+| §8.2 | MPP wire shape | [`site/src/worker.ts`](app/site/src/worker.ts) `/mpp` handler. `Mppx.compose(tempo, stripe)` via the `mppx` SDK. Returns `WWW-Authenticate: Payment` with the recipient base64-encoded inside the `request` parameter. |
+| §8.3 | AP2 mandate declaration | Declared in [`agentsjson.config.js`](app/site/agentsjson.config.js) `payments.ap2`. Mandate exchange runs over `ap2-protocol.org` and is not implemented here; the field surfaces the trust layer so an agent can pre-screen before the rail (x402 / MPP) settles. |
+| §9 | A2A AgentCard | Static file at [`site/public/.well-known/agent-card.json`](app/site/public/.well-known/agent-card.json). Headers (`Content-Type`, CORS) from [`_headers`](app/site/public/_headers). |
+| §10 | UCP profile | Static file at [`site/public/.well-known/ucp`](app/site/public/.well-known/ucp). Same emission pattern as the A2A card. |
+| §11.1 | agent-auth · Ed25519 JWT | [`auth/src/jwt.ts`](app/auth/src/jwt.ts) verifies. [`routes/agent.ts`](app/auth/src/routes/agent.ts) registers + revokes. [`routes/capability.ts`](app/auth/src/routes/capability.ts) gates execution. KV: `host:{thumbprint}`, `jti:{id}` replay markers. |
+| §11.2 | OAuth 2.0 client-credentials | [`auth/src/routes/oauth.ts`](app/auth/src/routes/oauth.ts): `/oauth/token`, `/oauth/introspect`, discovery + JWKS. [`auth/src/oauth-jwt.ts`](app/auth/src/oauth-jwt.ts): ES256 sign/verify + PBKDF2-SHA-256 (100K iterations, Workers runtime ceiling). KV: `oauth:client:*`, `oauth:revoked:*`. |
+| live | Spec-audit endpoint | [`site/src/worker.ts`](app/site/src/worker.ts) `/audit` route + [`audit.astro`](app/site/src/pages/audit.astro) page. Calls MCP `/api/audit` via service binding, content-negotiates HTML / JSON / Markdown, caches in `SESSION` KV for an hour, refuses to cache failures, and offers `?nocache=1` to force a re-run. |
+
+### Adding a new protocol
+
+The spec is **deliberately small** and protocol-agnostic. New protocols can be advertised in three ways, in increasing levels of formalization.
+
+#### 1. Use the `x-` prefix (experimental, no spec change)
+
+A protocol that has not been registered in this spec yet can be advertised using the `x-` prefix (`x-mypay`, `x-myauth`) per §3.1. Parsers MUST accept it; validators MUST NOT warn. The same convention extends to `agents.json` per-protocol object keys (`payments["x-mypay"]`). This is the runway for a protocol to be tested in the wild before promotion.
+
+```
+# agents.txt
+Protocols: x402, x-mypay
+```
+
+```json
+// agents.json
+{ "payments": { "x402": { "chains": ["eip155:8453"] }, "x-mypay": {} } }
+```
+
+Site authors decide their own runtime semantics for an experimental protocol (response shape, headers, settlement). No coordination with this spec is required. Once the protocol stabilizes and there is demand, the identifier may be promoted to a registered name in a future spec version, retiring the `x-` form.
+
+#### 2. Register an identifier in an existing block (PR against §8 or §11)
+
+When a payment protocol or authorization protocol has a stable specification of its own and ecosystem demand, it can be registered by adding a subsection to §8 (Payment Protocols) or §11 (Authorization Protocols). The bar is editorial:
+
+- Open a PR against [`spec/AGENTS-TXT-STANDARD.md`](app/site/src/content/spec/AGENTS-TXT-STANDARD.md).
+- Add a subsection describing what the identifier signals to an agent and where the protocol's own details live (well-known path, response challenge, SDK).
+- Bump the `Version:` line because semantics change.
+- Mirror the addition in the reference deployment: append the identifier to [`app/mcp/src/protocols.ts`](app/mcp/src/protocols.ts) so the MCP validators and `audit_site` tool accept it without warnings.
+- If the protocol has structured fields in `agents.json` (chains, methods, etc.), document the per-protocol object shape in §5.2 and §5.3.
+
+Discussion happens in the PR. Two reviewer approvals are required for structural spec changes.
+
+#### 3. Add a new capability block (RFC against the spec)
+
+When a protocol does not fit any existing block (the way A2A did not fit under Payments, Authorization, MCP, or Skills), it gets its own block and a new directive name. This is a structural change and requires RFC-style discussion in the PR.
+
+The **A2A block (§9), added in v1.0**, is the most recent worked example. The shape it takes:
+
+1. **Spec section** in `AGENTS-TXT-STANDARD.md`. New section that defines the directive (`A2A:`), the wire format (one HTTPS URL per line, repeatable), the discovery gap it fills (multi-agent sites, non-canonical AgentCard paths), and the relationship to existing blocks (independent: `A2A:` and `Authorization:` do not constrain each other).
+2. **Directive table entry** in §3.1.
+3. **Companion entry in `agents.json` schema** (§5.2). For A2A: an `a2a: [ { url, description? } ]` array, symmetric with `mcp[]` and `skills[]`. The description field is `agents.json`-only; `agents.txt` carries only the URL because the announcement layer stays terse.
+4. **Reference deployment update**:
+   - [`app/mcp/src/protocols.ts`](app/mcp/src/protocols.ts) registers the directive in `BLOCK_OPENERS` so parsers and audit tools treat it as a known block opener (not as an unknown directive surfaced under `extensions`).
+   - [`app/mcp/src/tools/parse_agents_txt.ts`](app/mcp/src/tools/parse_agents_txt.ts) collects the values into the structured output.
+   - [`app/mcp/src/tools/validate_agents.ts`](app/mcp/src/tools/validate_agents.ts) and [`audit_site.ts`](app/mcp/src/tools/audit_site.ts) validate URL shape, HTTPS, and the cross-file consistency rule that the URL set in `agents.txt` equals the URL set in `agents.json`.
+5. **Reference site update**: if the reference deployment itself adopts the new block, the corresponding `agents.txt` and `agents.json` artifacts in [`app/site/public/`](app/site/public/) are regenerated.
+
+The spec is forward-compatible by design: parsers ignore unknown directives, so an `A2A:` line written before a parser knew about it is silently dropped, not rejected. New blocks therefore never break existing sites or existing agents.
 
 ---
 
