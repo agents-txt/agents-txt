@@ -2,6 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/global.css';
 import { SPEC_VERSION } from '../config';
+// Import the actual /agents.json this deployment serves and render it as the
+// hero code preview. Build-time import means the preview can never drift from
+// the served file: if /agents.json changes, the next deploy reflects it.
+import agentsJsonData from '../../public/agents.json';
+const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
 ---
 
 <BaseLayout
@@ -41,83 +46,123 @@ import { SPEC_VERSION } from '../config';
   <!-- Page body -->
   <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-16 pb-24">
 
-    <!-- Hero -->
-    <section class="mb-14 pb-10 border-b border-[#e5e5e5]">
-      <p class="font-mono text-xs text-[#777] tracking-[0.1em] uppercase mb-4">
-        Layer 4 of the agent-readiness stack
-      </p>
-      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-[#111] mb-4 leading-tight">
-        The declarative capability discovery layer of the agent-native web.
-      </h1>
-      <p class="text-base text-[#555] leading-relaxed max-w-[68ch] mb-6">
-        <span class="font-mono text-[#111]">agents.txt</span> is a lightweight, protocol-agnostic capability declaration format. A site publishes one plain-text file at <span class="font-mono text-[#111]">/agents.txt</span> and one structured companion at <span class="font-mono text-[#111]">/agents.json</span>; agents read both to find out which payment protocols, authorization schemes, MCP servers, skill packages, and A2A AgentCards the site supports. Implementation details for every protocol stay in that protocol's own response surface, never in the discovery files.
-      </p>
-      <div class="flex flex-wrap items-center gap-3">
-        <a
-          href="/spec"
-          class="inline-flex items-center gap-2 border border-[#111] bg-[#111] text-white text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2.5 no-underline hover:bg-white hover:text-[#111] transition-colors"
-        >
-          Read the spec
-        </a>
-        <a
-          href="/demo"
-          class="inline-flex items-center gap-2 border border-[#111] text-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2.5 no-underline hover:bg-[#111] hover:text-white transition-colors"
-        >
-          Run the demos
-        </a>
-        <a
-          href="https://github.com/agentstxtdev/agentstxt"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.06em] uppercase text-[#555] hover:text-[#111] transition-colors no-underline px-4 py-2.5"
-        >
-          GitHub →
-        </a>
-      </div>
-    </section>
-
-    <!-- Where this fits -->
+    <!-- Hero + Context (merged into a single 2-column grid so the agents.json
+         preview on the right stretches to match the combined height of the
+         hero copy and the "Where agents.txt fits" table on the left. The
+         separator lives inside the left column, so it ends horizontally where
+         the table ends rather than spanning the full page width. -->
     <section class="mb-14">
-      <div class="mb-6">
-        <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Context</p>
-        <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">Where agents.txt fits</h2>
-        <p class="text-sm text-[#555] leading-relaxed max-w-[68ch]">
-          Four standards already cover the lower layers of how a website meets automated traffic. agents.txt is the fourth, sitting above content and adding the missing layer: agent-runtime capability declaration.
-        </p>
-      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-x-12 gap-y-10 items-stretch">
 
-      <div class="border border-[#e5e5e5]">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-[#fafafa] border-b border-[#e5e5e5]">
-              <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3 w-16">Layer</th>
-              <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3">Concern</th>
-              <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3">Standard</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#e5e5e5]">
-            <tr>
-              <td class="px-5 py-3 font-mono text-[#999] align-top">1</td>
-              <td class="px-5 py-3 text-[#555] align-top">Access control</td>
-              <td class="px-5 py-3 font-mono text-[#111] align-top">/robots.txt <span class="text-[#999] font-sans text-xs">(RFC 9309)</span></td>
-            </tr>
-            <tr>
-              <td class="px-5 py-3 font-mono text-[#999] align-top">2</td>
-              <td class="px-5 py-3 text-[#555] align-top">Page inventory</td>
-              <td class="px-5 py-3 font-mono text-[#111] align-top">/sitemap.xml <span class="text-[#999] font-sans text-xs">(sitemaps.org)</span></td>
-            </tr>
-            <tr>
-              <td class="px-5 py-3 font-mono text-[#999] align-top">3</td>
-              <td class="px-5 py-3 text-[#555] align-top">Content briefing</td>
-              <td class="px-5 py-3 font-mono text-[#111] align-top">/llms.txt <span class="text-[#999] font-sans text-xs">(llmstxt.org)</span></td>
-            </tr>
-            <tr class="bg-[#fafafa]">
-              <td class="px-5 py-3 font-mono text-[#111] font-semibold align-top">4</td>
-              <td class="px-5 py-3 text-[#111] font-semibold align-top">Agent capabilities</td>
-              <td class="px-5 py-3 font-mono text-[#111] align-top">/agents.txt + /agents.json <span class="text-[#999] font-sans text-xs">(this spec)</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Left column: hero copy → separator → context + table -->
+        <div class="flex flex-col">
+
+          <!-- Hero copy block -->
+          <div class="pb-10 mb-10 border-b border-[#e5e5e5]">
+            <p class="font-mono text-xs text-[#777] tracking-[0.1em] uppercase mb-4">
+              Layer 4 of the agent-readiness stack
+            </p>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#111] mb-6 leading-[1.05]">
+              The declarative capability discovery layer of the agent-native web.
+            </h1>
+            <p class="text-sm text-[#555] leading-relaxed max-w-[64ch] mb-8">
+              Two files at the site root: <span class="font-mono text-[#111]">/agents.txt</span> (plain text, one directive per line) and <span class="font-mono text-[#111]">/agents.json</span> (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, and A2A AgentCards. No crawling, no protocol probing, no SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
+            </p>
+            <div class="flex flex-wrap items-center gap-3">
+              <a
+                href="/spec"
+                class="inline-flex items-center gap-2 border border-[#111] bg-[#111] text-white text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2.5 no-underline hover:bg-white hover:text-[#111] transition-colors"
+              >
+                Read the spec
+              </a>
+              <a
+                href="/demo"
+                class="inline-flex items-center gap-2 border border-[#111] text-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2.5 no-underline hover:bg-[#111] hover:text-white transition-colors"
+              >
+                Run the demos
+              </a>
+              <a
+                href="https://github.com/agentstxtdev/agentstxt"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.06em] uppercase text-[#555] hover:text-[#111] transition-colors no-underline px-4 py-2.5"
+              >
+                GitHub →
+              </a>
+            </div>
+          </div>
+
+          <!-- Context + table -->
+          <div>
+            <div class="mb-6">
+              <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Context</p>
+              <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">Where agents.txt fits</h2>
+              <p class="text-sm text-[#555] leading-relaxed">
+                Four standards already cover the lower layers of how a website meets automated traffic. agents.txt is the fourth, sitting above content and adding the missing layer: agent-runtime capability declaration.
+              </p>
+            </div>
+
+            <div class="border border-[#e5e5e5] overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-[#fafafa] border-b border-[#e5e5e5]">
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3 w-16">Layer</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3">Concern</th>
+                    <th class="text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] px-5 py-3">Standard</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[#e5e5e5]">
+                  <tr>
+                    <td class="px-5 py-3 font-mono text-[#999] align-top">1</td>
+                    <td class="px-5 py-3 text-[#555] align-top">Access control</td>
+                    <td class="px-5 py-3 font-mono text-[#111] align-top">/robots.txt <span class="text-[#999] font-sans text-xs">(RFC 9309)</span></td>
+                  </tr>
+                  <tr>
+                    <td class="px-5 py-3 font-mono text-[#999] align-top">2</td>
+                    <td class="px-5 py-3 text-[#555] align-top">Page inventory</td>
+                    <td class="px-5 py-3 font-mono text-[#111] align-top">/sitemap.xml <span class="text-[#999] font-sans text-xs">(sitemaps.org)</span></td>
+                  </tr>
+                  <tr>
+                    <td class="px-5 py-3 font-mono text-[#999] align-top">3</td>
+                    <td class="px-5 py-3 text-[#555] align-top">Content briefing</td>
+                    <td class="px-5 py-3 font-mono text-[#111] align-top">/llms.txt <span class="text-[#999] font-sans text-xs">(llmstxt.org)</span></td>
+                  </tr>
+                  <tr class="bg-[#fafafa]">
+                    <td class="px-5 py-3 font-mono text-[#111] font-semibold align-top">4</td>
+                    <td class="px-5 py-3 text-[#111] font-semibold align-top">Agent capabilities</td>
+                    <td class="px-5 py-3 font-mono text-[#111] align-top">/agents.txt + /agents.json <span class="text-[#999] font-sans text-xs">(this spec)</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: live /agents.json preview. Build-time import keeps
+             this byte-identical to the served file. On lg the aside is
+             absolutely positioned inside a relative wrapper so the JSON
+             content does NOT drive the row height; the row height comes from
+             the left column (hero + separator + context + table), and the
+             aside fills that exact height. Bottom edge of the aside lines up
+             with the bottom of the table's last row. On mobile (single
+             column) the wrapper collapses to content height and the pre uses
+             a fixed max-h. -->
+        <div class="lg:relative">
+          <aside class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col lg:absolute lg:inset-0">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#e5e5e5] bg-white shrink-0">
+              <span class="font-mono text-[11px] font-semibold text-[#111]">/agents.json</span>
+              <a
+                href="/agents.json"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="font-mono text-[10px] tracking-[0.06em] uppercase text-[#777] hover:text-[#111] transition-colors no-underline"
+              >
+                View raw →
+              </a>
+            </div>
+            <pre class="px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 m-0 bg-transparent">{agentsJsonPretty}</pre>
+          </aside>
+        </div>
       </div>
     </section>
 
@@ -238,7 +283,7 @@ import { SPEC_VERSION } from '../config';
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           ['Payments',      '§8',  'Protocols:',        'x402, mpp, ap2',                                  'Per-request crypto micropayments, session-based fiat / stablecoin payments, and the AP2 mandate trust layer. Block opens with Protocols:; site-level policy hint Payments: required is optional.'],
-          ['Authorization', '§11',  'Authorization:',    'agent-auth',                                      'Agent identity and capability grants. Discovery at /.well-known/agent-configuration. Identity: required is the optional site-level policy hint.'],
+          ['Authorization', '§11',  'Authorization:',    'agent-auth, oauth2',                              'Agent identity and access tokens. agent-auth gives each agent its own key and tracks per-request identity; oauth2 follows the standard OAuth client-credentials flow for machine clients. Identity: required is the optional site-level policy hint.'],
           ['MCP',           '§6',  'MCP:',              'Streamable HTTP',                                 'Model Context Protocol server endpoint discovery. The directive is repeatable; one line per MCP server.'],
           ['Skills',        '§7',  'Skills:',           'agentskills.io',                                  'Service-consumption skill packages. Each Skills: line points to a SKILL.md at the root of an agentskills.io-canonical folder.'],
           ['A2A',           '§9',  'A2A:',              'a2a-protocol.org',                                'A2A AgentCard URLs. Complements the canonical well-known path for multi-agent sites and non-canonical AgentCard locations.'],

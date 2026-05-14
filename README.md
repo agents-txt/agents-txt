@@ -4,7 +4,7 @@
 
 <h1>AGENTS.TXT</h1>
 
-**An open standard for AI agent capability declarations on the web.**
+**The declarative capability discovery layer of the agent-native web.**
 
 <br>
 
