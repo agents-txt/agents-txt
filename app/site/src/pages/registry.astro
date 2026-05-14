@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NavRight from '../components/NavRight.astro';
+import '../styles/global.css';
+import { getCollection, render } from 'astro:content';
+import { SPEC_VERSION } from '../config';
+
+const entries = (await getCollection('registry')).sort(
+  (a, b) => (a.data.order ?? 0) - (b.data.order ?? 0),
+);
+
+const rendered = await Promise.all(
+  entries.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  }),
+);
+---
+
+<BaseLayout
+  title="Registry · agents.txt Standard"
+  description="The agents.txt registries: the directive names registered for use in agents.txt, and the per-protocol object shapes registered for use in agents.json. Live surface for the registries defined in §17 of the specification."
+  canonicalUrl="https://agentstxt.dev/registry"
+>
+  <!-- Top nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a
+          href="/"
+          class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap"
+        >
+          agents.txt
+        </a>
+        <span class="hidden sm:inline text-[#ccc] select-none">/</span>
+        <span class="hidden sm:inline text-sm text-[#555] whitespace-nowrap">Registry</span>
+      </div>
+      <NavRight current="registry" />
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <main class="max-w-3xl mx-auto">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          agents.txt Registry
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">Spec v{SPEC_VERSION} · §17</p>
+        <p class="text-sm text-[#555] leading-relaxed mb-3">
+          The live surface for the two registries defined in §17 of the specification: the directive names that may appear in <span class="font-mono">agents.txt</span>, and the per-protocol object shapes that may appear in <span class="font-mono">agents.json</span>.
+        </p>
+        <p class="text-sm text-[#555] leading-relaxed mb-3">
+          Registration policy is defined in <a href="/spec#171-registration-policy" class="underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">§17.1 of the spec</a>. New entries are proposed by PR against <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">agentstxtdev/agentstxt</a> using the registration template in <a href="/spec#174-registration-template" class="underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">§17.4</a>.
+        </p>
+        <p class="text-sm text-[#555] leading-relaxed">
+          Between spec versions this surface is authoritative; the next spec version absorbs accumulated changes.
+        </p>
+
+        <!-- Inline TOC -->
+        <nav class="mt-8">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-3">
+            Registries
+          </p>
+          <ul class="text-sm space-y-1.5 list-none pl-0">
+            {rendered.map(({ entry }) => (
+              <li>
+                <a
+                  href={`#${entry.id}`}
+                  class="text-[#111] underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all"
+                >
+                  {entry.data.title}
+                </a>
+                <span class="text-[#999]"> · {entry.data.specSection}</span>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      {rendered.map(({ entry, Content }) => (
+        <section id={entry.id} class="mb-16 scroll-mt-20">
+          <header class="mb-6">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-1">
+              {entry.data.specSection}
+            </p>
+            <h2 class="text-xl font-semibold tracking-tight text-[#111] mb-1">
+              {entry.data.title}
+            </h2>
+            <p class="text-xs text-[#999] font-mono">
+              Last updated {entry.data.lastUpdated}
+            </p>
+          </header>
+          <article class="prose max-w-none registry-content">
+            <Content />
+          </article>
+        </section>
+      ))}
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a
+          href="https://github.com/agentstxtdev/agentstxt/tree/main/app/site/src/content/registry"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all"
+        >
+          View source
+        </a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>

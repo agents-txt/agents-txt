@@ -8,4 +8,10 @@ export const collections = {
       base: './src/content/spec',
     }),
   }),
+  registry: defineCollection({
+    loader: glob({
+      pattern: '**/*.md',
+      base: './src/content/registry',
+    }),
+  }),
 };

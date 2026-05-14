@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import NavRight from '../../components/NavRight.astro';
 import '../../styles/global.css';
 import { SPEC_VERSION } from '../../config';
 ---
@@ -21,12 +22,7 @@ import { SPEC_VERSION } from '../../config';
         <span class="text-[#ccc] select-none">/</span>
         <span class="text-sm text-[#111] whitespace-nowrap">Discovery</span>
       </div>
-      <div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
-        <a href="/spec" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Spec</a>
-        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
-        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
-        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
-        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+      <NavRight current="demo" />|</span>
         <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub"
           class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -207,6 +203,8 @@ import { SPEC_VERSION } from '../../config';
         <span class="font-mono font-semibold text-[#555]">agents.txt</span>
         {' '}Standard v{SPEC_VERSION} ·{' '}
         <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
         {' '}·{' '}
         <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
       </div>

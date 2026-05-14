@@ -1,0 +1,132 @@
+---
+// Shared right-side of the top nav. Renders:
+//   agents.txt link | agents.json link | Pages dropdown (Spec / Registry / Demo)
+//   | vertical separator | GitHub icon | <slot />
+//
+// Pass `current` to highlight the active page inside the dropdown. Pages that
+// need a mobile TOC hamburger (spec, registry) pass it via the default slot.
+
+interface Props {
+  current?: 'spec' | 'registry' | 'demo' | null;
+}
+const { current = null } = Astro.props;
+
+const pages = [
+  { href: '/spec',     label: 'Spec',     key: 'spec' as const     },
+  { href: '/registry', label: 'Registry', key: 'registry' as const },
+  { href: '/demo',     label: 'Demo',     key: 'demo' as const     },
+];
+---
+
+<div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
+  <a
+    href="/agents.txt"
+    class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline"
+  >
+    agents.txt
+  </a>
+  <a
+    href="/agents.json"
+    class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline"
+  >
+    agents.json
+  </a>
+
+  <div class="relative" data-nav-dropdown>
+    <button
+      type="button"
+      data-nav-trigger
+      class="flex items-center gap-1.5 text-xs text-[#555] hover:text-[#111] transition-colors"
+      aria-haspopup="menu"
+      aria-expanded="false"
+      aria-controls="nav-pages-menu"
+    >
+      <span class:list={[current ? 'text-[#111] font-medium' : '']}>
+        {current ? pages.find((p) => p.key === current)?.label ?? 'Pages' : 'Pages'}
+      </span>
+      <svg
+        width="8"
+        height="8"
+        viewBox="0 0 8 8"
+        fill="none"
+        aria-hidden="true"
+        class="nav-chevron transition-transform duration-150"
+      >
+        <path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="square" />
+      </svg>
+    </button>
+
+    <div
+      id="nav-pages-menu"
+      data-nav-panel
+      role="menu"
+      class="hidden absolute right-0 top-[calc(100%+0.5rem)] min-w-[160px] bg-white border border-[#e5e5e5] z-50"
+    >
+      {pages.map((p) => (
+        <a
+          href={p.href}
+          role="menuitem"
+          class:list={[
+            'block px-4 py-2.5 text-xs no-underline transition-colors border-l-2',
+            current === p.key
+              ? 'text-[#111] font-medium border-[#111] bg-[#fafafa]'
+              : 'text-[#555] hover:text-[#111] hover:bg-[#fafafa] border-transparent',
+          ]}
+        >
+          {p.label}
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <span class="hidden sm:block text-[#ddd] select-none">|</span>
+
+  <a
+    href="https://github.com/agentstxtdev/agentstxt"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="View on GitHub"
+    class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1"
+  >
+    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+    </svg>
+  </a>
+
+  <slot />
+</div>
+
+<style>
+  [data-nav-dropdown].is-open .nav-chevron {
+    transform: rotate(180deg);
+  }
+</style>
+
+<script>
+  const root = document.querySelector('[data-nav-dropdown]');
+  if (root) {
+    const trigger = root.querySelector<HTMLButtonElement>('[data-nav-trigger]');
+    const panel = root.querySelector<HTMLElement>('[data-nav-panel]');
+
+    const setOpen = (open: boolean) => {
+      if (!trigger || !panel) return;
+      root.classList.toggle('is-open', open);
+      panel.classList.toggle('hidden', !open);
+      trigger.setAttribute('aria-expanded', String(open));
+    };
+
+    trigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !panel?.classList.contains('hidden');
+      setOpen(!isOpen);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target as Node)) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  }
+</script>

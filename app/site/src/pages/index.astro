@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import NavRight from '../components/NavRight.astro';
 import '../styles/global.css';
 import { SPEC_VERSION } from '../config';
 import { readFileSync } from 'node:fs';
@@ -32,19 +33,7 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
           v{SPEC_VERSION}
         </span>
       </div>
-      <div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
-        <a href="/spec" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Spec</a>
-        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
-        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
-        <a href="/demo" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Demo</a>
-        <span class="hidden sm:block text-[#ddd] select-none">|</span>
-        <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub"
-          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
-          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-        </a>
-      </div>
+      <NavRight />
     </div>
   </header>
 
@@ -208,10 +197,124 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
 
             <!-- Two panes; the inactive one carries the `hidden` Tailwind class.
                  The toggle script swaps `hidden` between them on tab click. -->
-            <pre id="pane-txt" class="scrollbar-thin px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-[420px] m-0 bg-transparent">{agentsTxt}</pre>
-            <pre id="pane-json" class="hidden scrollbar-thin px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 m-0 bg-transparent">{agentsJsonPretty}</pre>
+            <pre id="pane-txt" class="scrollbar-thin px-4 py-3 font-mono text-[10px] leading-snug text-[#333] overflow-auto max-h-[360px] lg:max-h-[420px] m-0 bg-transparent">{agentsTxt}</pre>
+            <pre id="pane-json" class="hidden scrollbar-thin px-4 py-3 font-mono text-[10px] leading-snug text-[#333] overflow-auto max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 m-0 bg-transparent">{agentsJsonPretty}</pre>
           </aside>
         </div>
+      </div>
+    </section>
+
+    <!-- Adopt -->
+    <section class="mb-14">
+      <div class="mb-6">
+        <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Adopt</p>
+        <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">Three ways to ship agents.txt on your own site</h2>
+        <p class="text-sm text-[#555] leading-relaxed max-w-[68ch]">
+          The format is plain UTF-8 text and the JSON companion is small. Most sites can hand-write both in five minutes; the other paths exist for projects that want regeneration on every build, dynamic discovery files, or framework-level payment middleware.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="border border-[#e5e5e5] px-5 py-4">
+          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 1</p>
+          <p class="text-sm font-semibold text-[#111] mb-2">Hand-write</p>
+          <p class="text-xs text-[#777] leading-relaxed">Copy the directives that apply to your site, save the file as <span class="font-mono">/agents.txt</span>, mirror the structure in <span class="font-mono">/agents.json</span>. Read <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">the spec</a> for the directive reference or try the <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">demo</a></p>
+        </div>
+        <div class="border border-[#e5e5e5] px-5 py-4">
+          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 2</p>
+          <p class="text-sm font-semibold text-[#111] mb-2">Use a generator</p>
+          <p class="text-xs text-[#777] leading-relaxed"><a href="https://github.com/agentstxtdev/herald" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">HERALD</a> is the sibling project built to generate the discovery files for this site. Useful if you want all layers kept in sync on every build.
+        </div>
+        <div class="border border-[#e5e5e5] px-5 py-4">
+          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 3</p>
+          <p class="text-sm font-semibold text-[#111] mb-2">Read this deployment</p>
+          <p class="text-xs text-[#777] leading-relaxed">The source for every route on this site is on <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">GitHub</a>. The reference workers (site, MCP, agent-auth) are Apache 2.0; vendor in or fork freely.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compose: your site, your discovery shape. Carries the message that
+         the standard composes: once a site has /agents.txt and /agents.json,
+         any further discovery file it publishes becomes addressable through
+         them. -->
+    <section class="mb-14">
+      <div class="border border-[#e5e5e5]">
+        <div class="px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]">
+          <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999]">Compose</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] gap-x-10 gap-y-8 items-center px-6 py-7">
+          <div class="max-w-[44ch]">
+            <p class="text-lg sm:text-xl font-bold tracking-tight text-[#111] leading-snug mb-3">
+              Your site, your discovery shape.
+            </p>
+            <p class="text-sm text-[#555] leading-relaxed">
+              Once <span class="font-mono text-[#111]">/agents.txt</span> and <span class="font-mono text-[#111]">/agents.json</span> are live, publish any extra discovery file your site needs (a <span class="font-mono text-[#111]">/changelog.json</span>, an <span class="font-mono text-[#111]">/openapi.json</span>, a <span class="font-mono text-[#111]">/.well-known/*</span> for an emerging standard) and reference it from <span class="font-mono text-[#111]">agents.json</span>. Parsers ignore fields they do not recognise by design. The standard composes. The shape of your site stays yours.
+            </p>
+          </div>
+          <!-- Interactive seam: the agents.json on the left declares a
+               `changelog` URL; the /changelog.json tab shows what that URL
+               resolves to. The pattern works for any custom discovery file a
+               site publishes. Reuses the same tab-toggle motif as the hero's
+               /agents.txt ↔ /agents.json preview. -->
+          <div id="compose-preview" class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col">
+            <div class="flex items-stretch border-b border-[#e5e5e5] bg-white shrink-0">
+              <button id="compose-tab-agents" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-[#111] text-[#111]">
+                /agents.json
+              </button>
+              <button id="compose-tab-api" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-transparent text-[#777] hover:text-[#111]">
+                /changelog.json
+              </button>
+              <span class="ml-auto self-center px-4 font-mono text-[10px] tracking-[0.06em] uppercase text-[#999]">on your site</span>
+            </div>
+            <pre id="compose-pane-agents" class="font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
+  "version":   "1.0",
+  "mcp":       [...],
+  "skills":    [...],
+  "changelog": "https://yoursite.com/changelog.json",
+  "x-status":  "https://status.yoursite.com"
+}`}</pre>
+            <pre id="compose-pane-api" class="hidden font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
+  "version": "1.0",
+  "releases": [
+    { "version": "2.4.0", "date": "2026-05-12" },
+    { "version": "2.3.0", "date": "2026-04-28" }
+  ]
+}`}</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Capability blocks at a glance -->
+    <section class="mb-14">
+      <div class="mb-6">
+        <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Spec at a glance</p>
+        <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">An open set of capability blocks</h2>
+        <p class="text-sm text-[#555] leading-relaxed max-w-[68ch]">
+          Each block is independent and optional. A site emits only the blocks that apply to it; old parsers ignore any block they do not recognise. The blocks below are the ones currently registered in the spec. A protocol awaiting registration may be advertised with the <span class="font-mono">x-</span> prefix; new block types are added to the spec by amendment; older parsers ignore what they do not recognise.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {[
+          ['Payments',      '§8',  'Protocols:',        'x402, mpp, ap2',                                  'Per-request crypto micropayments, session-based fiat / stablecoin payments, and the AP2 mandate trust layer. Block opens with Protocols:; site-level policy hint Payments: required is optional.'],
+          ['Authorization', '§11',  'Authorization:',    'agent-auth, oauth2',                              'Agent identity and access tokens. agent-auth gives each agent its own key and tracks per-request identity; oauth2 follows the standard OAuth client-credentials flow for machine clients. Identity: required is the optional site-level policy hint.'],
+          ['MCP',           '§6',  'MCP:',              'Streamable HTTP',                                 'Model Context Protocol server endpoint discovery. The directive is repeatable; one line per MCP server.'],
+          ['Skills',        '§7',  'Skills:',           'agentskills.io',                                  'Service-consumption skill packages. Each Skills: line points to a SKILL.md at the root of an agentskills.io-canonical folder.'],
+          ['A2A',           '§9',  'A2A:',              'a2a-protocol.org',                                'A2A AgentCard URLs. Complements the canonical well-known path for multi-agent sites and non-canonical AgentCard locations.'],
+          ['UCP',           '§10', 'UCP:',              'ucp.dev',                                         'Universal Commerce Protocol profile URLs. Profile document declares services, transport bindings, payment handlers, and signing keys. Complements the canonical /.well-known/ucp path for multi-profile sites.'],
+        ].map(([name, section, directive, value, description]) => (
+          <div class="border border-[#e5e5e5] px-5 py-4">
+            <div class="flex items-baseline justify-between gap-3 mb-2">
+              <p class="text-sm font-semibold text-[#111]">{name}</p>
+              <p class="font-mono text-[10px] text-[#999]">spec {section}</p>
+            </div>
+            <p class="font-mono text-[11px] text-[#555] mb-2">
+              <span class="text-[#111] font-semibold">{directive}</span> {value}
+            </p>
+            <p class="text-xs text-[#777] leading-relaxed">{description}</p>
+          </div>
+        ))}
       </div>
     </section>
 
@@ -319,117 +422,6 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
       </p>
     </section>
 
-    <!-- Capability blocks at a glance -->
-    <section class="mb-14">
-      <div class="mb-6">
-        <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Spec at a glance</p>
-        <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">An open set of capability blocks</h2>
-        <p class="text-sm text-[#555] leading-relaxed max-w-[68ch]">
-          Each block is independent and optional. A site emits only the blocks that apply to it; old parsers ignore any block they do not recognise. The blocks below are the ones currently registered in the spec. A protocol awaiting registration may be advertised with the <span class="font-mono">x-</span> prefix; new block types are added to the spec by amendment; older parsers ignore what they do not recognise.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[
-          ['Payments',      '§8',  'Protocols:',        'x402, mpp, ap2',                                  'Per-request crypto micropayments, session-based fiat / stablecoin payments, and the AP2 mandate trust layer. Block opens with Protocols:; site-level policy hint Payments: required is optional.'],
-          ['Authorization', '§11',  'Authorization:',    'agent-auth, oauth2',                              'Agent identity and access tokens. agent-auth gives each agent its own key and tracks per-request identity; oauth2 follows the standard OAuth client-credentials flow for machine clients. Identity: required is the optional site-level policy hint.'],
-          ['MCP',           '§6',  'MCP:',              'Streamable HTTP',                                 'Model Context Protocol server endpoint discovery. The directive is repeatable; one line per MCP server.'],
-          ['Skills',        '§7',  'Skills:',           'agentskills.io',                                  'Service-consumption skill packages. Each Skills: line points to a SKILL.md at the root of an agentskills.io-canonical folder.'],
-          ['A2A',           '§9',  'A2A:',              'a2a-protocol.org',                                'A2A AgentCard URLs. Complements the canonical well-known path for multi-agent sites and non-canonical AgentCard locations.'],
-          ['UCP',           '§10', 'UCP:',              'ucp.dev',                                         'Universal Commerce Protocol profile URLs. Profile document declares services, transport bindings, payment handlers, and signing keys. Complements the canonical /.well-known/ucp path for multi-profile sites.'],
-        ].map(([name, section, directive, value, description]) => (
-          <div class="border border-[#e5e5e5] px-5 py-4">
-            <div class="flex items-baseline justify-between gap-3 mb-2">
-              <p class="text-sm font-semibold text-[#111]">{name}</p>
-              <p class="font-mono text-[10px] text-[#999]">spec {section}</p>
-            </div>
-            <p class="font-mono text-[11px] text-[#555] mb-2">
-              <span class="text-[#111] font-semibold">{directive}</span> {value}
-            </p>
-            <p class="text-xs text-[#777] leading-relaxed">{description}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    <!-- Adopt -->
-    <section class="mb-14">
-      <div class="mb-6">
-        <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999] mb-2">Adopt</p>
-        <h2 class="text-xl font-bold tracking-tight text-[#111] mb-2">Three ways to ship agents.txt on your own site</h2>
-        <p class="text-sm text-[#555] leading-relaxed max-w-[68ch]">
-          The format is plain UTF-8 text and the JSON companion is small. Most sites can hand-write both in five minutes; the other paths exist for projects that want regeneration on every build, dynamic discovery files, or framework-level payment middleware.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="border border-[#e5e5e5] px-5 py-4">
-          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 1</p>
-          <p class="text-sm font-semibold text-[#111] mb-2">Hand-write</p>
-          <p class="text-xs text-[#777] leading-relaxed">Copy the directives that apply to your site, save the file as <span class="font-mono">/agents.txt</span>, mirror the structure in <span class="font-mono">/agents.json</span>. Read <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">the spec</a> for the directive reference or try the <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">demo</a></p>
-        </div>
-        <div class="border border-[#e5e5e5] px-5 py-4">
-          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 2</p>
-          <p class="text-sm font-semibold text-[#111] mb-2">Use a generator</p>
-          <p class="text-xs text-[#777] leading-relaxed"><a href="https://github.com/agentstxtdev/herald" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">HERALD</a> is the sibling project built to generate the discovery files for this site. Useful if you want all layers kept in sync on every build.
-        </div>
-        <div class="border border-[#e5e5e5] px-5 py-4">
-          <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 3</p>
-          <p class="text-sm font-semibold text-[#111] mb-2">Read this deployment</p>
-          <p class="text-xs text-[#777] leading-relaxed">The source for every route on this site is on <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">GitHub</a>. The reference workers (site, MCP, agent-auth) are Apache 2.0; vendor in or fork freely.</p>
-        </div>
-      </div>
-
-      <!-- Composability callout. Same visual motif as the hero's /agents.json
-           preview box so the eye reads the connection: agents.json is the
-           seam at which any further discovery surface attaches to the site. -->
-      <div class="border border-[#e5e5e5] mt-10">
-        <div class="px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]">
-          <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999]">Compose</p>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] gap-x-10 gap-y-8 items-center px-6 py-7">
-          <div class="max-w-[44ch]">
-            <p class="text-lg sm:text-xl font-bold tracking-tight text-[#111] leading-snug mb-3">
-              Your site, your discovery shape.
-            </p>
-            <p class="text-sm text-[#555] leading-relaxed">
-              Once <span class="font-mono text-[#111]">/agents.txt</span> and <span class="font-mono text-[#111]">/agents.json</span> are live, publish any extra discovery file your site needs (a <span class="font-mono text-[#111]">/changelog.json</span>, an <span class="font-mono text-[#111]">/openapi.json</span>, a <span class="font-mono text-[#111]">/.well-known/*</span> for an emerging standard) and reference it from <span class="font-mono text-[#111]">agents.json</span>. Parsers ignore fields they do not recognise by design. The standard composes. The shape of your site stays yours.
-            </p>
-          </div>
-          <!-- Interactive seam: the agents.json on the left declares an
-               `api` URL; the /api.json tab shows what that URL resolves to.
-               The pattern works for any custom discovery file a site
-               publishes. Reuses the same tab-toggle motif as the hero's
-               /agents.txt ↔ /agents.json preview. -->
-          <div id="compose-preview" class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col">
-            <div class="flex items-stretch border-b border-[#e5e5e5] bg-white shrink-0">
-              <button id="compose-tab-agents" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-[#111] text-[#111]">
-                /agents.json
-              </button>
-              <button id="compose-tab-api" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-transparent text-[#777] hover:text-[#111]">
-                /changelog.json
-              </button>
-              <span class="ml-auto self-center px-4 font-mono text-[10px] tracking-[0.06em] uppercase text-[#999]">on your site</span>
-            </div>
-            <pre id="compose-pane-agents" class="font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
-  "version":   "1.0",
-  "mcp":       [...],
-  "skills":    [...],
-  "changelog": "https://yoursite.com/changelog.json",
-  "x-status":  "https://status.yoursite.com"
-}`}</pre>
-            <pre id="compose-pane-api" class="hidden font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
-  "version": "1.0",
-  "releases": [
-    { "version": "2.4.0", "date": "2026-05-12" },
-    { "version": "2.3.0", "date": "2026-04-28" }
-  ]
-}`}</pre>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Status -->
     <section>
       <div class="border border-[#e5e5e5] px-6 py-5 bg-[#fafafa] grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-8 gap-y-2">
@@ -451,6 +443,8 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
         <span class="font-mono font-semibold text-[#555]">agents.txt</span>
         {' '}Standard v{SPEC_VERSION} ·{' '}
         <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
         {' '}·{' '}
         <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Demos</a>
       </div>

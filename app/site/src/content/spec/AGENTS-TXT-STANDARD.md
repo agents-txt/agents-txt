@@ -146,6 +146,8 @@ Skills: https://example.com/skills/premium/SKILL.md
 | `A2A:` | A2A | No | URL | One A2A AgentCard URL; repeat for multiple agents (§9) |
 | `UCP:` | UCP | No | URL | One UCP profile URL; repeat for multiple profiles (§10) |
 
+Registered directives are tracked in §17.2; the live surface at `https://agentstxt.dev/registry` carries any additions between spec versions.
+
 Presence of `Protocols:` is the payment-block signal: a site that accepts agent payments declares the protocols it supports and nothing more. `Payments:` is an OPTIONAL site-level policy hint, symmetric with `Identity:` in the Authorization block. Both `Protocols:` and `Authorization:` accept comma-separated values, allowing a site to declare simultaneous support for multiple protocol identifiers within the same block. Currently recognized identifiers are defined in §8 and §11 respectively.
 
 **Experimental identifiers.** A protocol that has not yet been formally registered in this specification MAY be advertised using the `x-` prefix (e.g. `x-mypay`, `x-myauth`). Parsers MUST accept `x-`-prefixed identifiers; validators MUST NOT warn on them. This gives new protocols a runway to be tested in the wild before being promoted to a registered identifier in a future spec version. The same convention applies to per-protocol object keys in `agents.json` (e.g. `payments["x-mypay"]`). Once an identifier is registered in the spec, the `x-` form for the same protocol is retired in favour of the registered name.
@@ -257,6 +259,8 @@ The key additions agents.json makes over agents.txt:
 - **MCP transport type.** Always `streamable-http`; clarifies what the endpoint supports.
 - **MCP and skill descriptions.** Optional human-readable summaries of what each endpoint exposes or teaches, so agents can pre-screen relevance without fetching the resource.
 - **Site metadata.** Name, url, description from the site config.
+
+Registered per-protocol shapes and top-level array shapes are tracked in §17.3.
 
 ### 5.2 Schema
 
@@ -908,7 +912,88 @@ See `CONTRIBUTING.md` in the repository. Changes to this spec require a PR with 
 
 ---
 
-## 17. References
+## 17. Registries
+
+This section establishes two registries governed by this specification. Both follow the IANA "Specification Required" registration policy ([RFC8126] §4.6) adapted for the spec's GitHub-hosted editorial process.
+
+The live registry surface is maintained at `https://agentstxt.dev/registry` and reflects the same entries enumerated below. Where the two disagree, the live surface is authoritative between spec versions; the next spec version absorbs accumulated changes.
+
+### 17.1 Registration Policy
+
+New entries are proposed by opening a PR against [`agentstxtdev/agentstxt`](https://github.com/agentstxtdev/agentstxt) that:
+
+1. Adds a row to the relevant registry table in §17.2 or §17.3.
+2. Includes the registration template (§17.4) filled in, in the PR description.
+3. Links to a public specification document for the proposed entry. The specification need not be IETF-published; a stable URL with a versioned document suffices.
+4. Receives two reviewer approvals per `CONTRIBUTING.md`.
+
+Provisional entries (entries whose underlying specification is not yet stable) are advertised in the wild using the `x-` prefix per §3.1 and are not added to the registry. A registration request promotes an `x-`-prefixed identifier to a registered name; the `x-` form is retired on the registration date.
+
+Status values:
+
+- **registered**. The entry is stable, has a published specification, and is recommended for general use.
+- **provisional**. The entry is accepted into the registry but its specification is still drafting; implementers should expect change.
+- **deprecated**. The entry was registered but has been superseded; parsers MUST continue to accept it for backward compatibility, generators SHOULD NOT emit it.
+
+### 17.2 agents.txt Directives Registry
+
+Governs the directive names that may appear in `agents.txt`. Parsers ignore unknown directives per §3.2; this registry exists so directive authors have a coordination surface, not so parsers gain new failure modes.
+
+| Directive | Block | Role | Value type | Repeatable | Spec § | Status |
+|---|---|---|---|---|---|---|
+| `Protocols:` | Payments | Block opener | Comma-separated identifier list | No | §3.1, §8 | registered |
+| `Payments:` | Payments | Modifier | Enum (`required`) | No | §3.1, §8.4 | registered |
+| `Authorization:` | Authorization | Block opener | Comma-separated identifier list | No | §3.1, §11 | registered |
+| `Identity:` | Authorization | Modifier | Enum (`required`) | No | §3.1, §11.3 | registered |
+| `MCP:` | MCP | Block opener | HTTPS URL | Yes | §3.1, §6 | registered |
+| `Skills:` | Skills | Block opener | HTTPS URL | Yes | §3.1, §7 | registered |
+| `A2A:` | A2A | Block opener | HTTPS URL | Yes | §3.1, §9 | registered |
+| `UCP:` | UCP | Block opener | HTTPS URL | Yes | §3.1, §10 | registered |
+
+### 17.3 agents.json Per-Protocol Shape Registry
+
+Governs the per-protocol object shapes inside `agents.json` `payments.*` and the top-level array shapes for `mcp[]`, `skills[]`, `a2a[]`, `ucp[]`. The `version`, `standard`, `site`, and `authorization` blocks are fixed by §5.2 and are not separately registered.
+
+| Key | Parent | Required fields | Optional fields | Spec § | Status |
+|---|---|---|---|---|---|
+| `payments.x402` | `payments` | (none) | `chains[]`, `description` | §5.3 | registered |
+| `payments.mpp` | `payments` | (none) | `methods[]`, `description` | §5.3 | registered |
+| `payments.ap2` | `payments` | (none) | `presentations[]`, `spec`, `description` | §5.3, §8.3 | registered |
+| `mcp[]` | top-level | `url`, `type` | `description` | §5.3 | registered |
+| `skills[]` | top-level | `url` | `description` | §5.3 | registered |
+| `a2a[]` | top-level | `url` | `description` | §5.3, §9 | registered |
+| `ucp[]` | top-level | `url` | `description` | §5.3, §10 | registered |
+
+Per-protocol shapes are emitted only when the corresponding identifier is present in the matching `agents.txt` block. Absence of a `payments.<id>` object means the site does not accept that protocol, regardless of whether the identifier is registered.
+
+### 17.4 Registration Template
+
+```
+Identifier: <name as it appears in agents.txt or agents.json>
+Registry:   <directives | json-shape>
+Block:      <Payments | Authorization | MCP | Skills | A2A | UCP | top-level>
+Role:       <block opener | modifier | per-protocol shape>
+Value type: <for directives only: URL | comma-list | enum>
+Repeatable: <for directives only: yes | no>
+Spec URL:   <canonical, versioned URL to the specification document>
+Contact:    <name + email or GitHub handle of registrant>
+Status:     <registered | provisional>
+Notes:      <one paragraph: what the entry signals, how it interacts with
+            existing blocks, anything implementers should know>
+```
+
+### 17.5 Out of Scope
+
+Two adjacent registries are intentionally not established by this specification:
+
+- **Payment protocol identifiers** (the values registered for the `Protocols:` directive) are defined by their own specifications (x402, MPP, AP2) and are enumerated in §8. `agents.txt` does not own a parallel registry; this avoids creating two competing sources of truth for identifiers that already have stable homes.
+- **Authorization protocol identifiers** (the values registered for the `Authorization:` directive) are similarly enumerated in §11, with each identifier defined by its own specification (Agent Auth Protocol, OAuth 2.0).
+
+If, in a future version, an identifier is proposed whose underlying protocol has no other stable home, this specification MAY add a third registry to cover it. v1.0 declines to pre-empt that case.
+
+---
+
+## 18. References
 
 ### Normative
 
