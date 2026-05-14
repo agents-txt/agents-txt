@@ -2,11 +2,16 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/global.css';
 import { SPEC_VERSION } from '../config';
-// Import the actual /agents.json this deployment serves and render it as the
-// hero code preview. Build-time import means the preview can never drift from
-// the served file: if /agents.json changes, the next deploy reflects it.
+import { readFileSync } from 'node:fs';
+// Import the actual /agents.txt and /agents.json this deployment serves and
+// render them as the hero code preview. Build-time read means the preview can
+// never drift from the served files: if either changes, the next deploy
+// reflects it. agents.json is a structured `import` (native to Vite); agents.txt
+// is a plain-text read since Astro/Vite does not have a built-in plain-text
+// loader for files outside src/.
 import agentsJsonData from '../../public/agents.json';
 const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
+const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '');
 ---
 
 <BaseLayout
@@ -52,7 +57,7 @@ const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
          separator lives inside the left column, so it ends horizontally where
          the table ends rather than spanning the full page width. -->
     <section class="mb-14">
-      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-x-12 gap-y-10 items-stretch">
+      <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,443px)] gap-x-12 gap-y-10 items-stretch">
 
         <!-- Left column: hero copy → separator → context + table -->
         <div class="flex flex-col">
@@ -89,6 +94,35 @@ const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
               >
                 GitHub →
               </a>
+              <!-- Two equal-flex spacers centre the score pill in the
+                   remaining row space on lg+: the first one sits between
+                   GitHub and the pill, the second sits between the pill
+                   and the right edge of the left column. They both have
+                   flex-1, so the leftover horizontal room is split evenly,
+                   placing the pill at the midpoint between the GitHub
+                   button and the agents.json column. The spacers are
+                   `hidden` below lg so the layout reverts to the natural
+                   flex-wrap order on narrow viewports. -->
+              <span class="hidden lg:block lg:flex-1" aria-hidden="true"></span>
+              <!-- Live agent-readiness score from isitagentready.com. Compact
+                   scoreboard-style pill: green "100" disc + two-line label.
+                   Acts as a trust signal alongside the CTAs without taking
+                   the focus off the primary "Read the spec" / "Run the demos"
+                   buttons. -->
+              <a
+                href="https://isitagentready.com/agentstxt.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Verified 100 / 100 on isitagentready.com"
+                class="inline-flex items-center gap-2.5 border border-[#e5e5e5] hover:border-[#111] transition-colors no-underline pl-2 pr-3 py-1.5"
+              >
+                <span class="flex items-center justify-center w-7 h-7 rounded-full border-2 border-[#16a34a] text-[#16a34a] font-bold text-[11px] leading-none shrink-0">100</span>
+                <span class="flex flex-col leading-tight">
+                  <span class="text-[11px] font-semibold tracking-tight text-[#111]">Level 5 · Agent-Native</span>
+                  <span class="font-mono text-[10px] text-[#777]">isitagentready.com →</span>
+                </span>
+              </a>
+              <span class="hidden lg:block lg:flex-1" aria-hidden="true"></span>
             </div>
           </div>
 
@@ -138,29 +172,44 @@ const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
           </div>
         </div>
 
-        <!-- Right column: live /agents.json preview. Build-time import keeps
-             this byte-identical to the served file. On lg the aside is
-             absolutely positioned inside a relative wrapper so the JSON
-             content does NOT drive the row height; the row height comes from
-             the left column (hero + separator + context + table), and the
-             aside fills that exact height. Bottom edge of the aside lines up
-             with the bottom of the table's last row. On mobile (single
-             column) the wrapper collapses to content height and the pre uses
-             a fixed max-h. -->
+        <!-- Right column: live previews of /agents.txt and /agents.json,
+             toggled by the tab bar at the top of the aside. Build-time read
+             keeps both byte-identical to the files the deployment serves.
+             - agents.txt (default): the aside is top-anchored inside its
+               wrapper and sizes to its (small) content. The wrapper still
+               reserves the full left-column height behind it, so the table
+               below never shifts.
+             - agents.json: the aside fills the wrapper (lg:inset-0 applied
+               via the .json-active class), and the longer JSON scrolls
+               inside it. Bottom edge then lines up with the bottom of the
+               table's last row, as before.
+             On mobile (single column) both prees fall back to a fixed
+             max-h-[360px] and the absolute-positioning trick does not apply. -->
         <div class="lg:relative">
-          <aside class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col lg:absolute lg:inset-0">
-            <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#e5e5e5] bg-white shrink-0">
-              <span class="font-mono text-[11px] font-semibold text-[#111]">/agents.json</span>
+          <aside id="agents-preview" class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col lg:absolute lg:inset-x-0 lg:top-0">
+            <!-- Tab bar -->
+            <div class="flex items-stretch border-b border-[#e5e5e5] bg-white shrink-0">
+              <button id="tab-txt" type="button" data-tab="txt" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-[#111] text-[#111]">
+                /agents.txt
+              </button>
+              <button id="tab-json" type="button" data-tab="json" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-transparent text-[#777] hover:text-[#111]">
+                /agents.json
+              </button>
               <a
-                href="/agents.json"
+                id="agents-raw-link"
+                href="/agents.txt"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="font-mono text-[10px] tracking-[0.06em] uppercase text-[#777] hover:text-[#111] transition-colors no-underline"
+                class="ml-auto self-center px-4 font-mono text-[10px] tracking-[0.06em] uppercase text-[#777] hover:text-[#111] transition-colors no-underline"
               >
                 View raw →
               </a>
             </div>
-            <pre class="px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 m-0 bg-transparent">{agentsJsonPretty}</pre>
+
+            <!-- Two panes; the inactive one carries the `hidden` Tailwind class.
+                 The toggle script swaps `hidden` between them on tab click. -->
+            <pre id="pane-txt" class="scrollbar-thin px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-[420px] m-0 bg-transparent">{agentsTxt}</pre>
+            <pre id="pane-json" class="hidden scrollbar-thin px-4 py-3 font-mono text-[11px] leading-relaxed text-[#333] overflow-auto max-h-[360px] lg:max-h-none lg:flex-1 lg:min-h-0 m-0 bg-transparent">{agentsJsonPretty}</pre>
           </aside>
         </div>
       </div>
@@ -372,4 +421,61 @@ const agentsJsonPretty = JSON.stringify(agentsJsonData, null, 2);
   details.route-group[open] > summary .chevron {
     transform: rotate(90deg);
   }
+
+  /* Match the spec page's nav-column scrollbar: thin, neutral grey thumb,
+     transparent track. Kept here rather than in global.css because the only
+     two scrolling elements on the site that want this style are the spec
+     page nav (already has it inline) and these two preview panes. */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e5e5 transparent;
+  }
 </style>
+
+<script>
+  // Tab toggle for the hero's /agents.txt + /agents.json preview.
+  // Pure-DOM class swapping so there is no CSS-specificity dance with
+  // Tailwind's atomic utilities. Each click hides one pane (`.hidden`),
+  // shows the other, repaints the active-tab underline, and updates the
+  // "View raw" link's href to point at whichever file is currently active.
+  //
+  // The aside itself is top-anchored on lg+ so it sizes to its content.
+  // When /agents.json is active and the pane carries `lg:flex-1
+  // lg:min-h-0`, the absolutely-positioned aside also picks up
+  // `bottom: 0` so it fills the wrapper; we toggle that with a single
+  // utility class on the aside.
+  const aside   = document.getElementById('agents-preview');
+  const rawLink = document.getElementById('agents-raw-link') as HTMLAnchorElement | null;
+  const tabTxt  = document.getElementById('tab-txt');
+  const tabJson = document.getElementById('tab-json');
+  const paneTxt  = document.getElementById('pane-txt');
+  const paneJson = document.getElementById('pane-json');
+
+  function activate(mode: 'txt' | 'json') {
+    if (!aside || !rawLink || !tabTxt || !tabJson || !paneTxt || !paneJson) return;
+    const isJson = mode === 'json';
+
+    paneTxt.classList.toggle('hidden',  isJson);
+    paneJson.classList.toggle('hidden', !isJson);
+
+    // Active-tab pill: dark text + dark bottom border on the active one.
+    tabTxt.classList.toggle('text-[#111]',          !isJson);
+    tabTxt.classList.toggle('border-[#111]',        !isJson);
+    tabTxt.classList.toggle('text-[#777]',           isJson);
+    tabTxt.classList.toggle('border-transparent',    isJson);
+    tabJson.classList.toggle('text-[#111]',          isJson);
+    tabJson.classList.toggle('border-[#111]',        isJson);
+    tabJson.classList.toggle('text-[#777]',         !isJson);
+    tabJson.classList.toggle('border-transparent', !isJson);
+
+    // Collapse vs expand on lg+: in json mode the aside also picks up
+    // `bottom: 0` so it fills the wrapper. Tailwind atomic utility
+    // `lg:bottom-0` is toggled directly.
+    aside.classList.toggle('lg:bottom-0', isJson);
+
+    rawLink.href = isJson ? '/agents.json' : '/agents.txt';
+  }
+
+  tabTxt?.addEventListener('click',  () => activate('txt'));
+  tabJson?.addEventListener('click', () => activate('json'));
+</script>
