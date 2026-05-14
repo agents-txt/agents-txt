@@ -1,0 +1,354 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/global.css';
+import { SPEC_VERSION } from '../config';
+---
+
+<BaseLayout
+  title="Audit a site against the agents.txt spec"
+  description="Audit any live site against the agents.txt specification. Validates /agents.txt and /agents.json against §3–§11, §5 schema, §4.5 serving headers, and cross-file consistency. Shareable result URL, JSON and Markdown representations available via content negotiation."
+  canonicalUrl="https://agentstxt.dev/audit"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">Audit</span>
+      </div>
+      <div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
+        <a href="/spec" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Spec</a>
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          Audit a site against the agents.txt spec
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">/agents.txt · /agents.json · §3–§11 directives · §5 schema · §4.5 serving · cross-file consistency</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">
+            <a href="/spec" class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              agents.txt v{SPEC_VERSION}
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/audit?url=&lt;target&gt; · /mcp <span class="text-[#999]">(audit_site tool)</span></dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTPS · content-negotiated <span class="font-mono">application/json · text/markdown · text/html</span></dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Auditing any site you paste, in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          Paste a site origin or full URL. The audit fetches <code>/agents.txt</code>, <code>/agents.json</code>, and <code>/robots.txt</code> from that origin, validates each against the agents.txt specification, cross-checks the two discovery files for consistency, and returns a structured report. The same URL serves three representations via content negotiation: HTML for browsers, <code>application/json</code> for scripts, <code>text/markdown</code> for LLM agents.
+        </p>
+        <p>
+          Result URLs are shareable. Cache TTL is one hour per target.
+        </p>
+      </div>
+
+      <!-- Form -->
+      <form id="audit-form" class="border border-[#e5e5e5] mb-8">
+        <div class="px-5 py-4 border-b border-[#e5e5e5]">
+          <p class="text-sm font-semibold text-[#111]">Target site</p>
+          <p class="text-xs text-[#999] mt-0.5">Origin or any URL on the site. The audit always runs against the origin.</p>
+        </div>
+        <div class="px-5 py-4 flex flex-col sm:flex-row gap-3">
+          <input
+            id="audit-input"
+            name="url"
+            type="text"
+            placeholder="https://example.com"
+            autocomplete="off"
+            spellcheck="false"
+            class="flex-1 border border-[#e5e5e5] bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#111] transition-colors"
+          />
+          <button
+            type="submit"
+            class="cursor-pointer flex items-center justify-center gap-2 border border-[#111] bg-[#111] text-white text-xs font-semibold tracking-[0.06em] uppercase px-5 py-2 hover:bg-white hover:text-[#111] transition-colors"
+          >
+            Audit
+          </button>
+        </div>
+      </form>
+
+      <!-- Result container. Populated on page load from #audit-data (when the
+           worker injected an envelope) or after the form submit. -->
+      <div id="audit-result" class="hidden"></div>
+
+      <!-- Empty state visible when no audit has been run yet. -->
+      <div id="audit-empty" class="border border-dashed border-[#e5e5e5] px-5 py-12 text-center">
+        <p class="text-sm text-[#777]">Paste a URL above to run an audit.</p>
+        <p class="text-xs text-[#999] mt-2 font-mono">curl -H 'Accept: application/json' https://agentstxt.dev/audit?url=&lt;target&gt;</p>
+      </div>
+
+      <!-- Other representations -->
+      <div class="prose max-w-none mt-16">
+        <h2>Programmatic access</h2>
+        <p>
+          The same URL serves all three formats. Pick by <code>Accept</code> header:
+        </p>
+        <pre><code>{`# JSON
+curl -H 'Accept: application/json' \\
+  'https://agentstxt.dev/audit?url=https://example.com'
+
+# Markdown (for LLMs and copy-paste into chat threads)
+curl -H 'Accept: text/markdown' \\
+  'https://agentstxt.dev/audit?url=https://example.com'
+
+# HTML (default; what the browser sees)
+curl 'https://agentstxt.dev/audit?url=https://example.com'`}</code></pre>
+        <p>
+          MCP-speaking agents can also call the underlying <code>audit_site</code> tool over <code>/mcp</code> directly. The tool's response shape is identical to the JSON returned here.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Worker-injected audit envelope. Defaults to an empty object so the
+       page renders the empty state when nobody has been audited yet.
+       `is:inline` is explicit so Astro does not try to bundle the JSON
+       contents as a module; this tag is a data island, not executable code. -->
+  <script id="audit-data" type="application/json" is:inline>{}</script>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* Detail rows collapse to 3 lines by default with a "Show all" toggle.
+     CSS-only baseline; pretext-driven measure-then-clamp could come later. */
+  .audit-detail-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .audit-row[data-expanded="true"] .audit-detail-clamped {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+  /* Long URLs in cross-check messages should wrap rather than horizontal-scroll. */
+  .audit-detail { word-break: break-word; overflow-wrap: anywhere; }
+</style>
+
+<script>
+  interface AuditEnvelopeOk   { ok: true;  target: string; cached: boolean; fetchedAt: string; report: Record<string, unknown> }
+  interface AuditEnvelopeErr  { ok: false; target: string; error: string; message: string }
+  type AuditEnvelope = AuditEnvelopeOk | AuditEnvelopeErr;
+
+  const form   = document.getElementById('audit-form') as HTMLFormElement | null;
+  const input  = document.getElementById('audit-input') as HTMLInputElement | null;
+  const result = document.getElementById('audit-result');
+  const empty  = document.getElementById('audit-empty');
+  const dataEl = document.getElementById('audit-data');
+
+  // Pre-fill the input from ?url= so the form value reflects the URL bar.
+  const params = new URLSearchParams(window.location.search);
+  const initialTarget = params.get('url');
+  if (initialTarget && input) input.value = initialTarget;
+
+  // Render immediately from the worker-injected envelope (if any).
+  if (dataEl) {
+    try {
+      const parsed = JSON.parse(dataEl.textContent ?? '{}');
+      if (parsed && typeof parsed === 'object' && 'ok' in parsed) {
+        renderEnvelope(parsed as AuditEnvelope);
+      }
+    } catch {}
+  }
+
+  // Submit → navigate to /audit?url=… so the result URL is shareable.
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = (input?.value ?? '').trim();
+    if (!value) return;
+    window.location.href = `/audit?url=${encodeURIComponent(value)}`;
+  });
+
+  function renderEnvelope(env: AuditEnvelope) {
+    if (!result || !empty) return;
+    empty.classList.add('hidden');
+    result.classList.remove('hidden');
+    result.innerHTML = '';
+
+    if (!env.ok) {
+      result.appendChild(card(
+        `Audit failed`,
+        `<p class="text-sm text-[#c00] mb-1"><span class="font-mono text-[11px]">${escape(env.error)}</span></p>
+         <p class="text-sm text-[#555]">${escape(env.message)}</p>`,
+      ));
+      return;
+    }
+
+    const report = env.report as Record<string, unknown>;
+    const summary = (report.summary as { compliant?: boolean; errorCount?: number; warningCount?: number } | undefined) ?? {};
+    const status = summary.compliant ? 'PASS' : 'FAIL';
+    const statusColor = summary.compliant ? '#16a34a' : '#c00';
+    const errorCount = summary.errorCount ?? 0;
+    const warningCount = summary.warningCount ?? 0;
+
+    // Summary card. When the result is cached, surface a `?nocache=1` link
+    // so the visitor can force a fresh audit without waiting for the hour
+    // bucket to roll over. Useful right after a target has been redeployed.
+    const cachedTag = env.cached
+      ? `<span class="font-mono text-[10px] text-[#999] ml-3">cached · ${escape(env.fetchedAt.slice(0, 19))}Z · <a href="/audit?url=${encodeURIComponent(env.target)}&nocache=1" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] hover:text-[#111] transition-colors no-underline">re-run</a></span>`
+      : '';
+    const summaryHtml = `
+      <div class="flex items-baseline gap-3 mb-2">
+        <span class="font-mono text-xs text-[#999]">${escape(env.target)}</span>
+        ${cachedTag}
+      </div>
+      <div class="flex items-baseline gap-4">
+        <span class="text-2xl font-bold tracking-tight" style="color:${statusColor}">${status}</span>
+        <span class="text-sm text-[#555]">${errorCount} error${errorCount === 1 ? '' : 's'} · ${warningCount} warning${warningCount === 1 ? '' : 's'}</span>
+      </div>
+    `;
+    result.appendChild(card('Result', summaryHtml));
+
+    // Per-file sections
+    renderFileSection(result, '/agents.txt',  report.agentsTxt);
+    renderFileSection(result, '/agents.json', report.agentsJson);
+    renderFileSection(result, '/robots.txt',  report.robotsTxt);
+
+    const consistency = report.consistency as { valid?: boolean; issues?: string[]; note?: string } | undefined;
+    if (consistency) {
+      const rows: string[] = [];
+      if (consistency.valid && !(consistency.issues && consistency.issues.length)) {
+        rows.push(`<p class="text-sm text-[#555]">${consistency.note ? escape(consistency.note) : 'Consistent.'}</p>`);
+      } else if (consistency.issues) {
+        rows.push(`<ul class="space-y-2 mt-2">${consistency.issues.map(i => renderIssue('error', i)).join('')}</ul>`);
+      }
+      result.appendChild(card('Cross-file consistency', rows.join('')));
+    }
+  }
+
+  function renderFileSection(parent: HTMLElement, label: string, block: unknown) {
+    if (!block || typeof block !== 'object') return;
+    const b = block as Record<string, unknown>;
+    const found = b.found === true;
+    const status = typeof b.status === 'number' ? b.status : null;
+    const validation = (b.validation as { errors?: string[]; warnings?: string[] } | undefined) ?? {};
+    const errors   = validation.errors ?? [];
+    const warnings = validation.warnings ?? [];
+
+    const meta = found
+      ? `<span class="text-xs text-[#555]">served${status ? ` · HTTP ${status}` : ''}</span>`
+      : `<span class="text-xs text-[#c00]">not found${status ? ` · HTTP ${status}` : ''}</span>`;
+
+    let body = `<div class="mb-3">${meta}</div>`;
+    if (errors.length === 0 && warnings.length === 0) {
+      body += `<p class="text-xs text-[#999]">No findings.</p>`;
+    } else {
+      body += `<ul class="space-y-2">`;
+      errors.forEach(e => { body += renderIssue('error', e); });
+      warnings.forEach(w => { body += renderIssue('warning', w); });
+      body += `</ul>`;
+    }
+    parent.appendChild(card(label, body, true));
+  }
+
+  function renderIssue(level: 'error' | 'warning', text: string): string {
+    const isErr = level === 'error';
+    const glyph = isErr ? '✗' : '!';
+    const color = isErr ? '#c00' : '#a16207';
+    return `
+      <li class="audit-row" data-expanded="false">
+        <div class="flex items-start gap-3">
+          <span class="font-mono text-[11px] mt-0.5 shrink-0 w-4" style="color:${color}">${glyph}</span>
+          <div class="min-w-0 flex-1">
+            <p class="audit-detail audit-detail-clamped text-xs text-[#333] leading-relaxed">${escape(text)}</p>
+            <button type="button" class="cursor-pointer audit-toggle font-mono text-[10px] tracking-[0.06em] uppercase text-[#777] hover:text-[#111] transition-colors mt-1 hidden">Show all</button>
+          </div>
+        </div>
+      </li>
+    `;
+  }
+
+  function card(heading: string, bodyHtml: string, codeStyleHeading = false): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'border border-[#e5e5e5] mb-4';
+    const head = document.createElement('div');
+    head.className = 'px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]';
+    head.innerHTML = codeStyleHeading
+      ? `<p class="font-mono text-[11px] font-semibold text-[#111]">${escape(heading)}</p>`
+      : `<p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">${escape(heading)}</p>`;
+    const body = document.createElement('div');
+    body.className = 'px-5 py-4';
+    body.innerHTML = bodyHtml;
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function escape(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  }
+
+  // After every render: any clamped detail whose actual height exceeds the
+  // 3-line clamp gets its "Show all" button revealed. This is the CSS-only
+  // baseline for the inline-vs-expander decision; pretext can replace this
+  // with a measure-before-render pass later.
+  function rebindToggles() {
+    document.querySelectorAll<HTMLElement>('.audit-row').forEach(row => {
+      const detail = row.querySelector<HTMLElement>('.audit-detail-clamped');
+      const button = row.querySelector<HTMLElement>('.audit-toggle');
+      if (!detail || !button) return;
+      const overflows = detail.scrollHeight - detail.clientHeight > 1;
+      if (overflows) {
+        button.classList.remove('hidden');
+        button.addEventListener('click', () => {
+          const expanded = row.dataset.expanded === 'true';
+          row.dataset.expanded = expanded ? 'false' : 'true';
+          button.textContent = expanded ? 'Show all' : 'Show less';
+        });
+      }
+    });
+  }
+  // Rebind on every render. Initial bind covers the worker-injected case.
+  rebindToggles();
+  // Also re-run after a microtask so dynamically created cards from a manual
+  // re-render (future feature) pick up their toggles.
+  const observer = new MutationObserver(() => rebindToggles());
+  if (result) observer.observe(result, { childList: true, subtree: true });
+</script>

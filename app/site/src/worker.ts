@@ -26,6 +26,12 @@ interface Env {
   // throttling here also protects those upstream dependencies from a runaway
   // client looping the demo.
   RL_DEMO?: RateLimitBinding;
+  // /audit cache. Reuses the existing SESSION KV namespace under an `audit:`
+  // key prefix; results are cached by (target_url, hour-bucket) for ~1 hour
+  // so popular targets only hit the MCP audit endpoint once per hour.
+  // Optional so local dev without a real KV binding still boots (cache reads
+  // return null, cache writes are skipped).
+  SESSION?: KVNamespace;
 }
 
 
@@ -99,6 +105,226 @@ async function enforceRateLimit(request: Request, env: Env, route: string): Prom
     JSON.stringify({ error: 'rate_limited', message: 'Too many requests. Slow down and retry shortly.' }),
     { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS } },
   );
+}
+
+// ── /audit helpers ──────────────────────────────────────────────────────────
+//
+// Architecture: the audit logic lives in the MCP worker (runAudit in
+// mcp/src/tools/audit_site.ts) so there is one source of truth for spec rules
+// shared between the MCP tool surface and this HTTP surface. The site worker
+// orchestrates: validate input, rate-limit, look up cache, call the MCP
+// worker's plain-HTTP /api/audit endpoint via the service binding, cache the
+// result, and content-negotiate the response (JSON / Markdown / HTML).
+//
+// Cache strategy: keyed by sha256(target_url) + hour-bucket, TTL 1 hour.
+// Same target audited twice in the same hour hits warm. A new hour starts
+// fresh so spec compliance can be re-verified.
+
+type AuditReport = Record<string, unknown>;
+type AuditEnvelope =
+  | { ok: true;  target: string; cached: boolean; fetchedAt: string; report: AuditReport }
+  | { ok: false; target: string; error: string; message: string };
+
+const AUDIT_TTL_SECONDS = 3600;
+
+/**
+ * Normalise a user-typed target. Allow bare hostnames ("example.com"), promote
+ * to https://, reject anything that does not parse as http(s). Returns the
+ * canonical absolute URL on success, null on failure.
+ */
+function normaliseAuditTarget(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const u = new URL(withScheme);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    // Strip path and query; the audit always runs against the origin.
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Inspect an audit report and decide whether it is "successful enough" to
+ * cache. The agents.txt spec audit is per-file: the report can have rich
+ * content with real validation findings even when one file is missing
+ * (legitimately a 404). But when the upstream fetch never reached the target
+ * — Cloudflare edge timeout (522), DNS failure (status 0), or any 5xx —
+ * those statuses indicate the audit could not run, not that the target site
+ * failed compliance. Storing such results poisons the cache for an hour.
+ *
+ * Rule: if any of the three audited files came back with status 0 (network
+ * error / abort) or status >= 500 (upstream couldn't serve), the result is
+ * a transient infrastructure failure and must NOT be cached. A 404 on
+ * agents.json, by contrast, is a real and stable finding and gets cached
+ * normally.
+ */
+function isReportCacheable(report: AuditReport): boolean {
+  const sections = ['agentsTxt', 'agentsJson', 'robotsTxt'] as const;
+  for (const key of sections) {
+    const block = report[key] as { status?: number } | undefined;
+    const status = block?.status;
+    if (typeof status === 'number' && (status === 0 || status >= 500)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Call the MCP worker's /api/audit endpoint via the service binding, caching
+ * the result in KV for AUDIT_TTL_SECONDS. Returns the audit envelope ready
+ * to embed in the response. The `cached` flag distinguishes warm KV hits
+ * from fresh upstream calls so the page can show a small "cached" badge.
+ *
+ * `bypassCache: true` skips the KV read but still writes the fresh result
+ * back (when cacheable). Used by the `?nocache=1` query-string flag so a
+ * caller who knows the cached version is stale can force a re-fetch without
+ * waiting for the hour bucket to roll over.
+ */
+async function runAuditCached(
+  env: Env,
+  target: string,
+  options: { bypassCache?: boolean } = {},
+): Promise<AuditEnvelope> {
+  const now = Date.now();
+  const hourBucket = Math.floor(now / (AUDIT_TTL_SECONDS * 1000));
+  const targetHash = await sha256Hex(target);
+  const cacheKey = `audit:${targetHash}:${hourBucket}`;
+
+  if (env.SESSION && !options.bypassCache) {
+    const cached = await env.SESSION.get(cacheKey, 'json') as AuditReport | null;
+    if (cached) {
+      return { ok: true, target, cached: true, fetchedAt: new Date(hourBucket * AUDIT_TTL_SECONDS * 1000).toISOString(), report: cached };
+    }
+  }
+
+  if (!env.MCP) {
+    return { ok: false, target, error: 'mcp_unavailable', message: 'MCP service binding is not configured on this deployment.' };
+  }
+
+  // Service binding fetch: the hostname is ignored by the binding; the path
+  // must match the MCP worker's /api/audit handler in mcp/src/index.ts.
+  const upstream = await env.MCP.fetch(`https://mcp/api/audit?url=${encodeURIComponent(target)}`);
+  if (!upstream.ok) {
+    const text = await upstream.text().catch(() => '');
+    return { ok: false, target, error: 'audit_failed', message: `Upstream audit returned ${upstream.status}. ${text.slice(0, 200)}` };
+  }
+  const report = await upstream.json() as AuditReport;
+
+  if (env.SESSION && isReportCacheable(report)) {
+    // Fire-and-forget; cache misses are not load-bearing.
+    await env.SESSION.put(cacheKey, JSON.stringify(report), { expirationTtl: AUDIT_TTL_SECONDS }).catch(() => {});
+  }
+
+  return { ok: true, target, cached: false, fetchedAt: new Date(now).toISOString(), report };
+}
+
+/**
+ * Stringify an envelope safely for inline injection into a `<script
+ * type="application/json">` tag. The only escape we need is the
+ * `</script` sequence: a stored error message containing it would terminate
+ * the script tag prematurely. JSON.stringify's normal output is otherwise
+ * already safe to embed inside script tags.
+ */
+function safeJsonForScriptTag(value: unknown): string {
+  return JSON.stringify(value).replace(/<\/script/gi, '<\\/script');
+}
+
+/**
+ * Render the audit envelope as Markdown. Mirrors the structure of the JSON
+ * report, with one section per audited file and a summary line at the top.
+ * Designed to be readable by humans and by LLMs that fetch the URL with
+ * `Accept: text/markdown` and want to summarise or quote the result.
+ */
+function renderAuditMarkdown(envelope: AuditEnvelope): string {
+  if (!envelope.ok) {
+    return `# agents.txt audit\n\n**Error**: \`${envelope.error}\`\n\n${envelope.message}\n`;
+  }
+  const r = envelope.report;
+  const summary = r.summary as { compliant?: boolean; errorCount?: number; warningCount?: number } | undefined;
+  const status = summary?.compliant ? 'PASS' : 'FAIL';
+  const lines: string[] = [];
+  lines.push(`# agents.txt audit · ${envelope.target}`);
+  lines.push('');
+  lines.push(`**Status**: ${status} · ${summary?.errorCount ?? 0} errors · ${summary?.warningCount ?? 0} warnings`);
+  if (envelope.cached) lines.push('');
+  if (envelope.cached) lines.push(`*Cached result from ${envelope.fetchedAt}.*`);
+  lines.push('');
+
+  const section = (heading: string, block: unknown) => {
+    if (!block || typeof block !== 'object') return;
+    const b = block as Record<string, unknown>;
+    lines.push(`## ${heading}`);
+    if ('found' in b) lines.push(`Served: ${b.found ? 'yes' : 'no'}${typeof b.status === 'number' ? ` · HTTP ${b.status}` : ''}`);
+    const v = b.validation as { errors?: string[]; warnings?: string[] } | undefined;
+    if (v?.errors?.length) {
+      lines.push('');
+      lines.push('### Errors');
+      v.errors.forEach(e => lines.push(`- ${e}`));
+    }
+    if (v?.warnings?.length) {
+      lines.push('');
+      lines.push('### Warnings');
+      v.warnings.forEach(w => lines.push(`- ${w}`));
+    }
+    lines.push('');
+  };
+  section('/agents.txt',  r.agentsTxt);
+  section('/agents.json', r.agentsJson);
+  section('/robots.txt',  r.robotsTxt);
+
+  const c = r.consistency as { valid?: boolean; issues?: string[]; note?: string } | undefined;
+  if (c) {
+    lines.push('## Cross-file consistency');
+    if (c.valid) {
+      lines.push('Consistent.');
+    } else if (c.issues?.length) {
+      lines.push('Inconsistencies:');
+      c.issues.forEach(i => lines.push(`- ${i}`));
+    } else if (c.note) {
+      lines.push(c.note);
+    }
+    lines.push('');
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Serve the static Astro shell for /audit/ from ASSETS, splicing the audit
+ * envelope into its `<script id="audit-data">` placeholder. The page's
+ * inline script reads that element on load and renders the result. This is
+ * the "(a)" architecture: zero-flicker, no client-side fetch round trip.
+ */
+async function renderAuditHtml(request: Request, env: Env, envelope: AuditEnvelope): Promise<Response> {
+  const shellRequest = new Request(new URL('/audit/', request.url));
+  const shell = await env.ASSETS.fetch(shellRequest);
+  if (!shell.ok) {
+    // Page not built? Fall back to the JSON form so the caller still gets
+    // something useful, with a hint about the misconfiguration.
+    return Response.json({ ...envelope, _shell_error: shell.status }, { status: 500, headers: CORS });
+  }
+  const html = await shell.text();
+  const replaced = html.replace(
+    /<script id="audit-data" type="application\/json">[^<]*<\/script>/,
+    `<script id="audit-data" type="application/json">${safeJsonForScriptTag(envelope)}</script>`,
+  );
+  return new Response(replaced, {
+    status: 200,
+    headers: {
+      'Content-Type':                'text/html; charset=utf-8',
+      'Cache-Control':               'no-store',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 }
 
 // /mpp is the MPP-protocol equivalent of /x402: a synthetic gated resource
@@ -186,6 +412,51 @@ export default {
 
     if (env.MCP  && matches(pathname, MCP_PREFIXES))  return proxyTo(request, env.MCP);
     if (env.AUTH && matches(pathname, AUTH_PREFIXES)) return proxyTo(request, env.AUTH);
+
+    // ── /audit: shareable spec audit for any site ─────────────────────────
+    // - GET /audit          (no ?url) → static Astro form page
+    // - GET /audit?url=…    → run audit + content-negotiate:
+    //     Accept: application/json → JSON envelope
+    //     Accept: text/markdown    → Markdown report (LLM-friendly)
+    //     default (HTML)           → Astro shell with audit JSON inlined
+    //                                  into <script id="audit-data">; the
+    //                                  page's client script renders it.
+    // The result URL is stable and shareable. The MCP worker's /api/audit
+    // does the actual work; the site worker handles rate-limit, KV cache,
+    // and presentation.
+    if (pathname === '/audit') {
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: CORS });
+      }
+      const target = new URL(request.url).searchParams.get('url');
+      if (!target) return env.ASSETS.fetch(request);
+
+      const validated = normaliseAuditTarget(target);
+      const acceptH = request.headers.get('accept') ?? '';
+      const wantsJson = /application\/json/i.test(acceptH);
+      const wantsMd   = /text\/markdown/i.test(acceptH);
+
+      if (!validated) {
+        const errEnv: AuditEnvelope = { ok: false, target, error: 'invalid_url', message: `"${target}" is not a valid http(s) URL.` };
+        if (wantsJson) return Response.json(errEnv, { status: 400, headers: CORS });
+        if (wantsMd)   return new Response(renderAuditMarkdown(errEnv), { status: 400, headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...CORS } });
+        return renderAuditHtml(request, env, errEnv);
+      }
+
+      const limited = await enforceRateLimit(request, env, 'audit');
+      if (limited) return limited;
+
+      // ?nocache=1 forces a fresh upstream audit, bypassing the KV read but
+      // still writing the result back when it is cacheable. Useful after a
+      // target has just been redeployed and the operator wants to re-verify
+      // without waiting for the hour bucket to roll over.
+      const bypassCache = new URL(request.url).searchParams.get('nocache') === '1';
+      const envelope = await runAuditCached(env, validated, { bypassCache });
+
+      if (wantsJson) return Response.json(envelope, { headers: CORS });
+      if (wantsMd)   return new Response(renderAuditMarkdown(envelope), { headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...CORS } });
+      return renderAuditHtml(request, env, envelope);
+    }
 
     // Markdown for Agents: when a client sends `Accept: text/markdown` (or the
     // markdown q-value beats text/html), serve /llms-full.txt — the canonical

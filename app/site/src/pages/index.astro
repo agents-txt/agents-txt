@@ -379,6 +379,55 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
           <p class="text-xs text-[#777] leading-relaxed">The source for every route on this site is on <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">GitHub</a>. The reference workers (site, MCP, agent-auth) are Apache 2.0; vendor in or fork freely.</p>
         </div>
       </div>
+
+      <!-- Composability callout. Same visual motif as the hero's /agents.json
+           preview box so the eye reads the connection: agents.json is the
+           seam at which any further discovery surface attaches to the site. -->
+      <div class="border border-[#e5e5e5] mt-10">
+        <div class="px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]">
+          <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-[#999]">Compose</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] gap-x-10 gap-y-8 items-center px-6 py-7">
+          <div class="max-w-[44ch]">
+            <p class="text-lg sm:text-xl font-bold tracking-tight text-[#111] leading-snug mb-3">
+              Your site, your discovery shape.
+            </p>
+            <p class="text-sm text-[#555] leading-relaxed">
+              Once <span class="font-mono text-[#111]">/agents.txt</span> and <span class="font-mono text-[#111]">/agents.json</span> are live, publish any extra discovery file your site needs (a <span class="font-mono text-[#111]">/changelog.json</span>, an <span class="font-mono text-[#111]">/openapi.json</span>, a <span class="font-mono text-[#111]">/.well-known/*</span> for an emerging standard) and reference it from <span class="font-mono text-[#111]">agents.json</span>. Parsers ignore fields they do not recognise by design. The standard composes. The shape of your site stays yours.
+            </p>
+          </div>
+          <!-- Interactive seam: the agents.json on the left declares an
+               `api` URL; the /api.json tab shows what that URL resolves to.
+               The pattern works for any custom discovery file a site
+               publishes. Reuses the same tab-toggle motif as the hero's
+               /agents.txt ↔ /agents.json preview. -->
+          <div id="compose-preview" class="border border-[#e5e5e5] bg-[#fafafa] overflow-hidden flex flex-col">
+            <div class="flex items-stretch border-b border-[#e5e5e5] bg-white shrink-0">
+              <button id="compose-tab-agents" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-[#111] text-[#111]">
+                /agents.json
+              </button>
+              <button id="compose-tab-api" type="button" class="cursor-pointer font-mono text-[11px] font-semibold px-4 py-2.5 transition-colors border-b-2 border-transparent text-[#777] hover:text-[#111]">
+                /changelog.json
+              </button>
+              <span class="ml-auto self-center px-4 font-mono text-[10px] tracking-[0.06em] uppercase text-[#999]">on your site</span>
+            </div>
+            <pre id="compose-pane-agents" class="font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
+  "version":   "1.0",
+  "mcp":       [...],
+  "skills":    [...],
+  "changelog": "https://yoursite.com/changelog.json",
+  "x-status":  "https://status.yoursite.com"
+}`}</pre>
+            <pre id="compose-pane-api" class="hidden font-mono text-[11px] leading-relaxed text-[#333] px-4 py-3 overflow-auto m-0 bg-transparent">{`{
+  "version": "1.0",
+  "releases": [
+    { "version": "2.4.0", "date": "2026-05-12" },
+    { "version": "2.3.0", "date": "2026-04-28" }
+  ]
+}`}</pre>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Status -->
@@ -478,4 +527,29 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
 
   tabTxt?.addEventListener('click',  () => activate('txt'));
   tabJson?.addEventListener('click', () => activate('json'));
+
+  // ── Compose section tab toggle (/agents.json ↔ /api.json) ──────────────
+  // Same mechanism as the hero toggle above: swap `hidden` between the two
+  // panes, repaint the active-tab underline.
+  const composeTabAgents = document.getElementById('compose-tab-agents');
+  const composeTabApi    = document.getElementById('compose-tab-api');
+  const composePaneAgents = document.getElementById('compose-pane-agents');
+  const composePaneApi    = document.getElementById('compose-pane-api');
+
+  function composeActivate(mode: 'agents' | 'api') {
+    if (!composeTabAgents || !composeTabApi || !composePaneAgents || !composePaneApi) return;
+    const isApi = mode === 'api';
+    composePaneAgents.classList.toggle('hidden',  isApi);
+    composePaneApi.classList.toggle('hidden',    !isApi);
+    composeTabAgents.classList.toggle('text-[#111]',         !isApi);
+    composeTabAgents.classList.toggle('border-[#111]',       !isApi);
+    composeTabAgents.classList.toggle('text-[#777]',          isApi);
+    composeTabAgents.classList.toggle('border-transparent',   isApi);
+    composeTabApi.classList.toggle('text-[#111]',             isApi);
+    composeTabApi.classList.toggle('border-[#111]',           isApi);
+    composeTabApi.classList.toggle('text-[#777]',            !isApi);
+    composeTabApi.classList.toggle('border-transparent',     !isApi);
+  }
+  composeTabAgents?.addEventListener('click', () => composeActivate('agents'));
+  composeTabApi?.addEventListener('click',    () => composeActivate('api'));
 </script>

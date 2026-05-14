@@ -9,6 +9,16 @@ import {
   isAcceptedAuthIdentifier,
 } from '../protocols.js';
 
+/**
+ * Subset of the worker's Env that audit_site needs. Kept inline here rather
+ * than imported from server.ts so this tool can be invoked from contexts
+ * (tests, plain HTTP API in index.ts) that hold either shape.
+ */
+export interface AuditEnv {
+  SITE_ORIGIN?: string;
+  SITE?: { fetch: typeof fetch };
+}
+
 // audit_site
 // ---------------------------------------------------------------------------
 // Audits a live site for compliance with the agents.txt specification.
@@ -62,9 +72,20 @@ type FetchOk = { found: true; content: string; status: number; headers: Response
 type FetchFail = { found: false; status: number; error?: string };
 type FetchResult = FetchOk | FetchFail;
 
-async function safeFetch(url: string): Promise<FetchResult> {
+async function safeFetch(url: string, env?: AuditEnv): Promise<FetchResult> {
+  // When the target origin matches the deployment's own SITE_ORIGIN, route
+  // through the SITE service binding instead of plain fetch(). Reason: a
+  // Cloudflare worker reached via a service binding (site → MCP) cannot then
+  // call public fetch() back to the same Cloudflare account's zone — the
+  // edge detects the subrequest as a loop and returns HTTP 522. The service
+  // binding stays inside Cloudflare's internal routing and bypasses the
+  // detection. Falls back to plain fetch() when either the binding or the
+  // SITE_ORIGIN var is missing (e.g. wrangler dev, or auditing a target
+  // unrelated to the deployment).
+  const useBinding = !!(env?.SITE && env?.SITE_ORIGIN && url.startsWith(env.SITE_ORIGIN));
+  const fetcher = useBinding ? env!.SITE!.fetch.bind(env!.SITE!) : fetch;
   try {
-    const res = await fetch(url, {
+    const res = await fetcher(url, {
       headers: { 'User-Agent': 'agents-txt-validator/1.0 (https://agentstxt.dev/mcp)' },
       signal: AbortSignal.timeout(8000),
     });
@@ -438,31 +459,30 @@ function crossCheck(
   return issues;
 }
 
-export function registerAuditSite(server: McpServer) {
-  server.registerTool(
-    'audit_site',
-    {
-      description:
-        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3, §6–§11, the JSON schema in §5, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
-      inputSchema: {
-        url: z.string().describe('Site origin or URL to audit (e.g. "https://example.com" or "example.com")'),
-      },
-    },
-    async ({ url }: { url: string }) => {
-      let origin: string;
-      try {
-        origin = normalizeOrigin(url);
-      } catch {
-        return {
-          content: [{ type: 'text' as const, text: JSON.stringify({ error: `Invalid URL: "${url}"` }, null, 2) }],
-          isError: true,
-        };
-      }
+/**
+ * Run an agents.txt-spec audit against a live site. Returns the same report
+ * shape the `audit_site` MCP tool produces, but as a plain object — no MCP
+ * envelope. The MCP tool below is a thin wrapper that calls this function
+ * and JSON-stringifies the result into `content[0].text`. Plain HTTP callers
+ * (e.g. the site worker's `/audit` route) can invoke this directly and skip
+ * the MCP protocol layer entirely.
+ *
+ * Errors on invalid URL input: returns `{ error }` plus `_error: true` so a
+ * caller can distinguish a bad-input report from a successful audit that
+ * happens to find errors on the target.
+ */
+export async function runAudit(url: string, env?: AuditEnv): Promise<Record<string, unknown>> {
+  let origin: string;
+  try {
+    origin = normalizeOrigin(url);
+  } catch {
+    return { error: `Invalid URL: "${url}"`, _error: true };
+  }
 
       const [txtResult, jsonResult, robotsResult] = await Promise.all([
-        safeFetch(`${origin}/agents.txt`),
-        safeFetch(`${origin}/agents.json`),
-        safeFetch(`${origin}/robots.txt`),
+        safeFetch(`${origin}/agents.txt`, env),
+        safeFetch(`${origin}/agents.json`, env),
+        safeFetch(`${origin}/robots.txt`, env),
       ]);
 
       const report: Record<string, unknown> = { site: origin };
@@ -568,13 +588,36 @@ export function registerAuditSite(server: McpServer) {
         ...((report.agentsJson as { validation?: { warnings?: string[] } }).validation?.warnings ?? []),
         ...((report.robotsTxt as { validation?: { warnings?: string[] } }).validation?.warnings ?? []),
       ];
-      report.summary = {
-        compliant: allErrors.length === 0,
-        errorCount: allErrors.length,
-        warningCount: allWarnings.length,
-      };
+  report.summary = {
+    compliant: allErrors.length === 0,
+    errorCount: allErrors.length,
+    warningCount: allWarnings.length,
+  };
 
-      return { content: [{ type: 'text' as const, text: JSON.stringify(report, null, 2) }] };
+  return report;
+}
+
+export function registerAuditSite(server: McpServer, env?: AuditEnv) {
+  server.registerTool(
+    'audit_site',
+    {
+      description:
+        'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3, §6–§11, the JSON schema in §5, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
+      inputSchema: {
+        url: z.string().describe('Site origin or URL to audit (e.g. "https://example.com" or "example.com")'),
+      },
+    },
+    async ({ url }: { url: string }) => {
+      const report = await runAudit(url, env);
+      const isError = report._error === true;
+      // Strip the internal `_error` flag from the wire payload; it exists
+      // only so plain HTTP callers can distinguish bad input from a normal
+      // audit. MCP clients use `isError` at the envelope level instead.
+      if (isError) delete report._error;
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(report, null, 2) }],
+        ...(isError ? { isError: true as const } : {}),
+      };
     },
   );
 }
