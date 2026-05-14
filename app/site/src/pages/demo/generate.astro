@@ -316,15 +316,36 @@ import { SPEC_VERSION } from '../../config';
             <label class="flex items-center gap-3 cursor-pointer select-none">
               <input type="checkbox" id="chk-auth" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
               <span class="text-sm font-medium text-[#111]">Authorization</span>
-              <span class="font-mono text-[11px] text-[#999]">agent-auth · Ed25519 · JWT</span>
+              <span class="font-mono text-[11px] text-[#999]">agent-auth · oauth2 · pick one or both</span>
             </label>
             <div id="auth-sub" class="hidden">
-              <div class="mt-4 pl-5 flex flex-col gap-3">
-                <div class="grid grid-cols-[7rem_1fr] items-center gap-3">
-                  <label class="text-xs text-[#555]" for="auth-protocol">Protocol</label>
-                  <input id="auth-protocol" type="text" value="agent-auth"
-                    class="font-mono text-xs px-2.5 py-1.5 border border-[#e5e5e5] focus:border-[#111] outline-none bg-white transition-colors w-full" />
+              <div class="mt-4 pl-5 flex flex-col gap-5">
+
+                <!-- agent-auth sub-toggle -->
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input type="checkbox" id="chk-auth-agent-auth" class="w-3.5 h-3.5 accent-[#111] shrink-0" checked />
+                    <span class="text-xs font-semibold text-[#111]">agent-auth</span>
+                    <span class="font-mono text-[11px] text-[#999]">Ed25519 · JWT · per-agent identity with capability grants</span>
+                  </label>
+                  <p class="pl-5 mt-2 text-[11px] text-[#999] leading-relaxed">
+                    Discovery at <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">/.well-known/agent-configuration</code>. Each agent holds an Ed25519 keypair, registers under a host, and signs per-request JWTs scoped to specific capabilities.
+                  </p>
                 </div>
+
+                <!-- oauth2 sub-toggle -->
+                <div>
+                  <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input type="checkbox" id="chk-auth-oauth2" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
+                    <span class="text-xs font-semibold text-[#111]">oauth2</span>
+                    <span class="font-mono text-[11px] text-[#999]">RFC 6749 · client-credentials · scope-based</span>
+                  </label>
+                  <p class="pl-5 mt-2 text-[11px] text-[#999] leading-relaxed">
+                    Discovery at <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">/.well-known/oauth-authorization-server</code> (RFC 8414) and <code class="font-mono bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5 text-[10px]">/.well-known/openid-configuration</code> (OIDC alias). Per-client credentials authenticate, scopes gate the resource.
+                  </p>
+                </div>
+
+                <!-- Identity: required policy hint -->
                 <label class="flex items-center gap-3 cursor-pointer select-none">
                   <input type="checkbox" id="chk-identity" class="w-3.5 h-3.5 accent-[#111] shrink-0" />
                   <span class="text-xs text-[#555]">
@@ -524,7 +545,8 @@ import { SPEC_VERSION } from '../../config';
       ap2Spec:          string
       ap2Description:   string
       authorization:    boolean
-      authProtocol:     string
+      authAgentAuth:    boolean
+      authOauth2:       boolean
       identityRequired: boolean
       mcp:              boolean
       mcpUrl:           string
@@ -537,44 +559,111 @@ import { SPEC_VERSION } from '../../config';
       ucpDescription:   string
     }
 
+    // ── Input sanitization ─────────────────────────────────────────────────
+    // Every value the user types goes through one of three normalizers below
+    // before it lands in the generated agents.txt / agents.json. The output is
+    // pure text (and then JSON via JSON.stringify), but agents.txt is a
+    // line-oriented format: a stray newline or `# ` injected into a field
+    // would corrupt the file in a way that survives copy-paste. The token,
+    // price, and URL normalizers each strip out the wire-syntax characters
+    // that would matter on their respective field.
+    //
+    // No backend submission happens here (everything is browser-side), so
+    // this is XSS-as-template-injection prevention, not server-side input
+    // hardening. The output `<pre>` blocks set textContent (not innerHTML),
+    // which already prevents script execution; these normalizers stop the
+    // user from accidentally pasting a multi-line value that breaks the file
+    // format the moment they copy it into their site's /public folder.
+    const MAX_TEXT_LEN  = 200
+    const MAX_DESC_LEN  = 400
+    const MAX_URL_LEN   = 2048
+
+    // Strip ASCII control chars (incl. newlines/tabs) and zero-width
+    // characters that would invisibly survive a paste into a text editor.
+    // Collapse internal whitespace to a single space; cap at maxLen.
+    function sanitizeText(raw: string, maxLen = MAX_TEXT_LEN): string {
+      // Strip ASCII C0 + DEL controls, zero-width chars, BiDi marks, BOM.
+      // Built from \uXXXX escapes so the source stays plain ASCII and the
+      // Astro parser does not see literal control bytes.
+      // eslint-disable-next-line no-control-regex
+      const FORBIDDEN = /[\u0000-\u001F\u007F\u200B-\u200F\u2028\u2029\uFEFF]/g
+      const stripped = raw
+        .replace(FORBIDDEN, "")
+        .replace(/\s+/g, " ")
+        .trim()
+      return stripped.length > maxLen ? stripped.slice(0, maxLen) : stripped
+    }
+
+    // URLs must be syntactically valid and HTTPS (spec §4.1 requires HTTPS
+    // for every URL-carrying directive: MCP, Skills, UCP). Reject anything
+    // else by returning empty string, which causes the generator to fall
+    // back to its placeholder. The constructor handles userinfo, fragments,
+    // bidirectional control chars, etc. natively.
+    function sanitizeUrl(raw: string): string {
+      const trimmed = sanitizeText(raw, MAX_URL_LEN)
+      if (!trimmed) return ''
+      try {
+        const u = new URL(trimmed)
+        if (u.protocol !== 'https:') return ''
+        return u.toString()
+      } catch {
+        return ''
+      }
+    }
+
+    // Numeric price strings: digits and a single dot, no scientific notation
+    // or sign. agents.json carries the amount as a string per spec §5.3.
+    function sanitizePrice(raw: string): string {
+      const trimmed = sanitizeText(raw, 24)
+      if (!/^\d+(\.\d+)?$/.test(trimmed)) return ''
+      return trimmed
+    }
+
+    // Currency / token tickers: uppercase ASCII letters, 1-8 chars.
+    function sanitizeToken(raw: string): string {
+      const upper = sanitizeText(raw, 8).toUpperCase()
+      return /^[A-Z]{1,8}$/.test(upper) ? upper : ''
+    }
+
     function readConfig(): GenConfig {
       const v = (id: string): string =>
         ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim()
       const c = (id: string): boolean =>
         !!(document.getElementById(id) as HTMLInputElement | null)?.checked
       return {
-        name:              v('site-name') || 'My Site',
-        url:               v('site-url')  || 'https://example.com',
-        description:       v('site-desc'),
+        name:              sanitizeText(v('site-name')) || 'My Site',
+        url:               sanitizeUrl(v('site-url'))  || 'https://example.com',
+        description:       sanitizeText(v('site-desc'), MAX_DESC_LEN),
         payments:          c('chk-payments'),
         x402:              c('chk-x402'),
         evmChain:          c('chk-evm'),
         solanaChain:       c('chk-solana'),
-        x402Price:         v('x402-price'),
-        x402Token:         v('x402-token'),
-        x402Description:   v('x402-description'),
+        x402Price:         sanitizePrice(v('x402-price')),
+        x402Token:         sanitizeToken(v('x402-token')),
+        x402Description:   sanitizeText(v('x402-description'), MAX_DESC_LEN),
         mpp:               c('chk-mpp'),
         mppTempo:          c('chk-mpp-tempo'),
         mppStripe:         c('chk-mpp-stripe'),
-        mppPrice:          v('mpp-price'),
-        mppToken:          v('mpp-token'),
-        mppDescription:    v('mpp-description'),
+        mppPrice:          sanitizePrice(v('mpp-price')),
+        mppToken:          sanitizeToken(v('mpp-token')),
+        mppDescription:    sanitizeText(v('mpp-description'), MAX_DESC_LEN),
         ap2:               c('chk-ap2'),
         ap2SdJwt:          c('chk-ap2-sdjwt'),
-        ap2Spec:           v('ap2-spec'),
-        ap2Description:    v('ap2-description'),
+        ap2Spec:           sanitizeUrl(v('ap2-spec')),
+        ap2Description:    sanitizeText(v('ap2-description'), MAX_DESC_LEN),
         authorization:     c('chk-auth'),
-        authProtocol:      v('auth-protocol') || 'agent-auth',
+        authAgentAuth:     c('chk-auth-agent-auth'),
+        authOauth2:        c('chk-auth-oauth2'),
         identityRequired:  c('chk-identity'),
         mcp:               c('chk-mcp'),
-        mcpUrl:            v('mcp-url'),
-        mcpDescription:    v('mcp-desc'),
+        mcpUrl:            sanitizeUrl(v('mcp-url')),
+        mcpDescription:    sanitizeText(v('mcp-desc'), MAX_DESC_LEN),
         skills:            c('chk-skills'),
-        skillsUrl:         v('skills-url'),
-        skillsDescription: v('skills-desc'),
+        skillsUrl:         sanitizeUrl(v('skills-url')),
+        skillsDescription: sanitizeText(v('skills-desc'), MAX_DESC_LEN),
         ucp:               c('chk-ucp'),
-        ucpUrl:            v('ucp-url'),
-        ucpDescription:    v('ucp-desc'),
+        ucpUrl:            sanitizeUrl(v('ucp-url')),
+        ucpDescription:    sanitizeText(v('ucp-desc'), MAX_DESC_LEN),
       }
     }
 
@@ -598,8 +687,13 @@ import { SPEC_VERSION } from '../../config';
       }
 
       if (c.authorization) {
-        lines.push('', `Authorization: ${c.authProtocol}`)
-        if (c.identityRequired) lines.push('Identity: required')
+        const authProtocols: string[] = []
+        if (c.authAgentAuth) authProtocols.push('agent-auth')
+        if (c.authOauth2)    authProtocols.push('oauth2')
+        if (authProtocols.length > 0) {
+          lines.push('', `Authorization: ${authProtocols.join(', ')}`)
+          if (c.identityRequired) lines.push('Identity: required')
+        }
       }
 
       if (c.mcp) {
@@ -686,12 +780,25 @@ import { SPEC_VERSION } from '../../config';
       }
 
       if (c.authorization) {
-        const auth: Record<string, unknown> = {
-          protocols: [c.authProtocol],
-          discovery: '/.well-known/agent-configuration',
+        const authProtocols: string[] = []
+        if (c.authAgentAuth) authProtocols.push('agent-auth')
+        if (c.authOauth2)    authProtocols.push('oauth2')
+        if (authProtocols.length > 0) {
+          const auth: Record<string, unknown> = {
+            protocols: authProtocols,
+            // The `discovery` field announces the non-standard path. agent-auth
+            // lives at /.well-known/agent-configuration; OAuth uses RFC-standard
+            // /.well-known/oauth-authorization-server which clients fetch by
+            // convention. When agent-auth is selected the agent-auth path is the
+            // load-bearing announcement; when only oauth2 is selected the OAuth
+            // path replaces it.
+            discovery: c.authAgentAuth
+              ? '/.well-known/agent-configuration'
+              : '/.well-known/oauth-authorization-server',
+          }
+          if (c.identityRequired) auth.identity = 'required'
+          obj.authorization = auth
         }
-        if (c.identityRequired) auth.identity = 'required'
-        obj.authorization = auth
       }
 
       if (c.mcp) {

@@ -9,11 +9,33 @@
     { "binding": "AUTH_KV", "id": "preview_id_placeholder", "preview_id": "preview_id_placeholder" }
   ],
 
+  // Per-IP rate limiter, keyed by `<cf-connecting-ip>:<route>` in
+  // `src/ratelimit.ts`. 20 requests / 60s is the demo-tier budget; if a real
+  // deployment needs differentiated thresholds per route, add a second entry
+  // with a distinct `name` and namespace_id and pick between them at the
+  // call site. namespace_id is an arbitrary numeric identifier scoped to this
+  // account; collisions across workers in the same account are by-design
+  // since the limiter then aggregates traffic from both.
+  "ratelimits": [
+    {
+      "name": "RL_AUTH",
+      "namespace_id": "2001",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
+
   "env": {
     "production": {
       "name": "agents-txt-auth-production",
       "kv_namespaces": [
         { "binding": "AUTH_KV", "id": "da5bf2d4aabc416e9c66c69be9bf94e5" }
+      ],
+      "ratelimits": [
+        {
+          "name": "RL_AUTH",
+          "namespace_id": "2001",
+          "simple": { "limit": 20, "period": 60 }
+        }
       ],
       "routes": [{ "pattern": "auth.agentstxt.dev", "custom_domain": true }]
     }

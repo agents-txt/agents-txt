@@ -4,6 +4,7 @@ import type { Env } from './types.js';
 import { mountDiscoveryRoutes } from './routes/discovery.js';
 import { mountAgentRoutes } from './routes/agent.js';
 import { mountCapabilityRoutes, mountProtectedRoutes } from './routes/capability.js';
+import { mountOAuthRoutes } from './routes/oauth.js';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -17,6 +18,7 @@ mountDiscoveryRoutes(app);
 mountAgentRoutes(app);
 mountCapabilityRoutes(app);
 mountProtectedRoutes(app);
+mountOAuthRoutes(app);
 
 app.get('/health', (c) => c.json({ ok: true, service: 'agents-txt-auth', version: '0.1.0' }));
 

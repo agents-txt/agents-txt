@@ -175,7 +175,16 @@ export default {
 
   authorization: {
     enabled: true,
-    protocols: ['agent-auth'],
+    // Both protocols are wired in the auth worker. agent-auth (Ed25519 + JWT)
+    // is the per-agent identity flow; oauth2 (RFC 6749 §4.4 client-credentials)
+    // is the per-client token flow. Agents pick whichever they support. The
+    // matching well-known discovery surfaces are served at:
+    //   /.well-known/agent-configuration            (agent-auth)
+    //   /.well-known/openid-configuration           (oauth2)
+    //   /.well-known/oauth-authorization-server     (oauth2 alias)
+    //   /.well-known/oauth-protected-resource       (oauth2 RFC 9728)
+    //   /.well-known/jwks.json                      (oauth2 public key)
+    protocols: ['agent-auth', 'oauth2'],
     identityRequired: false,
   },
 

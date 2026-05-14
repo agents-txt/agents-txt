@@ -34,7 +34,8 @@
   },
   "authorization": {
     "protocols": [
-      "agent-auth"
+      "agent-auth",
+      "oauth2"
     ],
     "discovery": "/.well-known/agent-configuration"
   },

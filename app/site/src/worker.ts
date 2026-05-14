@@ -1,6 +1,10 @@
 import { Mppx, tempo, stripe } from 'mppx/server';
 import Stripe from 'stripe';
 
+interface RateLimitBinding {
+  limit(opts: { key: string }): Promise<{ success: boolean }>;
+}
+
 interface Env {
   ASSETS: Fetcher;
   MCP?:  { fetch: typeof fetch };
@@ -16,10 +20,32 @@ interface Env {
   STRIPE_SECRET_KEY?: string;
   STRIPE_NETWORK_ID?: string;
   MPP_SECRET_KEY?: string;
+  // Per-IP rate limiter for /x402 and /mpp. Optional so local dev without the
+  // binding still boots; absence is a no-op. Both demo routes call out to
+  // third-party facilitators (x402.org, Stripe, Tempo) on the hot path, so
+  // throttling here also protects those upstream dependencies from a runaway
+  // client looping the demo.
+  RL_DEMO?: RateLimitBinding;
 }
 
+
 const MCP_PREFIXES  = ['/mcp', '/sse'];
-const AUTH_PREFIXES = ['/.well-known/agent-configuration', '/agent/', '/capability/', '/auth'];
+// The auth worker speaks two protocols in parallel: agent-auth (Ed25519 + JWT,
+// discovery at /.well-known/agent-configuration) and OAuth 2.0 (client-
+// credentials grant, discovery at the standard RFC 8414 / OIDC paths). Both
+// live on the same worker; the site worker proxies every prefix they own so
+// agents.txt's `Authorization:` block can advertise either or both.
+const AUTH_PREFIXES = [
+  '/.well-known/agent-configuration',
+  '/.well-known/openid-configuration',
+  '/.well-known/oauth-authorization-server',
+  '/.well-known/oauth-protected-resource',
+  '/.well-known/jwks.json',
+  '/agent/',
+  '/capability/',
+  '/oauth/',
+  '/auth',
+];
 
 function matches(pathname: string, prefixes: string[]): boolean {
   return prefixes.some(p =>
@@ -58,6 +84,22 @@ const CORS = {
   'Access-Control-Max-Age': '86400',
   'Access-Control-Expose-Headers': 'X-Payment-Response, Payment-Receipt, WWW-Authenticate',
 };
+
+/**
+ * Per-IP, per-route rate-limit gate. Returns a 429 Response when over budget,
+ * null otherwise. CF-Connecting-IP is set by Cloudflare's edge and cannot be
+ * spoofed by the client; the 'unknown' fallback covers local dev only.
+ */
+async function enforceRateLimit(request: Request, env: Env, route: string): Promise<Response | null> {
+  if (!env.RL_DEMO) return null;
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+  const { success } = await env.RL_DEMO.limit({ key: `${ip}:${route}` });
+  if (success) return null;
+  return new Response(
+    JSON.stringify({ error: 'rate_limited', message: 'Too many requests. Slow down and retry shortly.' }),
+    { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS } },
+  );
+}
 
 // /mpp is the MPP-protocol equivalent of /x402: a synthetic gated resource
 // whose only purpose is to demonstrate the MPP wire shape. agents.json never
@@ -180,6 +222,8 @@ export default {
       if (request.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers: CORS });
       }
+      const limited = await enforceRateLimit(request, env, 'x402');
+      if (limited) return limited;
 
       const payTo = env.SOLANA_ADDRESS;
       if (!payTo) {
@@ -273,6 +317,8 @@ export default {
       if (request.method === 'OPTIONS') {
         return new Response(null, { status: 204, headers: CORS });
       }
+      const limited = await enforceRateLimit(request, env, 'mpp');
+      if (limited) return limited;
 
       const status = getMppx(env);
       if (!status.ok) {

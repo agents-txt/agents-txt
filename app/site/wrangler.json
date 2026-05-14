@@ -27,6 +27,13 @@
 			"service": "agents-txt-auth-production"
 		}
 	],
+	"ratelimits": [
+		{
+			"name": "RL_DEMO",
+			"namespace_id": "3001",
+			"simple": { "limit": 30, "period": 60 }
+		}
+	],
 	"env": {
 		"production": {
 			"name": "agents-txt-site-production",
@@ -44,6 +51,13 @@
 				{
 					"binding": "AUTH",
 					"service": "agents-txt-auth-production"
+				}
+			],
+			"ratelimits": [
+				{
+					"name": "RL_DEMO",
+					"namespace_id": "3001",
+					"simple": { "limit": 30, "period": 60 }
 				}
 			]
 		}

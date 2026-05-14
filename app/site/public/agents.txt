@@ -4,7 +4,7 @@
 
 Protocols: x402, mpp, ap2
 
-Authorization: agent-auth
+Authorization: agent-auth, oauth2
 
 MCP: https://agentstxt.dev/mcp
 

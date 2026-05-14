@@ -6,7 +6,7 @@ import { SPEC_VERSION } from '../config';
 
 <BaseLayout
   title="Demos · agents.txt"
-  description="Working protocol demonstrations for the agents.txt standard. Agent Auth, MCP, Skills, A2A, UCP, and payment protocols running live against this server."
+  description="Working protocol demonstrations for the agents.txt standard. Agent Auth, OAuth 2.0, MCP, Skills, A2A, UCP, and payment protocols running live against this server."
   canonicalUrl="https://agentstxt.dev/demo"
 >
   <!-- Nav -->
@@ -369,6 +369,45 @@ import { SPEC_VERSION } from '../config';
                   ['4', 'Capability execution (agent JWT)'],
                   ['5a', 'Protected resource: unauthenticated → 401'],
                   ['5b', 'Protected resource: authenticated → 200'],
+                ].map(([num, label]) => (
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-mono text-[10px] text-[#bbb] shrink-0 w-4">{num}</span>
+                    <span class="text-xs text-[#555]">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- OAuth 2.0 demo -->
+        <a href="/demo/oauth" class="block group no-underline h-full">
+          <div class="border border-[#e5e5e5] group-hover:border-[#111] transition-colors h-full flex flex-col">
+            <div class="px-6 py-5 border-b border-[#e5e5e5] flex-1">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-semibold text-[#111]">OAuth 2.0 client-credentials</p>
+                  <p class="font-mono text-[11px] text-[#999] mt-1">Authorization directive (§11.2) · RFC 6749 §4.4 · ES256 · RFC 8414 + 9728</p>
+                </div>
+                <span class="font-mono text-xs text-[#999] group-hover:text-[#111] transition-colors shrink-0 mt-0.5">
+                  Run demo →
+                </span>
+              </div>
+              <p class="text-sm text-[#555] mt-3 leading-relaxed">
+                Walks the OAuth 2.0 client-credentials grant end to end against this server. Reads the authorization server metadata at <span class="font-mono">/.well-known/oauth-authorization-server</span>, fetches the JWKS, posts a token request with the demo client credentials, decodes the ES256 access token, and verifies its signature against the published public key. The same flow any RFC-conforming OAuth client follows.
+              </p>
+            </div>
+            <div class="px-6 py-4 bg-[#fafafa]">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-3">Steps covered</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-8">
+                {[
+                  ['0', 'Authorization server metadata (RFC 8414)'],
+                  ['1', 'Protected resource metadata (RFC 9728)'],
+                  ['2', 'JWKS fetch (RFC 7517)'],
+                  ['3', 'Token request (grant_type=client_credentials)'],
+                  ['4', 'Access token decode (header / payload / sig)'],
+                  ['5', 'ES256 signature verification against JWKS'],
+                  ['6', 'Token introspection (RFC 7662)'],
                 ].map(([num, label]) => (
                   <div class="flex items-baseline gap-2">
                     <span class="font-mono text-[10px] text-[#bbb] shrink-0 w-4">{num}</span>

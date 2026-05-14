@@ -1,0 +1,552 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+import { SPEC_VERSION } from '../../config';
+---
+
+<BaseLayout
+  title="OAuth 2.0 Demo · agents.txt"
+  description="Live demonstration of the OAuth 2.0 client-credentials grant. Discovery metadata, JWKS fetch, token issuance, ES256 verification, and introspection executed against this server in your browser."
+  canonicalUrl="https://agentstxt.dev/demo/oauth"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
+          agents.txt
+        </a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">OAuth 2.0</span>
+      </div>
+      <div class="flex items-center gap-x-3 sm:gap-x-5 shrink-0">
+        <a href="/spec" class="text-xs text-[#555] hover:text-[#111] transition-colors no-underline">Spec</a>
+        <a href="/agents.txt" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.txt</a>
+        <a href="/agents.json" class="font-mono text-xs text-[#555] hover:text-[#111] transition-colors no-underline">agents.json</a>
+        <a href="/demo" class="text-xs font-medium text-[#111] no-underline border-b border-[#111]">Demo</a>
+        <span class="hidden sm:block text-[#ddd] select-none">|</span>
+        <a href="https://github.com/agentstxtdev/agentstxt" target="_blank" rel="noopener noreferrer" aria-label="View on GitHub"
+          class="flex text-xs text-[#555] hover:text-[#111] transition-colors no-underline items-center gap-1">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          OAuth 2.0 client-credentials: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">RFC 6749 §4.4 · ES256 / ECDSA P-256 · RFC 8414 + 9728</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Protocol</dt>
+          <dd class="text-[#111]">
+            <a href="https://www.rfc-editor.org/rfc/rfc6749" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              rfc-editor.org/rfc/rfc6749
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/.well-known/oauth-authorization-server · /.well-known/jwks.json · /agents.json authorization</dd>
+          <dt class="text-[#999] font-medium">Cryptography</dt>
+          <dd class="font-mono text-[#111]">ES256 (ECDSA P-256), PBKDF2-SHA-256</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTPS · application/x-www-form-urlencoded · Bearer JWT</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Executing against this server in real time.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          This page walks the OAuth 2.0 client-credentials grant end to end against this server. Steps 0 through 2 (discovery metadata, protected resource metadata, JWKS fetch) require no credentials and execute against any visitor's browser. Steps 3 through 6 (token request, decode, signature verification, introspection) require a valid <code>client_id</code> and <code>client_secret</code> issued at provisioning time by the spec author.
+        </p>
+        <p>
+          The client-credentials grant is a confidential-client flow: the secret authenticates a machine, not a user, and a browser is not the canonical place to hold one. This demo accepts the credentials in a form so a visitor can observe both paths in the same UI. Run with credentials empty to see the <code>401 invalid_client</code> response (itself a load-bearing part of the protocol); run with credentials filled to see the full issuance and verification flow.
+        </p>
+
+        <h2>Protocol flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Auth</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">0</td><td>Discover authorization server metadata (RFC 8414)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">1</td><td>Discover protected resource metadata (RFC 9728)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">2</td><td>Fetch JWKS (RFC 7517)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">3</td><td>Request token (<code>grant_type=client_credentials</code>)</td><td>Basic / form</td></tr>
+            <tr><td class="font-mono">4</td><td>Decode access token (header / payload / signature)</td><td class="text-[#999]">local</td></tr>
+            <tr><td class="font-mono">5</td><td>Verify ES256 signature against JWKS public key</td><td class="text-[#999]">local</td></tr>
+            <tr><td class="font-mono">6</td><td>Introspect token (RFC 7662)</td><td>Basic / form</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Public-demo banner -->
+      <div class="border border-[#e5e5e5] bg-[#fafafa] px-5 py-4 mb-6">
+        <p class="text-xs font-semibold uppercase tracking-[0.08em] text-[#999] mb-2">Public demo credential</p>
+        <p class="text-sm text-[#555] leading-relaxed">
+          The <span class="font-mono text-[#111]">demo-public</span> client_id and its secret below are pre-filled and <strong>intentionally published</strong>. They follow the same model as the placeholder treasury address in the <a href="/demo/payments" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#111]">x402 demo</a>: anyone can use them, and the scopes they grant (<span class="font-mono text-[#111]">spec:read</span>, <span class="font-mono text-[#111]">mcp:tools</span>) gate read-only resources the MCP server already exposes unauthenticated. No privilege escalation is possible.
+        </p>
+        <p class="text-xs text-[#999] mt-3 leading-relaxed">
+          Real client_credentials secrets never live in browser-served HTML. The pattern here is a demonstration of the protocol wire shape, not a deployment guide.
+        </p>
+      </div>
+
+      <!-- Credentials form -->
+      <div class="border border-[#e5e5e5] mb-6">
+        <div class="px-5 py-4 border-b border-[#e5e5e5]">
+          <p class="text-sm font-semibold text-[#111]">Credentials</p>
+          <p class="text-xs text-[#999] mt-0.5">
+            Pre-filled with the public demo client. Edit to use your own provisioned credentials, or clear to observe the 401 unauthenticated path.
+          </p>
+        </div>
+        <div class="px-5 py-4 grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-x-6 gap-y-4">
+          <label for="client_id" class="text-xs font-medium text-[#555] sm:pt-2">
+            client_id
+            <span class="font-mono text-[#bbb] block text-[10px] mt-0.5">RFC 6749 §2.2</span>
+          </label>
+          <input
+            id="client_id"
+            type="text"
+            value="demo-public"
+            placeholder="demo-public"
+            class="border border-[#e5e5e5] bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#111] transition-colors"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <label for="client_secret" class="text-xs font-medium text-[#555] sm:pt-2">
+            client_secret
+            <span class="font-mono text-[#bbb] block text-[10px] mt-0.5">RFC 6749 §2.3.1</span>
+          </label>
+          <input
+            id="client_secret"
+            type="text"
+            value="agentstxt-demo-public-credential-not-secret-by-design"
+            placeholder="(public demo credential, pre-filled)"
+            class="border border-[#e5e5e5] bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#111] transition-colors"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <label for="scope" class="text-xs font-medium text-[#555] sm:pt-2">
+            scope
+            <span class="font-mono text-[#bbb] block text-[10px] mt-0.5">RFC 6749 §3.3 · space-separated</span>
+          </label>
+          <input
+            id="scope"
+            type="text"
+            value="spec:read mcp:tools"
+            placeholder="spec:read mcp:tools"
+            class="border border-[#e5e5e5] bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#111] transition-colors"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">OAuth 2.0 flow runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Token decode + ES256 verify run locally · requests execute against this server</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['0', 'Authorization server metadata',  'GET /.well-known/oauth-authorization-server'],
+            ['1', 'Protected resource metadata',    'GET /.well-known/oauth-protected-resource'],
+            ['2', 'JWKS fetch',                     'GET /.well-known/jwks.json'],
+            ['3', 'Token request',                  'POST /oauth/token  (grant_type=client_credentials)'],
+            ['4', 'Access token decode',            'JWT header · payload · signature'],
+            ['5', 'Signature verification',         'ES256 verify against JWKS public key'],
+            ['6', 'Token introspection',            'POST /oauth/introspect'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">Access tokens issued during this demo are short-lived; run again to mint a fresh one. The credential is read-only and gates nothing the MCP server does not already serve unauthenticated.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Why ES256, not HS256</h3>
+        <p>
+          ES256 (ECDSA P-256) is asymmetric: the authorization server holds a private key, and any resource server can verify tokens against the public JWK published at <code>/.well-known/jwks.json</code>. HS256 would require the resource server to share the signing secret with the issuer, which collapses the trust separation. The public JWK published here is what any resource server would fetch to validate tokens issued by this authorization server.
+        </p>
+        <h3>Scope intersection, not scope expansion</h3>
+        <p>
+          The token endpoint accepts a <code>scope</code> parameter and intersects the requested scopes with the client's granted scopes (from KV) and the server's supported scopes (<code>spec:read</code>, <code>mcp:tools</code>, <code>mcp:resources</code>). A client granted only <code>spec:read</code> that requests <code>spec:read mcp:tools mcp:resources</code> receives a token scoped to <code>spec:read</code>. Privilege escalation is impossible by construction.
+        </p>
+        <h3>Discovery alias</h3>
+        <p>
+          <code>/.well-known/openid-configuration</code> and <code>/.well-known/oauth-authorization-server</code> return byte-identical payloads on this deployment. The first is the OIDC Discovery 1.0 path, the second the RFC 8414 path. Tooling that probes either gets the same document; OIDC-strict clients see the <code>id_token_signing_alg_values_supported</code> and <code>subject_types_supported</code> fields that pure RFC 8414 clients ignore.
+        </p>
+        <h3>PBKDF2-SHA-256 for client_secret storage</h3>
+        <p>
+          Client secrets in KV are stored as PBKDF2-SHA-256 with a per-record random salt. The plaintext never appears in storage; the comparison on every token request derives the same hash with the same salt and compares byte-by-byte in constant time.
+        </p>
+        <h3>Token revocation</h3>
+        <p>
+          Token introspection consults a KV deny set at <code>oauth:revoked:&lt;jti&gt;</code> with TTL equal to the token lifetime. Writing a revocation entry rejects the token within its remaining lifetime, then the entry expires alongside the token itself, so KV does not grow indefinitely.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
+        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function b64urlDecode(b64url: string): Uint8Array {
+  const pad = (s: string) => s + '==='.slice((s.length + 3) % 4);
+  const b64 = pad(b64url.replace(/-/g, '+').replace(/_/g, '/'));
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setSkipped(num: string, reason: string) {
+  const el = getStep(num);
+  el.dataset.state = 'skipped';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '○';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#bbb] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'skipped';
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#bbb] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = reason;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+interface OAuthDiscovery {
+  issuer: string;
+  token_endpoint: string;
+  introspection_endpoint?: string;
+  jwks_uri: string;
+  grant_types_supported: string[];
+  scopes_supported?: string[];
+}
+
+interface ProtectedResource {
+  resource: string;
+  authorization_servers: string[];
+  scopes_supported?: string[];
+}
+
+interface Jwks {
+  keys: JsonWebKey[];
+}
+
+interface TokenResponse {
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
+  scope?: string;
+  error?: string;
+  error_description?: string;
+}
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+  const clientId     = (document.getElementById('client_id')     as HTMLInputElement).value.trim();
+  const clientSecret = (document.getElementById('client_secret') as HTMLInputElement).value;
+  const scope        = (document.getElementById('scope')         as HTMLInputElement).value.trim();
+
+  try {
+    // ── 0. Authorization server metadata ──────────────────────────────────
+    setRunning('0');
+    const discRes = await fetch(`${origin}/.well-known/oauth-authorization-server`);
+    const disc = await discRes.json() as OAuthDiscovery;
+    setDone('0', `GET /.well-known/oauth-authorization-server\n\n${fmt(disc)}`, `${discRes.status}`);
+
+    // ── 1. Protected resource metadata ────────────────────────────────────
+    setRunning('1');
+    const prRes = await fetch(`${origin}/.well-known/oauth-protected-resource`);
+    const pr = await prRes.json() as ProtectedResource;
+    setDone('1', `GET /.well-known/oauth-protected-resource\n\n${fmt(pr)}`, `${prRes.status}`);
+
+    // ── 2. JWKS ───────────────────────────────────────────────────────────
+    setRunning('2');
+    const jwksRes = await fetch(disc.jwks_uri);
+    const jwks = await jwksRes.json() as Jwks;
+    if (!jwks.keys || jwks.keys.length === 0) throw new Error('JWKS contains no keys');
+    setDone('2', `GET ${disc.jwks_uri}\n\n${fmt(jwks)}`, `${jwksRes.status}`);
+
+    // ── 3. Token request ──────────────────────────────────────────────────
+    setRunning('3');
+    if (!clientId || !clientSecret) {
+      // Demonstrate the unauthenticated path: 401 invalid_client.
+      const tokenRes = await fetch(disc.token_endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'grant_type=client_credentials',
+      });
+      const token = await tokenRes.json() as TokenResponse;
+      const wwwAuth = tokenRes.headers.get('www-authenticate');
+      setDone('3',
+        `POST ${disc.token_endpoint}\n` +
+        `Content-Type: application/x-www-form-urlencoded\n\n` +
+        `grant_type=client_credentials\n\n` +
+        `─── Response ───\n` +
+        `HTTP ${tokenRes.status}\n` +
+        (wwwAuth ? `WWW-Authenticate: ${wwwAuth}\n\n` : '\n') +
+        `${fmt(token)}`,
+        `${tokenRes.status}`,
+      );
+      setSkipped('4', 'No access_token to decode (no credentials supplied).');
+      setSkipped('5', 'No access_token to verify (no credentials supplied).');
+      setSkipped('6', 'No access_token to introspect (no credentials supplied).');
+      resultText.textContent = `401 invalid_client demonstrates the unauthenticated path. Fill the credential inputs above to run the full issuance flow.`;
+      banner.classList.remove('hidden');
+      return;
+    }
+
+    // Use form-body authentication (RFC 6749 §2.3.1 alternative) rather than
+    // Basic auth so the browser never opens its native HTTP Basic dialog on
+    // a 401 response. Both methods are advertised by the discovery metadata
+    // as supported; they are spec-equivalent for the client-credentials grant.
+    const tokenBody = new URLSearchParams({
+      grant_type:    'client_credentials',
+      client_id:     clientId,
+      client_secret: clientSecret,
+    });
+    if (scope) tokenBody.set('scope', scope);
+    const tokenRes = await fetch(disc.token_endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenBody.toString(),
+    });
+    const token = await tokenRes.json() as TokenResponse;
+    if (!tokenRes.ok || !token.access_token) {
+      setError('3',
+        `POST ${disc.token_endpoint}\n` +
+        `HTTP ${tokenRes.status}\n\n` +
+        `${fmt(token)}\n\n` +
+        `Check the client_id and client_secret values above. If you have not provisioned the demo client on this server, see scripts/provision-oauth-client.mjs in the agentstxt repository.`,
+      );
+      setSkipped('4', 'Token request failed; nothing to decode.');
+      setSkipped('5', 'Token request failed; nothing to verify.');
+      setSkipped('6', 'Token request failed; nothing to introspect.');
+      resultText.textContent = `Token request rejected with ${tokenRes.status} ${token.error ?? 'error'}. See step 3 for the server's error response.`;
+      resultText.classList.add('text-[#c00]');
+      banner.classList.remove('hidden');
+      return;
+    }
+    // Render the request with the secret masked, even though it travels
+    // in the form body on the wire. The unmasked secret is what the browser
+    // actually sent; the display version is for readability.
+    const displayBody = tokenBody.toString().replace(
+      /client_secret=[^&]+/,
+      `client_secret=${clientSecret.length > 8 ? clientSecret.slice(0, 4) + '...' + clientSecret.slice(-4) : '***'}`,
+    );
+    setDone('3',
+      `POST ${disc.token_endpoint}\n` +
+      `Content-Type: application/x-www-form-urlencoded\n\n` +
+      `${displayBody}\n\n` +
+      `─── Response ───\n` +
+      `HTTP ${tokenRes.status}\n\n` +
+      `${fmt(token)}`,
+      `${tokenRes.status}`,
+    );
+
+    // ── 4. Decode access token ────────────────────────────────────────────
+    setRunning('4');
+    const parts = token.access_token.split('.');
+    if (parts.length !== 3) throw new Error('Token is not a well-formed JWT');
+    const headerJson = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[0]!))) as Record<string, unknown>;
+    const payloadJson = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[1]!))) as Record<string, unknown>;
+    setDone('4',
+      `header   ${fmt(headerJson)}\n` +
+      `payload  ${fmt(payloadJson)}\n` +
+      `signature  ${parts[2]} (${b64urlDecode(parts[2]!).length} bytes IEEE P1363 r||s)`,
+      `${parts.length} parts`,
+    );
+
+    // ── 5. Verify signature against JWKS ──────────────────────────────────
+    setRunning('5');
+    const kid = headerJson.kid as string | undefined;
+    const jwk = kid
+      ? jwks.keys.find(k => (k as Record<string, unknown>).kid === kid) ?? jwks.keys[0]!
+      : jwks.keys[0]!;
+    const key = await crypto.subtle.importKey(
+      'jwk',
+      jwk,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['verify'],
+    );
+    const verified = await crypto.subtle.verify(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      key,
+      b64urlDecode(parts[2]!) as BufferSource,
+      new TextEncoder().encode(`${parts[0]}.${parts[1]}`),
+    );
+    if (!verified) throw new Error('ES256 signature verification FAILED');
+    setDone('5',
+      `kid           ${kid ?? '(no kid in header; used first JWKS entry)'}\n` +
+      `alg           ${headerJson.alg}\n` +
+      `algorithm     ECDSA P-256 + SHA-256\n` +
+      `library       Web Crypto API (crypto.subtle.verify)\n` +
+      `\n` +
+      `Result        valid`,
+      'verified',
+    );
+
+    // ── 6. Introspect ─────────────────────────────────────────────────────
+    setRunning('6');
+    if (!disc.introspection_endpoint) {
+      setSkipped('6', 'Authorization server metadata did not advertise an introspection_endpoint.');
+    } else {
+      // Same form-body auth pattern as the token request, for the same reason
+      // (no browser HTTP Basic dialog on a 401 response).
+      const introBody = new URLSearchParams({
+        token:         token.access_token,
+        client_id:     clientId,
+        client_secret: clientSecret,
+      });
+      const introRes = await fetch(disc.introspection_endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: introBody.toString(),
+      });
+      const intro = await introRes.json() as Record<string, unknown>;
+      setDone('6',
+        `POST ${disc.introspection_endpoint}\n` +
+        `Content-Type: application/x-www-form-urlencoded\n\n` +
+        `token=<access_token>&client_id=${clientId}&client_secret=***\n\n` +
+        `─── Response ───\n` +
+        `HTTP ${introRes.status}\n\n` +
+        `${fmt(intro)}`,
+        `${introRes.status}`,
+      );
+    }
+
+    resultText.textContent = `Access token issued, verified against the published JWKS, and confirmed active. Token scope: ${token.scope ?? '(none)'}.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

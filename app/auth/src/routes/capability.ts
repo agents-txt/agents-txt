@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env, AgentRecord } from '../types.js';
 import { parseJwt, verifyEd25519, assertClaims } from '../jwt.js';
+import { enforceRateLimit } from '../ratelimit.js';
 
 function err(c: any, status: number, code: string, message: string) {
   return c.json({ error: code, message }, status);
@@ -102,6 +103,8 @@ export function mountCapabilityRoutes(app: Hono<{ Bindings: Env }>) {
   });
 
   app.post('/capability/execute', async (c) => {
+    const limited = await enforceRateLimit(c, 'capability_execute');
+    if (limited) return limited;
     const result = await verifyAgentJwt(c.req.header('Authorization'), c.env.AUTH_KV, new URL(c.req.url).toString().split('?')[0]!);
     if (!result.ok) return err(c, result.status, result.code, result.message);
 

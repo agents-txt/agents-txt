@@ -643,7 +643,45 @@ Server ← 200 + capability result
 
 Credential and key details (JWKs, capability schemas, endpoint URLs) are NOT in `agents.txt`. They are exchanged via `/.well-known/agent-configuration` and the `/agent/register` flow, as defined by the Agent Auth Protocol specification.
 
-### 11.2 `Identity: required`
+### 11.2 oauth2 — OAuth 2.0
+
+[OAuth 2.0](https://www.rfc-editor.org/rfc/rfc6749) is the IETF authorization framework that issues access tokens to authenticated clients. The framework defines four grant types; the `oauth2` identifier in `agents.txt` does not constrain which grants a site supports. Sites declare the supported grant types and authentication methods at their discovery endpoint.
+
+**Discovery:** Advertised in `agents.txt` as `oauth2`. Implementation details (issuer URL, token endpoint, supported grant types, signing algorithms, public keys, supported scopes) are NOT in `agents.txt`. They are served at the OAuth-defined well-known paths:
+
+```
+GET /.well-known/oauth-authorization-server   (RFC 8414)
+GET /.well-known/openid-configuration         (OpenID Connect Discovery 1.0)
+GET /.well-known/jwks.json                    (RFC 7517)
+```
+
+Sites that protect specific resources additionally publish [RFC 9728](https://www.rfc-editor.org/rfc/rfc9728) Protected Resource Metadata so agents can discover which authorization servers issue tokens valid for the resource:
+
+```
+GET /.well-known/oauth-protected-resource
+```
+
+**Flow summary (client-credentials grant, RFC 6749 §4.4):**
+```
+Agent → GET /.well-known/oauth-authorization-server
+Server ← { issuer, token_endpoint, jwks_uri, grant_types_supported, scopes_supported }
+
+Agent → POST /oauth/token
+        Authorization: Basic <base64(client_id:client_secret)>
+        Content-Type: application/x-www-form-urlencoded
+        grant_type=client_credentials&scope=<requested scopes>
+Server ← { access_token: "<JWT>", token_type: "Bearer", expires_in, scope }
+
+Agent → GET /<protected-resource>
+        Authorization: Bearer <access_token>
+Server ← 200 + resource representation
+```
+
+The access token format is implementation-defined; this specification recommends signed JWTs (RFC 7519) verifiable against the published JWKS, so resource servers can validate without a round-trip to the authorization server. The `jwks_uri` in the discovery metadata SHOULD point at a JSON document conforming to RFC 7517 §5.
+
+**Coexistence with agent-auth:** A site MAY advertise both `agent-auth` and `oauth2` in the same `Authorization:` block. The two protocols are independent: agents pick whichever they support. `agent-auth` is keyed by per-agent Ed25519 identity with capability-scoped grants; `oauth2` is keyed by client_id and is scope-based at the resource level. Sites that publish both run both discovery surfaces in parallel and accept either credential at protected routes.
+
+### 11.3 `Identity: required`
 
 When a site emits `Identity: required` in the Authorization block, it signals a site-level policy: agents MUST authenticate before any interaction, not just before capability execution. This is a stronger signal than the protocol's own capability-gating and is intended for sites where unauthenticated agent access is not acceptable under any circumstance.
 

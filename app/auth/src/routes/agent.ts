@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Env, HostRecord, AgentRecord } from '../types.js';
 import { parseJwt, verifyEd25519, jwkThumbprint, assertClaims } from '../jwt.js';
+import { enforceRateLimit } from '../ratelimit.js';
 
 function err(c: any, status: number, code: string, message: string) {
   return c.json({ error: code, message }, status);
@@ -57,6 +58,8 @@ async function verifyHostJwt(authHeader: string | undefined, kv: KVNamespace): P
 export function mountAgentRoutes(app: Hono<{ Bindings: Env }>) {
   // POST /agent/register — accept Host JWT, auto-approve, create agent record
   app.post('/agent/register', async (c) => {
+    const limited = await enforceRateLimit(c, 'agent_register');
+    if (limited) return limited;
     const result = await verifyHostJwt(c.req.header('Authorization'), c.env.AUTH_KV);
     if (!result.ok) return err(c, result.status, result.code, result.message);
 
@@ -103,6 +106,8 @@ export function mountAgentRoutes(app: Hono<{ Bindings: Env }>) {
 
   // POST /agent/revoke
   app.post('/agent/revoke', async (c) => {
+    const limited = await enforceRateLimit(c, 'agent_revoke');
+    if (limited) return limited;
     const result = await verifyHostJwt(c.req.header('Authorization'), c.env.AUTH_KV);
     if (!result.ok) return err(c, result.status, result.code, result.message);
 
