@@ -266,6 +266,7 @@ Registered per-protocol shapes and top-level array shapes are tracked in §17.3.
 
 ```json
 {
+  "$schema": "https://agentstxt.dev/schema/agents-json/v1.0.json",
   "version": "1.0",
   "standard": "https://agentstxt.dev",
   "site": {
@@ -326,7 +327,11 @@ Registered per-protocol shapes and top-level array shapes are tracked in §17.3.
 
 All blocks are optional. A block is omitted entirely when the capability is not configured. Within `payments`, each per-protocol object (`x402`, `mpp`, and any future protocol) is emitted only when that protocol is actually wired up; the `payments` block itself is present only when at least one per-protocol object is present. Absence of the block means the site does not accept agent payments. There is no top-level `payments.protocols` array: the set of supported protocols is the set of per-protocol keys, and the corresponding `Protocols:` line in `agents.txt` carries the same set as plain text.
 
+Implementations SHOULD include the `$schema` field shown above, pointing at the canonical JSON Schema document for the format version they emit. The schema is descriptive: it duplicates rules already defined in this section and is published so JSON-aware editors and validators can perform inline schema validation and autocomplete on hand-edited files. The canonical document for v1.0 is published at `https://agentstxt.dev/schema/agents-json/v1.0.json` as a JSON Schema 2020-12 artefact [JSON-SCHEMA-2020-12]. The `$schema` field has no effect on the wire semantics of any other field.
+
 ### 5.3 Field notes
+
+**`$schema`**: OPTIONAL URL pointing to the JSON Schema document that describes this revision of the format. When present, the value SHOULD be the canonical document for the format version emitted: for v1.0, `https://agentstxt.dev/schema/agents-json/v1.0.json`, published as a JSON Schema 2020-12 artefact [JSON-SCHEMA-2020-12]. Editors and validators that respect the `$schema` field provide inline validation and autocomplete on hand-edited files; the field exists for that purpose. Implementations MAY reference an equivalent schema hosted elsewhere, provided the document covers the same rules established in this section. Future format versions are published at distinct URLs (`v1.1.json`, `v2.0.json`, etc.); the v1.0 URL is a frozen reference and remains valid for documents conforming to this version.
 
 **`version`**: the stable semver number of the spec this file was generated against (e.g. `"1.0"`). Pre-release suffixes such as `-draft` are omitted: the `version` field tracks the numeric version only, so agents can parse and compare it without handling arbitrary suffix strings. The value SHOULD match the numeric portion of the spec version declared in the document header.
 
@@ -918,6 +923,8 @@ This section establishes two registries governed by this specification. Both fol
 
 The live registry surface is maintained at `https://agentstxt.dev/registry` and reflects the same entries enumerated below. Where the two disagree, the live surface is authoritative between spec versions; the next spec version absorbs accumulated changes.
 
+A canonical JSON Schema 2020-12 document for the `agents.json` wire format described in §5 is published at `https://agentstxt.dev/schema/agents-json/v1.0.json` [JSON-SCHEMA-2020-12]. The document is descriptive: it captures the rules already defined in §5 so JSON-aware editors and validators can perform inline schema validation on `agents.json` files. Implementations referencing the schema via the `$schema` field (§5.3) SHOULD use this URL for v1.0 documents. Future format versions are published at distinct URLs (`v1.1.json`, `v2.0.json`, etc.) so existing references remain valid for documents conforming to their declared version.
+
 ### 17.1 Registration Policy
 
 New entries are proposed by opening a PR against [`agentstxtdev/agentstxt`](https://github.com/agentstxtdev/agentstxt) that:
@@ -1017,3 +1024,4 @@ If, in a future version, an identifier is proposed whose underlying protocol has
 - **[UCP]** "UCP: Universal Commerce Protocol", 2025. <https://ucp.dev/>
 - **[ERC-8004]** "ERC-8004: Trustless Agents Registry", 2025. <https://eips.ethereum.org/EIPS/eip-8004>
 - **[AGENT-SKILLS]** "Agent Skills Protocol", 2025. <https://agentskills.io/>
+- **[JSON-SCHEMA-2020-12]** Wright, A., Andrews, H., Hutton, B., and Dennis, G., "JSON Schema: A Media Type for Describing JSON Documents", Internet-Draft draft-bhutton-json-schema-01, June 2022. <https://json-schema.org/draft/2020-12/>
