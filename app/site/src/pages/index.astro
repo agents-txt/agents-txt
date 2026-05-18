@@ -57,7 +57,8 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
               />
             </h1>
             <p class="text-sm text-[#555] leading-relaxed max-w-[64ch] mb-8">
-              Two files at the site root: <span class="font-mono text-[#111]">/agents.txt</span> (plain text, one directive per line) and <span class="font-mono text-[#111]">/agents.json</span> (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, and A2A AgentCards. No crawling, no protocol probing, no SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
+              Two files sit at the site root: <span class="font-mono text-[#111]">/agents.txt</span> and <span class="font-mono text-[#111]">/agents.json</span>.<br />
+              <span class="font-mono text-[#111]">/agents.txt</span> states which protocols the site supports; <span class="font-mono text-[#111]">/agents.json</span> carries the structured detail required to work with each one in a single request, removing the need to crawl every page or probe endpoints one by one. Covering authorization, payments, MCP servers, skill packages, and A2A AgentCards, and the format is open by design, accepting new blocks as additional agent protocols emerge.
             </p>
             <div class="flex flex-wrap items-center gap-3">
               <a
@@ -145,7 +146,7 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
                   <tr>
                     <td class="px-5 py-3 font-mono text-[#999] align-top">3</td>
                     <td class="px-5 py-3 text-[#555] align-top">Content briefing</td>
-                    <td class="px-5 py-3 font-mono text-[#111] align-top">/llms.txt <span class="text-[#999] font-sans text-xs">(llmstxt.org)</span></td>
+                    <td class="px-5 py-3 font-mono text-[#111] align-top">/llms.txt + /llms-full.txt <span class="text-[#999] font-sans text-xs">(llmstxt.org)</span></td>
                   </tr>
                   <tr class="bg-[#fafafa]">
                     <td class="px-5 py-3 font-mono text-[#111] font-semibold align-top">4</td>
