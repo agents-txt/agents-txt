@@ -160,6 +160,11 @@ export default {
               title: 'agents.txt Registry',
               description: 'Live surface for the two registries defined in §17 of the spec: the directive names registered for use in agents.txt, and the per-protocol object shapes registered for use in agents.json. Authoritative between spec versions; the next spec version absorbs accumulated changes.',
             },
+            {
+              url: 'https://agents-txt.com/audit',
+              title: 'Audit a site against the agents.txt spec',
+              description: 'Audits any live site against the agents.txt specification: validates /agents.txt and /agents.json against §3–§11, the §5 schema, §4.5 serving headers, and cross-file consistency, and reports an agent-readiness score. Runs in the browser or via the audit_site MCP tool.',
+            },
           ],
         },
         {

@@ -100,12 +100,11 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
                 href="https://isitagentready.com/agents-txt.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Verified 100 / 100 on isitagentready.com"
                 class="inline-flex items-center gap-2.5 border border-[#e5e5e5] hover:border-[#111] transition-colors no-underline pl-2 pr-3 py-1.5"
               >
                 <span class="flex items-center justify-center w-7 h-7 rounded-full border-2 border-[#16a34a] text-[#16a34a] font-bold text-[11px] leading-none shrink-0">100</span>
                 <span class="flex flex-col leading-tight">
-                  <span class="text-[11px] font-semibold tracking-tight text-[#111]">Level 5 · Agent-Native</span>
+                  <span class="block text-center text-[11px] font-semibold tracking-tight text-[#111]">Level 5</span>
                   <span class="font-mono text-[10px] text-[#777]">isitagentready.com →</span>
                 </span>
               </a>
@@ -226,7 +225,7 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
         <div class="border border-[#e5e5e5] px-5 py-4">
           <p class="font-mono text-[10px] text-[#999] uppercase tracking-[0.08em] mb-2">Path 3</p>
           <p class="text-sm font-semibold text-[#111] mb-2">Read this deployment</p>
-          <p class="text-xs text-[#777] leading-relaxed">This is a live agentic site: its source is on <a href="https://github.com/agents-txt/agents-txt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">GitHub</a> and it validates itself against the hashed, versioned <a href="https://agents-txt.com/schema/agents-json/v1.0.json" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">JSON Schema</a>. Audit your own site at <a href="/audit" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">/audit</a> or via the <span class="font-mono">audit_site</span> tool on the <a href="https://mcp.agents-txt.com/mcp" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">MCP endpoint</a>.</p>
+          <p class="text-xs text-[#777] leading-relaxed">This is a live agentic site: its source is on <a href="https://github.com/agents-txt/agents-txt" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">GitHub</a> and it validates itself against the hashed, versioned <a href="https://agents-txt.com/schema/agents-json/v1.0.json" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">JSON Schema</a>. Audit your own site in the browser at <a href="/audit" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">/audit</a>, or via the <span class="font-mono">audit_site</span> tool on the <a href="https://mcp.agents-txt.com/mcp" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] transition-all text-[#555]">MCP endpoint</a>.</p>
         </div>
       </div>
     </section>
@@ -424,11 +423,11 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
     <section>
       <div class="border border-[#e5e5e5] px-6 py-5 bg-[#fafafa] grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-8 gap-y-2">
         <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">Status</p>
-        <p class="text-sm text-[#111]">v{SPEC_VERSION}. Format and schema are stable. Patches accepted via PR; structural changes ship as RFCs against the spec.</p>
+        <p class="text-sm text-[#111]">v{SPEC_VERSION}. Format and schema are stable.</p>
         <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">Spec license</p>
-        <p class="text-sm text-[#111]">CC0 (public domain). Anyone may implement the standard without restriction.</p>
+        <p class="text-sm text-[#111]">CC0 (public domain).</p>
         <p class="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">Reference code</p>
-        <p class="text-sm text-[#111]">Apache 2.0. The workers in this repository are reference implementations only; production deployments may diverge.</p>
+        <p class="text-sm text-[#111]">Apache 2.0.</p>
       </div>
     </section>
 

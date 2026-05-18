@@ -36,6 +36,12 @@ export interface AuditEnv {
 // robots.txt validation, sitemap.xml (sitemaps.org), llms.txt (llmstxt.org).
 
 const SPEC_URL = 'https://agents-txt.com';
+// Canonical JSON Schema document for the agents.json wire format. Owned by
+// @agentstxtdev/herald-schema; herald injects this URL as the "$schema" field
+// at the top of every emitted agents.json. The audit recognises its presence
+// as a positive signal but does not fetch the document — presence + string
+// shape is enough at this layer (see agentstxt/CLAUDE.md).
+const AGENTS_JSON_SCHEMA_URL = 'https://agents-txt.com/schema/agents-json/v1.0.json';
 const TREASURY_REGEX = /\b0x[a-fA-F0-9]{40}\b/;
 // Solana base58 wallet: standard alphabet (no 0OIl), address length range.
 // Applied to parsed JSON string values only, so CAIP-2 chain IDs like
@@ -238,6 +244,15 @@ function auditAgentsJson(text: string, headers: ResponseHeaders, origin: string)
   const solanaHit = findSolanaWalletInJson(parsed);
   if (solanaHit) {
     errors.push(`§5.4 / §14: agents.json contains what looks like a Solana wallet address "${solanaHit.value}" at ${solanaHit.path}; wallet addresses must only appear in 402 responses`);
+  }
+
+  // §5: "$schema" reference. Present + string is a positive signal (editors
+  // get inline validation and autocomplete); absent or malformed is a warning,
+  // never an error. Mirrors the validate_agents_json tool's handling.
+  if (!('$schema' in parsed)) {
+    warnings.push(`§5: "$schema" reference recommended; set it to "${AGENTS_JSON_SCHEMA_URL}" for editor validation and autocomplete`);
+  } else if (typeof parsed.$schema !== 'string') {
+    warnings.push('§5: "$schema" is present but not a string; it must be the URL of the agents.json JSON Schema document');
   }
 
   // §5.2: required top-level fields

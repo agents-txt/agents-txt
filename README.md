@@ -10,7 +10,8 @@
 [![live agents-txt.com](https://img.shields.io/badge/live-agents--txt.com-fe7d37?style=flat-square&labelColor=555555)](https://agents-txt.com)
 [![GitHub stars](https://img.shields.io/github/stars/agents-txt/agents-txt?style=flat-square&logo=github&logoColor=white&color=181717)](https://github.com/agents-txt/agents-txt)
 
-Two files at the site root: `/agents.txt` (plain text, one directive per line) and `/agents.json` (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, A2A AgentCards. No crawling. No protocol probing. No SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
+Two files sit at the site root: `/agents.txt` and `/agents.json`.<br>
+`/agents.txt` states which protocols the site supports; `/agents.json` carries the structured detail required to work with each one in a single request, removing the need to crawl every page or probe endpoints one by one. Covering authorization, payments, MCP servers, skill packages, and A2A AgentCards, and the format is open by design, accepting new blocks as additional agent protocols emerge.
 
 It fills **Layer 4** of the agent-readiness stack:
 

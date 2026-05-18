@@ -15,16 +15,16 @@ import { SPEC_VERSION } from '../config';
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
         <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
-        <span class="text-[#ccc] select-none">/</span>
-        <span class="text-sm text-[#111] whitespace-nowrap">Audit</span>
+        <span class="hidden sm:inline text-[#ccc] select-none">/</span>
+        <span class="hidden sm:inline text-sm text-[#555] whitespace-nowrap">Audit</span>
       </div>
-      <NavRight />
+      <NavRight current="audit" />
     </div>
   </header>
 
   <!-- Page body -->
   <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
-    <div class="max-w-[72ch]">
+    <main class="max-w-3xl mx-auto">
 
       <!-- Cover -->
       <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
@@ -117,7 +117,7 @@ curl 'https://agents-txt.com/audit?url=https://example.com'`}</code></pre>
         </p>
       </div>
 
-    </div>
+    </main>
   </div>
 
   <!-- Worker-injected audit envelope. Defaults to an empty object so the
@@ -211,29 +211,19 @@ curl 'https://agents-txt.com/audit?url=https://example.com'`}</code></pre>
     }
 
     const report = env.report as Record<string, unknown>;
-    const summary = (report.summary as { compliant?: boolean; errorCount?: number; warningCount?: number } | undefined) ?? {};
-    const status = summary.compliant ? 'PASS' : 'FAIL';
-    const statusColor = summary.compliant ? '#16a34a' : '#c00';
-    const errorCount = summary.errorCount ?? 0;
-    const warningCount = summary.warningCount ?? 0;
+    const score = computeScore(report);
+    result.appendChild(renderScoreCard(env, score));
 
-    // Summary card. When the result is cached, surface a `?nocache=1` link
-    // so the visitor can force a fresh audit without waiting for the hour
-    // bucket to roll over. Useful right after a target has been redeployed.
-    const cachedTag = env.cached
-      ? `<span class="font-mono text-[10px] text-[#999] ml-3">cached · ${escape(env.fetchedAt.slice(0, 19))}Z · <a href="/audit?url=${encodeURIComponent(env.target)}&nocache=1" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] hover:text-[#111] transition-colors no-underline">re-run</a></span>`
-      : '';
-    const summaryHtml = `
-      <div class="flex items-baseline gap-3 mb-2">
-        <span class="font-mono text-xs text-[#999]">${escape(env.target)}</span>
-        ${cachedTag}
-      </div>
-      <div class="flex items-baseline gap-4">
-        <span class="text-2xl font-bold tracking-tight" style="color:${statusColor}">${status}</span>
-        <span class="text-sm text-[#555]">${errorCount} error${errorCount === 1 ? '' : 's'} · ${warningCount} warning${warningCount === 1 ? '' : 's'}</span>
-      </div>
-    `;
-    result.appendChild(card('Result', summaryHtml));
+    // Animate the score on insertion: the ring and the filled bar segments
+    // render empty, then sweep to their target values on the next frame.
+    requestAnimationFrame(() => {
+      result.querySelectorAll<HTMLElement>('[data-seg-fill]').forEach((seg) => {
+        seg.style.transform = 'scaleX(1)';
+      });
+      result.querySelectorAll<SVGCircleElement>('[data-ring]').forEach((r) => {
+        r.style.strokeDashoffset = r.dataset.target ?? '0';
+      });
+    });
 
     // Per-file sections
     renderFileSection(result, '/agents.txt',  report.agentsTxt);
@@ -250,6 +240,208 @@ curl 'https://agents-txt.com/audit?url=https://example.com'`}</code></pre>
       }
       result.appendChild(card('Cross-file consistency', rows.join('')));
     }
+  }
+
+  // ── Agent-readiness score ───────────────────────────────────────────────
+  // The audit report is per-file pass/fail. The score rolls it into a single
+  // percentage across four spec-compliance categories, plus a non-scored
+  // "Capabilities" tally of how many protocol blocks the site declares.
+  interface CatScore  { label: string; got: number; max: number; optional?: boolean }
+  interface Protocol  { label: string; present: boolean }
+  interface Readiness {
+    pct: number; grade: string; level: string; color: string;
+    categories: CatScore[]; protocols: Protocol[];
+    errorCount: number; warningCount: number;
+  }
+
+  function computeScore(report: Record<string, unknown>): Readiness {
+    const txt    = (report.agentsTxt   as Record<string, unknown>) ?? {};
+    const json   = (report.agentsJson  as Record<string, unknown>) ?? {};
+    const robots = (report.robotsTxt   as Record<string, unknown>) ?? {};
+    const consistency = (report.consistency as { valid?: boolean }) ?? {};
+    const summary     = (report.summary     as { errorCount?: number; warningCount?: number }) ?? {};
+
+    const txtVal  = (txt.validation  as { valid?: boolean; errors?: string[] }) ?? {};
+    const jsonVal = (json.validation as { valid?: boolean; errors?: string[] }) ?? {};
+    const txtErrors  = txtVal.errors  ?? [];
+    const jsonErrors = jsonVal.errors ?? [];
+
+    const txtFound  = txt.found  === true;
+    const jsonFound = json.found === true;
+    const jsonParsed = json.parsed as Record<string, unknown> | null | undefined;
+
+    // §4.5 / §5 sub-checks are derived from the error strings the MCP audit
+    // tags with section numbers — no error from that section means it passed.
+    const servesOk  = (errs: string[]) => !errs.some((e) => e.includes('§4.5'));
+    const schemaOk  = (errs: string[]) => !errs.some((e) => e.startsWith('§5'));
+    const count = (b: boolean[]) => b.filter(Boolean).length;
+
+    const discovery = [
+      txtFound,
+      jsonFound,
+      robots.found === true && (robots as { allowsAgentsTxt?: boolean }).allowsAgentsTxt === true,
+    ];
+    const validity = [
+      txtVal.valid === true,
+      jsonVal.valid === true,
+      consistency.valid === true,
+    ];
+    const serving = [
+      txtFound  && servesOk(txtErrors),
+      jsonFound && servesOk(jsonErrors),
+    ];
+    const schema = [
+      jsonFound && !json.parseError && schemaOk(jsonErrors),
+      !!(jsonParsed && typeof jsonParsed === 'object' && '$schema' in jsonParsed),
+    ];
+
+    const categories: CatScore[] = [
+      { label: 'Discovery',    got: count(discovery), max: 3 },
+      { label: 'Validity',     got: count(validity),  max: 3 },
+      { label: 'Serving',      got: count(serving),   max: 2 },
+      { label: 'Schema',       got: count(schema),    max: 2 },
+    ];
+
+    // Protocol detection from whichever discovery file parsed cleanly.
+    const p = (txt.parsed as Record<string, unknown> | undefined)
+            ?? jsonParsed ?? {};
+    const present = (key: string): boolean => {
+      const v = (p as Record<string, unknown>)[key];
+      if (Array.isArray(v)) return v.length > 0;
+      if (v && typeof v === 'object') return Object.keys(v).length > 0;
+      return false;
+    };
+    const protocols: Protocol[] = [
+      { label: 'MCP',      present: present('mcp')           },
+      { label: 'Skills',   present: present('skills')        },
+      { label: 'A2A',      present: present('a2a')           },
+      { label: 'UCP',      present: present('ucp')           },
+      { label: 'Payments', present: present('payments')      },
+      { label: 'Auth',     present: present('authorization') },
+    ];
+    categories.push({
+      label: 'Capabilities',
+      got: protocols.filter((x) => x.present).length,
+      max: protocols.length,
+      optional: true,
+    });
+
+    const scored = categories.filter((c) => !c.optional);
+    const got = scored.reduce((s, c) => s + c.got, 0);
+    const max = scored.reduce((s, c) => s + c.max, 0);
+    const pct = max ? Math.round((got / max) * 100) : 0;
+
+    const grade = pct >= 90 ? 'A' : pct >= 75 ? 'B' : pct >= 60 ? 'C' : pct >= 40 ? 'D' : 'F';
+    const level = pct >= 90 ? 'Agent-Native'
+                : pct >= 70 ? 'Agent-Ready'
+                : pct >= 45 ? 'Agent-Aware'
+                : pct >  0  ? 'Minimal'
+                :             'Not Ready';
+    const color = pct >= 75 ? '#16a34a' : pct >= 45 ? '#d97706' : '#dc2626';
+
+    return {
+      pct, grade, level, color, categories, protocols,
+      errorCount: summary.errorCount ?? 0,
+      warningCount: summary.warningCount ?? 0,
+    };
+  }
+
+  // Category colour: green when complete, amber when partial, red when zero.
+  // The optional Capabilities row is neutral — it counts protocol coverage,
+  // which is informational and never penalised.
+  function categoryColor(c: CatScore): string {
+    if (c.optional) return c.got > 0 ? '#111' : '#bbb';
+    return c.got === c.max ? '#16a34a' : c.got > 0 ? '#d97706' : '#dc2626';
+  }
+
+  // A category's segmented bar: `max` equal cells, the first `got` filled.
+  // Filled cells render collapsed (scaleX 0) and carry `data-seg-fill` so the
+  // caller can sweep them in left-to-right; `baseIndex` staggers the sweep
+  // across the whole card so rows fill in sequence rather than all at once.
+  function segBar(c: CatScore, color: string, baseIndex: number): string {
+    let cells = '';
+    for (let i = 0; i < c.max; i++) {
+      const filled = i < c.got;
+      if (filled) {
+        const delay = (baseIndex + i) * 45;
+        cells += `<span class="flex-1 h-2.5" data-seg-fill style="background:${color};transform:scaleX(0);transform-origin:left;transition:transform .45s cubic-bezier(.2,.7,.2,1) ${delay}ms"></span>`;
+      } else {
+        cells += `<span class="flex-1 h-2.5" style="background:#ededed"></span>`;
+      }
+    }
+    return cells;
+  }
+
+  // Full-circle progress ring with the score centred. Like the bars, it
+  // renders empty (dashoffset = full circumference) and carries `data-target`
+  // so the caller can sweep it closed on the next frame. Starts at 12 o'clock
+  // via the -90° rotation.
+  function ring(pct: number, color: string): string {
+    const r = 32;
+    const circ = 2 * Math.PI * r;
+    const target = (circ * (1 - Math.max(0, Math.min(100, pct)) / 100)).toFixed(2);
+    return `
+      <svg viewBox="0 0 80 80" class="w-[76px] h-[76px] shrink-0" role="img" aria-label="${pct} of 100 agent readiness">
+        <circle cx="40" cy="40" r="${r}" fill="none" stroke="#ededed" stroke-width="7" />
+        <circle cx="40" cy="40" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+                data-ring data-target="${target}" transform="rotate(-90 40 40)"
+                stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${circ.toFixed(2)}"
+                style="transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)" />
+        <text x="40" y="40" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="700"
+              fill="${color}" font-family="ui-sans-serif,system-ui,sans-serif">${pct}</text>
+      </svg>`;
+  }
+
+  function renderScoreCard(env: AuditEnvelopeOk, score: Readiness): HTMLElement {
+    const wrap = document.createElement('div');
+    wrap.className = 'border border-[#e5e5e5] mb-4';
+
+    const cachedTag = env.cached
+      ? ` · <span class="font-mono text-[10px]">cached ${escape(env.fetchedAt.slice(0, 19))}Z · <a href="/audit?url=${encodeURIComponent(env.target)}&nocache=1" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#111] hover:text-[#111] transition-colors">re-run</a></span>`
+      : '';
+
+    let segIndex = 0;
+    const rows = score.categories.map((c) => {
+      const color = categoryColor(c);
+      const cells = segBar(c, color, segIndex);
+      segIndex += c.max;
+      return `
+        <div class="flex items-center gap-3 py-[5px]">
+          <span class="w-24 sm:w-28 shrink-0 text-[11px] text-[#555]">${escape(c.label)}</span>
+          <span class="flex-1 flex gap-[2px] overflow-hidden">${cells}</span>
+          <span class="w-9 shrink-0 text-right font-mono text-[11px]" style="color:${color}">${c.got}/${c.max}</span>
+        </div>`;
+    }).join('');
+
+    const pills = score.protocols.map((p) => `
+      <span class="inline-flex items-center gap-1.5 border px-2.5 py-1 text-[11px] font-mono ${p.present ? 'border-[#111] text-[#111]' : 'border-[#e5e5e5] text-[#ccc]'}">
+        <span class="${p.present ? 'text-[#16a34a]' : ''}">${p.present ? '✓' : '·'}</span>${escape(p.label)}
+      </span>`).join('');
+
+    wrap.innerHTML = `
+      <div class="px-5 py-3 border-b border-[#e5e5e5] bg-[#fafafa]">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999]">Agent readiness</p>
+      </div>
+      <div class="flex items-center justify-between gap-4 px-5 py-4 border-b border-[#e5e5e5]">
+        <div class="min-w-0">
+          <p class="font-mono text-xs text-[#555] break-all">${escape(env.target)}</p>
+          <p class="mt-1.5">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none">Grade ${escape(score.grade)}</span>
+          </p>
+          <p class="text-sm font-medium text-[#111] mt-1.5">${escape(score.level)}</p>
+          <p class="text-xs text-[#999] mt-1">${score.errorCount} error${score.errorCount === 1 ? '' : 's'} · ${score.warningCount} warning${score.warningCount === 1 ? '' : 's'}${cachedTag}</p>
+        </div>
+        ${ring(score.pct, score.color)}
+      </div>
+      <div class="px-5 py-4 border-b border-[#e5e5e5]">
+        ${rows}
+        <p class="text-[10px] text-[#bbb] mt-3 pt-3 border-t border-[#f0f0f0]">Discovery, Validity, Serving and Schema set the score. Capabilities is informational — protocol coverage is never penalised.</p>
+      </div>
+      <div class="px-5 py-5">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-3">Protocols declared</p>
+        <div class="flex flex-wrap gap-2">${pills}</div>
+      </div>`;
+    return wrap;
   }
 
   function renderFileSection(parent: HTMLElement, label: string, block: unknown) {

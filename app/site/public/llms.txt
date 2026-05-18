@@ -6,6 +6,7 @@
 - [agents.txt Standard v1.0](https://agents-txt.com): The open specification for AI agent capability declarations. Covers file format, directives, discovery, payment protocols (x402, MPP), authorization (agent-auth), MCP endpoint declaration, and skills. Layer 4 of the agent-readiness stack.
 - [agents.txt Standard v1.0 (full text)](https://agents-txt.com/spec): The complete text of the v1.0 specification rendered as a single page: file format, directives, discovery, the agents.json schema, the four capability blocks (Payments, Authorization, MCP, Skills) plus A2A and UCP, §4.5 serving requirements, and the registries defined in §17.
 - [agents.txt Registry](https://agents-txt.com/registry): Live surface for the two registries defined in §17 of the spec: the directive names registered for use in agents.txt, and the per-protocol object shapes registered for use in agents.json. Authoritative between spec versions; the next spec version absorbs accumulated changes.
+- [Audit a site against the agents.txt spec](https://agents-txt.com/audit): Audits any live site against the agents.txt specification: validates /agents.txt and /agents.json against §3–§11, the §5 schema, §4.5 serving headers, and cross-file consistency, and reports an agent-readiness score. Runs in the browser or via the audit_site MCP tool.
 
 ## Demos
 - [Demos index](https://agents-txt.com/demo): Live demonstrations of every capability the spec advertises.
