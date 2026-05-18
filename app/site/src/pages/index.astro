@@ -24,14 +24,8 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
   <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
-        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
-          agents.txt
-        </a>
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
         <span class="hidden sm:inline text-[#ccc] select-none">/</span>
-        <span class="hidden sm:inline text-sm text-[#555] whitespace-nowrap">Standard</span>
-        <span class="hidden sm:inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none">
-          v{SPEC_VERSION}
-        </span>
       </div>
       <NavRight />
     </div>
@@ -53,11 +47,14 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
 
           <!-- Hero copy block -->
           <div class="pb-10 mb-10 border-b border-[#e5e5e5]">
-            <p class="font-mono text-xs text-[#777] tracking-[0.1em] uppercase mb-4">
-              Layer 4 of the agent-readiness stack
-            </p>
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-[#111] mb-6 leading-[1.05]">
-              The declarative capability discovery layer of the agent-native web.
+            <h1 class="mb-6">
+              <img
+                src="/assets/wordmark-stacked.svg"
+                alt="agents.txt — the declarative capability discovery layer"
+                width="384"
+                height="214"
+                class="w-full max-w-[340px] h-auto"
+              />
             </h1>
             <p class="text-sm text-[#555] leading-relaxed max-w-[64ch] mb-8">
               Two files at the site root: <span class="font-mono text-[#111]">/agents.txt</span> (plain text, one directive per line) and <span class="font-mono text-[#111]">/agents.json</span> (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, and A2A AgentCards. No crawling, no protocol probing, no SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
@@ -440,15 +437,15 @@ const agentsTxt = readFileSync('public/agents.txt', 'utf-8').replace(/\n+$/, '')
   <footer class="border-t border-[#e5e5e5] mt-4">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div class="text-xs text-[#999]">
-        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
-        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
         <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
         {' '}·{' '}
         <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
         {' '}·{' '}
         <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Demos</a>
       </div>
-      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
     </div>
   </footer>
 </BaseLayout>

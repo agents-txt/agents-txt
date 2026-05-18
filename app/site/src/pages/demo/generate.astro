@@ -14,9 +14,7 @@ import { SPEC_VERSION } from '../../config';
   <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
-        <a href="/" class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap">
-          agents.txt
-        </a>
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
         <span class="text-[#ccc] select-none">/</span>
         <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
         <span class="text-[#ccc] select-none">/</span>
@@ -483,13 +481,13 @@ import { SPEC_VERSION } from '../../config';
   <footer class="border-t border-[#e5e5e5] mt-4">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div class="text-xs text-[#999]">
-        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
-        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
         <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
         {' '}·{' '}
         <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
       </div>
-      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
     </div>
   </footer>
 

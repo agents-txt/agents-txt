@@ -225,7 +225,7 @@ export default {
       url: 'https://agents-txt.com/skills/adopt-agents-txt/SKILL.md',
       name: 'adopt-agents-txt',
       type: 'skill-md',
-      digest: 'sha256:28b3b35c5f712e9d46d9e0f80d6dfadeec6dab6036179c292d53a47c15933a4a',
+      digest: 'sha256:82629cac0c7a1501da45e15c51ac0b6ac8b9ab5fa54dc072a9907aa6d7f09232',
       description: 'Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result.',
     },
   },
@@ -277,6 +277,18 @@ export default {
         { key: 'Content-Type',                value: 'application/json' },
         { key: 'Access-Control-Allow-Origin', value: '*' },
         { key: 'Cache-Control',               value: 'public, max-age=86400, immutable' },
+      ],
+    },
+    // RFC 9530 representation digest for the hosted JSON Schema. Precomputed
+    // sha-256 of public/schema/agents-json/v1.0.json. Safe to hardcode: the
+    // schema document is immutable per version (v1.1 ships at a different
+    // URL), so this value never goes stale within v1.0. Regenerate only if
+    // the v1.0 file is ever corrected, with:
+    //   openssl dgst -sha256 -binary public/schema/agents-json/v1.0.json | openssl base64 -A
+    {
+      source: '/schema/agents-json/v1.0.json',
+      headers: [
+        { key: 'Repr-Digest', value: 'sha-256=:oaDvAtIFUajuagkdhhJmB+GzvRnvnRrUmuyZ2ia32o0=:' },
       ],
     },
   ],

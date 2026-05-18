@@ -61,6 +61,9 @@
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=86400, immutable
 
+/schema/agents-json/v1.0.json
+  Repr-Digest: sha-256=:oaDvAtIFUajuagkdhhJmB+GzvRnvnRrUmuyZ2ia32o0=:
+
 /
   Link: </.well-known/api-catalog>; rel="api-catalog"
   Link: </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"

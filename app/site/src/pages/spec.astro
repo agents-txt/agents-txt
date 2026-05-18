@@ -59,12 +59,7 @@ const parseInline = (value: string): InlinePart[] => {
   <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
-        <a
-          href="/"
-          class="font-mono text-sm font-semibold tracking-tight text-[#111] no-underline whitespace-nowrap"
-        >
-          agents.txt
-        </a>
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
         <span class="hidden sm:inline text-[#ccc] select-none">/</span>
         <span class="hidden sm:inline text-sm text-[#555] whitespace-nowrap">Standard</span>
         <span
@@ -210,8 +205,8 @@ const parseInline = (value: string): InlinePart[] => {
   <footer class="border-t border-[#e5e5e5] mt-4">
     <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
       <div class="text-xs text-[#999]">
-        <span class="font-mono font-semibold text-[#555]">agents.txt</span>
-        {' '}Standard v{SPEC_VERSION} ·{' '}
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
         <a
           href="https://github.com/agents-txt/agents-txt/blob/main/app/site/src/content/spec/AGENTS-TXT-STANDARD.md"
           target="_blank"
@@ -221,7 +216,7 @@ const parseInline = (value: string): InlinePart[] => {
           View source
         </a>
       </div>
-      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code). Anyone may implement the standard without restriction.</p>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
     </div>
   </footer>
 </BaseLayout>

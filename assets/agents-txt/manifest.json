@@ -1,0 +1,21 @@
+{
+  "source": "agents.txt logo system.html",
+  "generatedAt": "2026-05-15",
+  "svg": [
+    "mark-ink-on-cream.svg",
+    "mark-cream-on-ink.svg",
+    "mark-monochrome-on-accent.svg",
+    "mark-single-ink-print.svg",
+    "mark.svg",
+    "mark-2.svg"
+  ],
+  "rasters": [
+    "favicon-16.png",
+    "favicon-32.png",
+    "favicon-48.png",
+    "apple-touch-icon.png",
+    "icon-192.png",
+    "icon-512.png",
+    "favicon.ico"
+  ]
+}

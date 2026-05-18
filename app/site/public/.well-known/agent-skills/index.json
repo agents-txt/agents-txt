@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Guides a developer through adopting the agents.txt standard on their own website: walks the spec, picks an adoption path (hand-write, generator, or library), and validates the result.",
       "url": "https://agents-txt.com/skills/adopt-agents-txt/SKILL.md",
-      "digest": "sha256:28b3b35c5f712e9d46d9e0f80d6dfadeec6dab6036179c292d53a47c15933a4a"
+      "digest": "sha256:82629cac0c7a1501da45e15c51ac0b6ac8b9ab5fa54dc072a9907aa6d7f09232"
     }
   ]
 }

@@ -1,19 +1,14 @@
-<div align="center">
-
-<img src="assets/alogo.svg" width="235" alt="AGENTS.TXT">
-
-<h1>AGENTS.TXT</h1>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/agents-txt/wordmark-dark.svg">
+  <img src="assets/agents-txt/wordmark.svg" width="380" alt="agents.txt">
+</picture>
 
 **The declarative capability discovery layer of the agent-native web.**
 
-<br>
-
-[![Spec: v1.0](https://img.shields.io/badge/spec-v1.0-111?style=flat-square)](spec/AGENTS-TXT-STANDARD.md)
-[![License: CC0](https://img.shields.io/badge/license-CC0-lightgrey?style=flat-square)](spec/AGENTS-TXT-STANDARD.md)
-[![Live: agents-txt.com](https://img.shields.io/badge/live-agents-txt.com-7c3aed?style=flat-square)](https://agents-txt.com)
+[![spec v1.0](https://img.shields.io/badge/spec-v1.0-3fb950?style=flat-square&labelColor=555555)](spec/AGENTS-TXT-STANDARD.md)
+[![license CC0](https://img.shields.io/badge/license-CC0-777777?style=flat-square&labelColor=555555)](spec/AGENTS-TXT-STANDARD.md)
+[![live agents-txt.com](https://img.shields.io/badge/live-agents--txt.com-fe7d37?style=flat-square&labelColor=555555)](https://agents-txt.com)
 [![GitHub stars](https://img.shields.io/github/stars/agents-txt/agents-txt?style=flat-square&logo=github&logoColor=white&color=181717)](https://github.com/agents-txt/agents-txt)
-
-</div>
 
 Two files at the site root: `/agents.txt` (plain text, one directive per line) and `/agents.json` (structured companion). Agents fetch them on first contact and learn what the site supports: payment protocols, authorization schemes, MCP servers, skill packages, A2A AgentCards. No crawling. No protocol probing. No SDK to bundle. Implementation details live inside each protocol's own response surface; the discovery layer stays thin, static-cacheable, CC0-licensed, and protocol-agnostic by design.
 
