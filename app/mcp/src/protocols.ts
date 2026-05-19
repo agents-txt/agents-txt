@@ -29,6 +29,7 @@ export const BLOCK_OPENERS = {
   Skills: 'skills',
   A2A: 'a2a',
   UCP: 'ucp',
+  WebMCP: 'webmcp',
 } as const;
 
 export type BlockOpener = keyof typeof BLOCK_OPENERS;

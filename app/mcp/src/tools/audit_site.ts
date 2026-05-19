@@ -197,6 +197,11 @@ function auditAgentsTxt(content: string, headers: ResponseHeaders): {
     if (!isHttpsUrl(u)) errors.push(`§10: invalid UCP URL "${u}"`);
     else if (!u.startsWith('https://')) warnings.push(`§10: UCP URL should use HTTPS: "${u}"`);
   }
+  // §6.6: WebMCP URLs must be valid HTTPS
+  for (const u of parsed.webmcp) {
+    if (!isHttpsUrl(u)) errors.push(`§6.6: invalid WebMCP URL "${u}"`);
+    else if (!u.startsWith('https://')) warnings.push(`§6.6: WebMCP URL should use HTTPS: "${u}"`);
+  }
 
   // §4.2: # JSON: comment SHOULD be present (especially when capabilities declared)
   const jsonMatch = content.match(/^\s*#\s*JSON:\s*(\S+)/m);
@@ -379,6 +384,20 @@ function auditAgentsJson(text: string, headers: ResponseHeaders, origin: string)
     }
   }
 
+  // §5.2: webmcp[]
+  const webmcp = parsed.webmcp as Array<Record<string, unknown>> | undefined;
+  if (webmcp !== undefined) {
+    if (!Array.isArray(webmcp)) {
+      errors.push('§5.2: "webmcp" must be an array');
+    } else {
+      webmcp.forEach((entry, i) => {
+        if (typeof entry?.url !== 'string' || !isHttpsUrl(entry.url)) {
+          errors.push(`§5.2: "webmcp[${i}].url" must be a valid URL`);
+        }
+      });
+    }
+  }
+
   return { parsed, parseError: null, errors, warnings };
 }
 
@@ -461,6 +480,13 @@ function crossCheck(
   const jsonUcp = set((json.ucp as Array<{ url?: string }> | undefined)?.map((e) => e?.url ?? ''));
   if (!eqSet(txtUcp, jsonUcp)) {
     issues.push(`UCP URL set mismatch: agents.txt {${[...txtUcp].join(', ')}} vs agents.json {${[...jsonUcp].join(', ')}}`);
+  }
+
+  // webmcp URLs
+  const txtWebmcp = set(txt.webmcp);
+  const jsonWebmcp = set((json.webmcp as Array<{ url?: string }> | undefined)?.map((e) => e?.url ?? ''));
+  if (!eqSet(txtWebmcp, jsonWebmcp)) {
+    issues.push(`WebMCP URL set mismatch: agents.txt {${[...txtWebmcp].join(', ')}} vs agents.json {${[...jsonWebmcp].join(', ')}}`);
   }
 
   // # JSON: comment URL must reference the agents.json on the same origin

@@ -13,3 +13,5 @@ Skills: https://agents-txt.com/skills/adopt-agents-txt/SKILL.md
 A2A: https://agents-txt.com/.well-known/agent-card.json
 
 UCP: https://agents-txt.com/.well-known/ucp
+
+WebMCP: https://agents-txt.com/demo/webmcp

@@ -100,7 +100,7 @@ herald lives in a different repository and is documented separately. Do not atte
 
 If the user runs a server (Express, Hono, Next.js App Router, etc.) and wants the file generated per request based on runtime state, two sub-options:
 
-1. **`@herald/addon`**: the herald project also ships framework adapters (`createAgenticRouter`, route handlers for App Router) that serve all four files from one config. Same caveat as Path 2: mention it as one option, not the only one.
+1. **`@agentstxtdev/herald-addon`**: the herald project also ships framework adapters (`createAgenticRouter`, route handlers for App Router) that serve all four files from one config. Same caveat as Path 2: mention it as one option, not the only one.
 2. **Hand-roll a route handler.** A minimal Express handler:
 
    ```ts
@@ -135,7 +135,7 @@ Most static-asset pipelines do **not** set these by default. Help the user wire 
 | **Apache** | `Header set` in `.htaccess` or vhost config. |
 | **Caddy** | `header` directive in their Caddyfile. |
 | **AWS S3 + CloudFront** | Response Headers Policy on the distribution (or Lambda@Edge for finer control). |
-| **Express / Hono / Next.js handlers** | Set the headers in the route handler that serves the file. The `@herald/addon` middleware already does this if the user adopted via Path 2. |
+| **Express / Hono / Next.js handlers** | Set the headers in the route handler that serves the file. The `@agentstxtdev/herald-addon` middleware already does this if the user adopted via Path 2. |
 
 If the user is on Cloudflare, Netlify, or Vercel **and** they used `herald` (Path 2), they can run `herald generate --headers` and the CLI emits the right config based on its hosting-platform probe (or pass `--platform <name>` to override). For other hosts or hand-written sites, this step is manual.
 
@@ -194,6 +194,7 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 - **Stale generated files.** If using a generator, run it on every deploy, not just locally. CI integration matters.
 - **MCP without transport.** If they declare `MCP: https://example.com/mcp` in `agents.txt`, the URL must speak Streamable HTTP MCP, not just be a JSON endpoint. If they don't have an MCP server, drop the directive.
 - **A2A URL without an AgentCard.** Each `A2A:` line MUST point to a valid AgentCard JSON document (a2a-protocol.org). If the URL returns 404 or a non-AgentCard document, drop the directive. Single-agent sites that already serve their AgentCard at the canonical `/.well-known/agent-card.json` do not need this block at all.
+- **WebMCP without in-browser tools.** Each `WebMCP:` line MUST point to a page whose document registers tools via `navigator.modelContext` (spec §6.6). If no page calls `registerTool()`, drop the directive. `WebMCP:` is for browser-context agents; it does not replace the server-side `MCP:` directive.
 - **Inventing protocol identifiers.** If the user wants to advertise a protocol not registered in the spec (not `x402`, `mpp`, `agent-auth`), tell them to use the `x-` prefix per §3.1 (`x-mypay`, `x-myauth`). Parsers accept it; validators don't warn. Inventing an unprefixed identifier puts them outside the spec and triggers `unknown-protocol` warnings.
 
 ---
@@ -208,4 +209,4 @@ If the user has an `agents.txt` *and* an `agents.json`, confirm they declare the
 
 ## Reference
 
-[REFERENCE.md](REFERENCE.md) carries the full directive list, `agents.json` schema, capability block examples (Payments / Authorization / MCP / Skills / A2A), and hand-write templates per framework. Open it inline whenever the user asks about a specific directive's syntax or fields.
+[REFERENCE.md](REFERENCE.md) carries the full directive list, `agents.json` schema, capability block examples (Payments / Authorization / MCP / Skills / A2A / WebMCP), and hand-write templates per framework. Open it inline whenever the user asks about a specific directive's syntax or fields.

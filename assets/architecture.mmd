@@ -1,0 +1,74 @@
+flowchart TB
+    Client(["AI Agent / Browser"])
+
+    subgraph SITE["site worker &nbsp;·&nbsp; agents-txt.com"]
+        direction TB
+        SW["worker.ts &nbsp; default.fetch"]
+        SP["/x402 handler<br/>x402 v2 402 response<br/>payTo from SOLANA_ADDRESS env"]
+        SM["/mpp handler<br/>WWW-Authenticate: Payment via mppx<br/>methods from TREASURY_TEMPO and/or STRIPE_*"]
+        SD["/audit route<br/>content-negotiated HTML / JSON / Markdown<br/>RL_DEMO rate limit + SESSION KV cache"]
+        SA[["Static Assets (env.ASSETS)<br/>/agents.txt &nbsp; /agents.json<br/>/llms.txt &nbsp; /llms-full.txt &nbsp; /robots.txt &nbsp; /sitemap.xml<br/>/.well-known/agent-card.json<br/>/.well-known/api-catalog (RFC 9727)<br/>/.well-known/mcp/server-card.json (SEP-2127)<br/>/.well-known/agent-skills/index.json (agentskills.io v0.2.0)<br/>/.well-known/security.txt (RFC 9116)<br/>/openapi.json (Payment Discovery)<br/>public/_headers &nbsp;(§4.5 CORS + MIME)"]]
+        SW -- "/x402" --> SP
+        SW -- "/mpp"  --> SM
+        SW -- "/audit" --> SD
+        SW -- "everything else" --> SA
+    end
+
+    subgraph MCP["mcp worker &nbsp;·&nbsp; mcp.agents-txt.com"]
+        direction TB
+        MX["server.ts &nbsp; McpAgent<br/>(Streamable HTTP + SSE)"]
+        MAPI["/api/audit (plain HTTP)<br/>thin wrapper over runAudit()"]
+        MP["protocols.ts<br/>BLOCK_OPENERS<br/>PAYMENT_PROTOCOLS<br/>AUTH_PROTOCOLS"]
+        M1["get_spec"]
+        M2["parse_agents_txt"]
+        M3["validate_agents_txt"]
+        M4["validate_agents_json"]
+        M5["audit_site<br/>(MCP tool, wraps runAudit)"]
+        M6["get_skill"]
+        MX --> M1
+        MX --> M2
+        MX --> M3
+        MX --> M4
+        MX --> M5
+        MX --> M6
+        M2 -.-> MP
+        M3 -.-> MP
+        M4 -.-> MP
+        M5 -. "delegates" .-> M3
+        M5 -. "delegates" .-> M4
+    end
+
+    subgraph AUTH["auth worker &nbsp;·&nbsp; agent-auth + oauth2"]
+        direction TB
+        AX["index.ts &nbsp;(Hono router)"]
+        AD["routes/discovery.ts<br/>GET /.well-known/agent-configuration"]
+        AA["routes/agent.ts<br/>POST /agent/register<br/>GET&nbsp; /agent/status<br/>POST /agent/revoke"]
+        AC["routes/capability.ts<br/>GET&nbsp; /auth<br/>GET&nbsp; /capability/list<br/>GET&nbsp; /capability/describe<br/>POST /capability/execute"]
+        AO["routes/oauth.ts &nbsp;(§11.2)<br/>POST /oauth/token (client-credentials)<br/>POST /oauth/introspect (RFC 7662)<br/>GET&nbsp; /.well-known/oauth-authorization-server<br/>GET&nbsp; /.well-known/openid-configuration (alias)<br/>GET&nbsp; /.well-known/jwks.json"]
+        AJ["jwt.ts<br/>Ed25519 verify (@noble)<br/>jti replay guard"]
+        AOJ["oauth-jwt.ts<br/>ES256 sign + verify<br/>PBKDF2-SHA-256 secret hashing<br/>RL_AUTH rate limit"]
+        AKV[("AUTH_KV<br/>host:* &nbsp; jti:*<br/>oauth:client:* &nbsp; oauth:revoked:*")]
+        AX --> AD
+        AX --> AA
+        AX --> AC
+        AX --> AO
+        AA --> AJ
+        AC --> AJ
+        AO --> AOJ
+        AJ --> AKV
+        AOJ --> AKV
+        AA --> AKV
+    end
+
+    FAC["x402.org<br/>/facilitator/settle"]
+
+    Client -->|HTTPS| SW
+    SW -->|"env.MCP.fetch()<br/>/mcp &nbsp; /sse &nbsp; /api/audit"| MX
+    SW -->|"env.AUTH.fetch()<br/>/.well-known/agent-configuration<br/>/.well-known/oauth-* &nbsp; /agent/*<br/>/capability/* &nbsp; /oauth/* &nbsp; /auth"| AX
+    SP -->|"POST settle (x402 v2)"| FAC
+
+    SD -->|"env.MCP.fetch('/api/audit?url=...')"| MAPI
+    MAPI -. "runAudit()" .-> M5
+    M5 -. "env.SITE.fetch() &nbsp;(self-targets)<br/>plain fetch() &nbsp;(third-party)" .-> SW
+
+    M5 -. "report: errors, warnings,<br/>§4.5 headers,<br/>cross-file consistency" .-> Client

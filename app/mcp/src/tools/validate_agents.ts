@@ -79,6 +79,12 @@ function validateParsed(parsed: ReturnType<typeof parseAgentsTxt>): ValidationRe
     }
   }
 
+  for (const url of parsed.webmcp) {
+    if (!isHttpsUrl(url)) {
+      errors.push(`WebMCP URL must be a valid HTTPS URL — got: "${url}"`);
+    }
+  }
+
   for (const key of Object.keys(parsed.extensions)) {
     warnings.push(`Unknown directive "${key}:" — ignored. Use \`x-\` prefix for experimental identifiers; new block-level directives require a spec update.`);
   }
@@ -204,6 +210,23 @@ function validateAgentsJson(obj: unknown): ValidationResult {
           const e = entry as Record<string, unknown>;
           if (!isHttpsUrl(String(e.url))) {
             errors.push(`ucp[].url must be a valid HTTPS URL — got: "${e.url}"`);
+          }
+        }
+      }
+    }
+  }
+
+  if ('webmcp' in json && json.webmcp) {
+    if (!Array.isArray(json.webmcp)) {
+      errors.push('"webmcp" must be an array');
+    } else {
+      for (const entry of json.webmcp as unknown[]) {
+        if (typeof entry !== 'object' || entry === null || !('url' in (entry as object))) {
+          errors.push('Each webmcp entry must have a "url" field');
+        } else {
+          const e = entry as Record<string, unknown>;
+          if (!isHttpsUrl(String(e.url))) {
+            errors.push(`webmcp[].url must be a valid HTTPS URL — got: "${e.url}"`);
           }
         }
       }

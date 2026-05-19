@@ -145,6 +145,7 @@ Skills: https://example.com/skills/premium/SKILL.md
 | `Skills:` | Skills | No | URL | One skill package URL (SKILL.md or index); repeat for multiple packages |
 | `A2A:` | A2A | No | URL | One A2A AgentCard URL; repeat for multiple agents (§9) |
 | `UCP:` | UCP | No | URL | One UCP profile URL; repeat for multiple profiles (§10) |
+| `WebMCP:` | WebMCP | No | URL | One page URL that registers in-browser WebMCP tools; repeat for multiple pages (§6.6) |
 
 Registered directives are tracked in §17.2; the live surface at `https://agents-txt.com/registry` carries any additions between spec versions.
 
@@ -321,6 +322,12 @@ Registered per-protocol shapes and top-level array shapes are tracked in §17.3.
       "url": "https://example.com/.well-known/ucp",
       "description": "Optional: brief description of this UCP profile."
     }
+  ],
+  "webmcp": [
+    {
+      "url": "https://example.com/app",
+      "description": "Optional: brief description of the in-browser tools this page registers."
+    }
   ]
 }
 ```
@@ -368,6 +375,10 @@ The block carries no mandate content, no signing keys, and no `CheckoutSignature
 **`a2a[].url`**: URL of an A2A AgentCard JSON document. The set of entries in this array MUST match the set of `A2A:` lines in `agents.txt` (§9).
 
 **`a2a[].description`**: OPTIONAL. A brief human-readable summary of the agent's capability or role. This field is `agents.json`-only; `agents.txt` carries only the URL. Detailed agent metadata (skills, capabilities, extensions, transport) lives in the AgentCard itself.
+
+**`webmcp[].url`**: URL of a page whose document registers WebMCP tools via `navigator.modelContext` (§6.6). The set of entries in this array MUST match the set of `WebMCP:` lines in `agents.txt`.
+
+**`webmcp[].description`**: OPTIONAL. A brief human-readable summary of the in-browser tools the page registers. This field is `agents.json`-only; `agents.txt` carries only the URL. The authoritative tool definitions are registered at runtime by the page's own JavaScript through `navigator.modelContext`, not in `agents.json`.
 
 ### 5.4 Security
 
@@ -424,6 +435,28 @@ The `MCP:` directive and the Server Card sit at different layers and complement 
 - The Server Card is the **MCP-side** descriptor. An agent that already knows where the endpoint is (because it read `agents.txt`, or because the URL is configured locally) reads the card to decide whether to negotiate a session.
 
 Sites with an MCP server SHOULD publish both. The `MCP:` URL in `agents.txt` and the `transport.endpoint` in the Server Card MUST agree.
+
+### 6.6 WebMCP — In-Browser Tool Registration
+
+[WebMCP](https://webmachinelearning.github.io/webmcp/) is a browser API, developed in the W3C Web Machine Learning Community Group, that lets a web page expose its own functionality as structured **tools** to an AI agent operating inside the browser tab. A page calls `navigator.modelContext.registerTool()`, or describes standard actions declaratively in HTML forms, to register named functions with natural-language descriptions and JSON Schema input shapes. An agent running in that browser context invokes the tools directly, reusing the page's existing JavaScript instead of scraping the DOM or driving UI automation.
+
+WebMCP and the server-side `MCP:` endpoint (§6.2) sit at different layers and complement each other:
+
+- A server-side `MCP:` endpoint is reached by a **headless** agent over JSON-RPC, with no browser involved.
+- WebMCP tools live in the **document** and are reached by an agent that has already loaded the page in a browser-context runtime.
+
+The `WebMCP:` directive advertises that a site serves pages which register in-browser tools. An agent reading `agents.txt` can decide in advance whether to open those pages in a browser-context runtime rather than fetch them headlessly.
+
+```
+WebMCP: https://example.com/app
+WebMCP: https://example.com/checkout
+```
+
+Each `WebMCP:` line declares the URL of one page whose document registers WebMCP tools. The directive is repeatable; sites that expose in-browser tools on multiple pages emit one line per page. The value SHOULD be an HTTPS URL.
+
+The block carries page URLs only. The tool set itself (tool names, descriptions, input schemas) is registered at runtime by the page's own JavaScript through `navigator.modelContext`, exactly as WebMCP specifies. `agents.txt` does not duplicate or summarise it. The tools a page registers MAY differ between loads or between visitors, which is why the announcement layer carries only the URL and the runtime carries the tool definitions.
+
+WebMCP tool registration is independent of the site-level `Payments:` and `Authorization:` blocks. A tool's handler runs inside the page's own session and reuses whatever credentials or payment context the browser tab already holds; the user-consent model for tool invocation is defined by the WebMCP specification, not by `agents.txt`.
 
 ---
 
@@ -727,7 +760,7 @@ Absence of `Identity: required` does not mean identity is optional; it means the
 | Agent Skills Discovery ([agentskills.io](https://agentskills.io) v0.2.0) | Complementary. The discovery index at `/.well-known/agent-skills/index.json` lists skill artifacts with name / type / url / sha256 digest per entry. `agents.txt`'s `Skills:` directive carries only URLs and remains the primary discovery channel; the Skills Discovery index adds verification (sha256) and metadata (type: `skill-md` or `archive`) for skill packagers that need integrity guarantees. Both list the same skill set; the digests in the discovery index let agents detect drift between the advertised artifact and what they fetched. |
 | OAuth Protected Resource Metadata (RFC 9728) | Independent. `/.well-known/oauth-protected-resource` declares which OAuth/OIDC authorization servers can issue tokens for the resource and which scopes it accepts. `agents.txt`'s `Authorization:` directive identifies a protocol family (e.g. `agent-auth`, `oauth2`); the OAuth Protected Resource Metadata declares the OAuth-specific binding details. Sites with OAuth-gated APIs SHOULD publish both. |
 | Payment Discovery (`x-payment-info` OpenAPI extension, [paymentauth.org draft](https://paymentauth.org/draft-payment-discovery-00.txt)) | Complementary. An OpenAPI document at `/openapi.json` MAY declare payable operations using the `x-payment-info` extension (per-operation offers of `{ intent, method, amount, currency, description }`). `agents.txt` declares which payment protocols the site speaks; the OpenAPI document declares which paths require payment and at what price. The two layers don't overlap: an agent that has read `agents.txt` and knows a site supports MPP still needs the OpenAPI document (or the 402 response itself) to find out which paths are payable and how much each costs. |
-| WebMCP ([webmachinelearning.github.io/webmcp](https://webmachinelearning.github.io/webmcp/)) | Complementary. WebMCP exposes site-defined tools to in-page AI agents via `navigator.modelContext.registerTool()` calls in the document. `agents.txt`'s `MCP:` directive advertises server-side MCP endpoints; WebMCP advertises browser-context tools. Both can coexist on the same site: server-side MCP for headless agents, WebMCP for agents running inside the browser tab. |
+| WebMCP ([webmachinelearning.github.io/webmcp](https://webmachinelearning.github.io/webmcp/)) | Complementary. WebMCP exposes site-defined tools to in-page AI agents via `navigator.modelContext.registerTool()` calls in the document. `agents.txt` provides discovery of WebMCP-enabled pages via the `WebMCP:` directive (§6.6): the `MCP:` directive advertises server-side MCP endpoints for headless agents, the `WebMCP:` directive advertises pages that register browser-context tools. Both can coexist on the same site. The browser API itself (the `navigator.modelContext` interface, tool schema, user-consent model) is defined by the WebMCP specification. |
 | Markdown for Agents ([Cloudflare convention](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/)) | Independent. HTTP content negotiation: requests with `Accept: text/markdown` SHOULD receive a markdown representation with `Content-Type: text/markdown`. `agents.txt` declares capabilities; Markdown for Agents handles content-format negotiation for arbitrary HTML pages. The two are orthogonal and can be applied to the same site without overlap. |
 
 ---
@@ -956,10 +989,11 @@ Governs the directive names that may appear in `agents.txt`. Parsers ignore unkn
 | `Skills:` | Skills | Block opener | HTTPS URL | Yes | §3.1, §7 | registered |
 | `A2A:` | A2A | Block opener | HTTPS URL | Yes | §3.1, §9 | registered |
 | `UCP:` | UCP | Block opener | HTTPS URL | Yes | §3.1, §10 | registered |
+| `WebMCP:` | WebMCP | Block opener | HTTPS URL | Yes | §3.1, §6.6 | registered |
 
 ### 17.3 agents.json Per-Protocol Shape Registry
 
-Governs the per-protocol object shapes inside `agents.json` `payments.*` and the top-level array shapes for `mcp[]`, `skills[]`, `a2a[]`, `ucp[]`. The `version`, `standard`, `site`, and `authorization` blocks are fixed by §5.2 and are not separately registered.
+Governs the per-protocol object shapes inside `agents.json` `payments.*` and the top-level array shapes for `mcp[]`, `skills[]`, `a2a[]`, `ucp[]`, `webmcp[]`. The `version`, `standard`, `site`, and `authorization` blocks are fixed by §5.2 and are not separately registered.
 
 | Key | Parent | Required fields | Optional fields | Spec § | Status |
 |---|---|---|---|---|---|
@@ -970,6 +1004,7 @@ Governs the per-protocol object shapes inside `agents.json` `payments.*` and the
 | `skills[]` | top-level | `url` | `description` | §5.3 | registered |
 | `a2a[]` | top-level | `url` | `description` | §5.3, §9 | registered |
 | `ucp[]` | top-level | `url` | `description` | §5.3, §10 | registered |
+| `webmcp[]` | top-level | `url` | `description` | §5.3, §6.6 | registered |
 
 Per-protocol shapes are emitted only when the corresponding identifier is present in the matching `agents.txt` block. Absence of a `payments.<id>` object means the site does not accept that protocol, regardless of whether the identifier is registered.
 
@@ -978,7 +1013,7 @@ Per-protocol shapes are emitted only when the corresponding identifier is presen
 ```
 Identifier: <name as it appears in agents.txt or agents.json>
 Registry:   <directives | json-shape>
-Block:      <Payments | Authorization | MCP | Skills | A2A | UCP | top-level>
+Block:      <Payments | Authorization | MCP | Skills | A2A | UCP | WebMCP | top-level>
 Role:       <block opener | modifier | per-protocol shape>
 Value type: <for directives only: URL | comma-list | enum>
 Repeatable: <for directives only: yes | no>

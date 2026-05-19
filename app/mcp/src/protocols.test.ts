@@ -33,6 +33,7 @@ describe('protocol registries', () => {
       Skills: 'skills',
       A2A: 'a2a',
       UCP: 'ucp',
+      WebMCP: 'webmcp',
     });
   });
 

@@ -1,0 +1,324 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NavRight from '../../components/NavRight.astro';
+import '../../styles/global.css';
+---
+
+<BaseLayout
+  title="WebMCP Demo · agents.txt"
+  description="Live demonstration of WebMCP. This page registers in-browser tools through navigator.modelContext and invokes them the way a browser-context agent would. Executed entirely in your browser."
+  canonicalUrl="https://agents-txt.com/demo/webmcp"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">WebMCP</span>
+      </div>
+      <NavRight current="demo" />
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          WebMCP: Live Demonstration
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">navigator.modelContext · in-browser tools · W3C Web ML Community Group</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Specification</dt>
+          <dd class="text-[#111]">
+            <a href="https://webmachinelearning.github.io/webmcp/" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              webmachinelearning.github.io/webmcp
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">agents.txt WebMCP: (§6.6) · agents.json webmcp[]</dd>
+          <dt class="text-[#999] font-medium">API</dt>
+          <dd class="font-mono text-[#111]">navigator.modelContext.registerTool()</dd>
+          <dt class="text-[#999] font-medium">Layer</dt>
+          <dd class="text-[#111]">Browser-context tools, reached by an agent running inside the page</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Tools register in your browser on page load.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          WebMCP lets a page expose its own functionality as structured <strong>tools</strong> to an AI agent operating inside the browser tab. Instead of scraping the DOM or driving UI automation, the agent calls JavaScript functions the page registered through <code>navigator.modelContext</code>. Each tool carries a name, a natural-language description, and a JSON Schema describing its inputs.
+        </p>
+        <p>
+          This page registers three tools against an in-page task list. When the document loads it calls <code>navigator.modelContext.registerTool()</code> for each one. The runner below invokes those tools the way a browser-context agent would: it parses arguments against the input schema, calls the tool's <code>execute</code> handler, and renders the structured result. The same handlers drive the visible task list, so a tool call and a button click reach identical code.
+        </p>
+
+        <h2>Where WebMCP sits</h2>
+        <p>
+          The <code>MCP:</code> directive (§6.2) advertises a server-side MCP endpoint for headless agents. The <code>WebMCP:</code> directive (§6.6) advertises pages that register browser-context tools. They are complementary layers, and a site can publish both. <code>agents.txt</code> carries only the page URL; the tool definitions are registered at runtime by the page itself.
+        </p>
+
+        <h2>Registered tools</h2>
+        <table>
+          <thead>
+            <tr><th>Tool</th><th>Input schema</th><th>Effect</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">add_task</td><td class="font-mono text-[11px]">{'{ text: string }'}</td><td>Appends a task to the list</td></tr>
+            <tr><td class="font-mono">complete_task</td><td class="font-mono text-[11px]">{'{ id: number }'}</td><td>Marks a task done</td></tr>
+            <tr><td class="font-mono">list_tasks</td><td class="font-mono text-[11px]">{'{ status?: string }'}</td><td>Returns tasks, optionally filtered</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Capability banner -->
+      <div id="cap-banner" class="border border-[#e5e5e5] bg-[#fafafa] px-5 py-3 mb-6">
+        <p class="text-sm text-[#555]"><span class="font-mono text-[#999]">navigator.modelContext</span>: <span id="cap-state" class="font-medium text-[#111]">checking…</span></p>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">WebMCP tool runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Invoke a registered tool the way a browser-context agent would</p>
+          </div>
+        </div>
+
+        <!-- Invocation console -->
+        <div class="px-5 py-4 border-b border-[#e5e5e5]">
+          <div class="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
+            <div>
+              <label for="tool-select" class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] block mb-1.5">Tool</label>
+              <select id="tool-select" class="w-full border border-[#e5e5e5] text-sm font-mono px-2 py-1.5 bg-white text-[#111]">
+                <option value="add_task">add_task</option>
+                <option value="complete_task">complete_task</option>
+                <option value="list_tasks">list_tasks</option>
+              </select>
+            </div>
+            <div>
+              <label for="args-input" class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] block mb-1.5">Arguments (JSON)</label>
+              <input id="args-input" type="text" spellcheck="false"
+                class="w-full border border-[#e5e5e5] text-sm font-mono px-2 py-1.5 bg-white text-[#111]"
+                value={'{ "text": "Read the agents.txt spec" }'} />
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mt-3">
+            <button id="run-btn"
+              class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              <span id="run-btn-label">Invoke tool</span>
+            </button>
+            <p class="text-xs text-[#999]">Calls <span class="font-mono">execute(args)</span> on the registered tool.</p>
+          </div>
+        </div>
+
+        <!-- Tool result -->
+        <div class="px-5 py-4 border-b border-[#e5e5e5]">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-2">Tool result</p>
+          <pre id="tool-output" class="bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0 max-h-80">No tool invoked yet.</pre>
+        </div>
+
+        <!-- Task list state -->
+        <div class="px-5 py-4">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-2">Task list (page state the tools operate on)</p>
+          <ul id="task-list" class="divide-y divide-[#eee] border border-[#e5e5e5]"></ul>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Tool registration</h3>
+        <p>
+          On load, the page builds a tool object for each function and calls <code>navigator.modelContext.registerTool()</code> when the API is present. A tool object carries <code>name</code>, <code>description</code>, an <code>inputSchema</code> (JSON Schema), and an <code>execute</code> handler. The handler returns a result of the form <code>{'{ content: [{ type: "text", text: "…" }] }'}</code>, which is what a browser-context agent receives back.
+        </p>
+        <h3>Browser availability</h3>
+        <p>
+          WebMCP shipped in Chrome 146 behind the Early Preview Program, so <code>navigator.modelContext</code> is not exposed by default. In a browser without it, the capability banner above reads "not available", and the runner calls the <code>execute</code> handlers directly instead of registering them. The demo stays faithful to the tool contract either way: a registered tool and a direct call reach the same handler and return the same structured result.
+        </p>
+        <h3>Discovery</h3>
+        <p>
+          A browser-context agent does not need <code>agents.txt</code> to use the tools on a page it has already loaded; the tools self-register in the document. The <code>WebMCP:</code> directive exists for pre-screening: an agent reading <code>agents.txt</code> learns which pages register in-browser tools and can decide to open them in a browser-context runtime rather than fetch them headlessly. The tool definitions are never duplicated into <code>agents.txt</code> or <code>agents.json</code>; only the page URL is.
+        </p>
+        <h3>Relationship to server-side MCP</h3>
+        <p>
+          The <a href="/demo/mcp">MCP demo</a> exercises a server-side endpoint over JSON-RPC, reached by a headless agent. WebMCP tools live in the document and are reached by an agent already running in the browser tab. The two are separate directives (<code>MCP:</code> and <code>WebMCP:</code>) and separate layers; see §6 of the <a href="/spec">specification</a>.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+// ── In-page state the tools operate on ──────────────────────────────────────
+interface Task { id: number; text: string; done: boolean }
+const tasks: Task[] = [];
+let nextId = 1;
+
+// ── WebMCP tool definitions ─────────────────────────────────────────────────
+interface ToolResult { content: Array<{ type: 'text'; text: string }> }
+interface Tool {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  execute: (args: Record<string, unknown>) => ToolResult;
+}
+
+const text = (t: string): ToolResult => ({ content: [{ type: 'text', text: t }] });
+
+const TOOLS: Tool[] = [
+  {
+    name: 'add_task',
+    description: 'Add a new task to the list.',
+    inputSchema: {
+      type: 'object',
+      properties: { text: { type: 'string', description: 'The task description.' } },
+      required: ['text'],
+    },
+    execute(args) {
+      const value = String(args.text ?? '').trim();
+      if (!value) return text('Error: "text" is required and must be a non-empty string.');
+      const task: Task = { id: nextId++, text: value, done: false };
+      tasks.push(task);
+      renderTasks();
+      return text(`Added task #${task.id}: "${task.text}". ${tasks.length} task(s) total.`);
+    },
+  },
+  {
+    name: 'complete_task',
+    description: 'Mark an existing task as done by its numeric id.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'number', description: 'The id of the task to complete.' } },
+      required: ['id'],
+    },
+    execute(args) {
+      const id = Number(args.id);
+      const task = tasks.find(t => t.id === id);
+      if (!task) return text(`Error: no task with id ${id}.`);
+      task.done = true;
+      renderTasks();
+      return text(`Completed task #${task.id}: "${task.text}".`);
+    },
+  },
+  {
+    name: 'list_tasks',
+    description: 'List tasks. Optionally filter by status: "open" or "done".',
+    inputSchema: {
+      type: 'object',
+      properties: { status: { type: 'string', enum: ['open', 'done'], description: 'Optional status filter.' } },
+    },
+    execute(args) {
+      const status = args.status ? String(args.status) : null;
+      let rows = tasks;
+      if (status === 'open') rows = tasks.filter(t => !t.done);
+      if (status === 'done') rows = tasks.filter(t => t.done);
+      if (rows.length === 0) return text(status ? `No ${status} tasks.` : 'The task list is empty.');
+      return text(rows.map(t => `#${t.id} [${t.done ? 'done' : 'open'}] ${t.text}`).join('\n'));
+    },
+  },
+];
+
+const toolByName = new Map(TOOLS.map(t => [t.name, t]));
+
+// ── Register against navigator.modelContext when available ──────────────────
+function registerTools(): boolean {
+  const mc = (navigator as unknown as { modelContext?: { registerTool?: (t: unknown) => void } }).modelContext;
+  if (!mc || typeof mc.registerTool !== 'function') return false;
+  for (const t of TOOLS) {
+    mc.registerTool({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.inputSchema,
+      execute: (args: Record<string, unknown>) => t.execute(args ?? {}),
+    });
+  }
+  return true;
+}
+
+// ── Rendering ───────────────────────────────────────────────────────────────
+function renderTasks() {
+  const list = document.getElementById('task-list')!;
+  if (tasks.length === 0) {
+    list.innerHTML = '<li class="px-4 py-3 text-xs text-[#999]">No tasks yet. Invoke add_task to create one.</li>';
+    return;
+  }
+  list.innerHTML = tasks.map(t => `
+    <li class="px-4 py-2.5 flex items-center justify-between gap-3">
+      <span class="text-sm ${t.done ? 'text-[#999] line-through' : 'text-[#111]'}">
+        <span class="font-mono text-[11px] text-[#bbb] mr-2">#${t.id}</span>${escapeHtml(t.text)}
+      </span>
+      <span class="font-mono text-[10px] uppercase tracking-[0.08em] ${t.done ? 'text-[#555]' : 'text-[#bbb]'}">${t.done ? 'done' : 'open'}</span>
+    </li>
+  `).join('');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+}
+
+// ── Wiring ──────────────────────────────────────────────────────────────────
+const registered = registerTools();
+const capState = document.getElementById('cap-state')!;
+if (registered) {
+  capState.textContent = 'available. Three tools registered with the browser.';
+} else {
+  capState.textContent = 'not available in this browser. The runner calls the tool handlers directly, which stays faithful to the tool contract.';
+  capState.className = 'font-medium text-[#a15c00]';
+}
+renderTasks();
+
+const select = document.getElementById('tool-select') as HTMLSelectElement;
+const argsInput = document.getElementById('args-input') as HTMLInputElement;
+const output = document.getElementById('tool-output')!;
+const placeholders: Record<string, string> = {
+  add_task: '{ "text": "Read the agents.txt spec" }',
+  complete_task: '{ "id": 1 }',
+  list_tasks: '{ "status": "open" }',
+};
+select.addEventListener('change', () => { argsInput.value = placeholders[select.value]; });
+
+document.getElementById('run-btn')!.addEventListener('click', () => {
+  const tool = toolByName.get(select.value)!;
+  let args: Record<string, unknown>;
+  try {
+    args = argsInput.value.trim() ? JSON.parse(argsInput.value) : {};
+  } catch {
+    output.textContent = 'Error: arguments must be valid JSON.';
+    return;
+  }
+  const result = tool.execute(args);
+  const path = registered ? 'navigator.modelContext tool' : 'direct execute() call';
+  output.textContent =
+    `tool: ${tool.name}\nargs: ${JSON.stringify(args)}\nvia:  ${path}\n\n` +
+    JSON.stringify(result, null, 2);
+});
+</script>

@@ -53,9 +53,11 @@ Skills: https://mysite.com/skills/main/SKILL.md
 A2A: https://mysite.com/.well-known/agent-card.json
 
 UCP: https://mysite.com/.well-known/ucp
+
+WebMCP: https://mysite.com/app
 ```
 
-That's it. Six directive types, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; per-protocol details (pricing, scopes, transport, skill manifests, AgentCard fields) live in that protocol's own discovery surface, never duplicated here.
+That's it. Seven directive types, plain UTF-8, served at `/agents.txt`. Each directive declares that the site *supports* a protocol; per-protocol details (pricing, scopes, transport, skill manifests, AgentCard fields) live in that protocol's own discovery surface, never duplicated here.
 
 The structured companion **`agents.json`** carries the same information in machine-friendly JSON with richer per-block detail (chain identifiers, default pricing, capability descriptions). Sites SHOULD serve both, same relationship as `llms.txt` and `llms-full.txt`.
 
@@ -127,7 +129,7 @@ Any JSON-aware editor (VS Code, JetBrains, Helix with the JSON LSP, `jq --schema
 The community reference generator [**herald**](https://github.com/agents-txt/herald) (a sibling project, distributed via npm) emits `agents.txt`, `agents.json`, `robots.txt`, `llms.txt`, and `sitemap.xml` from a single config file. Useful if you also want the lower layers of the stack regenerated alongside, or if you're hosting on Express / Hono / Next.js and want a payment middleware wired up automatically.
 
 ```bash
-npm install -D @herald/cli
+npm install -D @agentstxtdev/herald
 herald init
 herald emit --out ./public
 ```
@@ -156,6 +158,7 @@ The spec defines an open set of capability blocks. The blocks below are the ones
 | Skills (§7) | `Skills:` (repeatable) | Agent skill package URLs ([agentskills.io](https://agentskills.io)). |
 | A2A (§9) | `A2A:` (repeatable) | A2A AgentCard URLs ([a2a-protocol.org](https://a2a-protocol.org)). One line per AgentCard, HTTPS only. Complements the canonical well-known path `/.well-known/agent-card.json` for multi-agent sites and non-canonical AgentCard locations. Agent metadata stays in the AgentCard itself; `agents.txt` carries only the URL. |
 | UCP (§10) | `UCP:` (repeatable) | Universal Commerce Protocol profile URLs ([ucp.dev](https://ucp.dev)). One line per profile, HTTPS only. Complements the canonical well-known path `/.well-known/ucp` for multi-profile sites. The profile document declares services, transport bindings, payment handlers (including the AP2 mandate extension), and signing keys; `agents.txt` carries only the URL. |
+| WebMCP (§6.6) | `WebMCP:` (repeatable) | Page URLs that register in-browser tools via `navigator.modelContext` ([WebMCP](https://webmachinelearning.github.io/webmcp/)). One line per page, HTTPS only. Where the `MCP:` directive advertises server-side endpoints for headless agents, `WebMCP:` advertises pages an agent reads inside a browser-context runtime. The tool definitions are registered at runtime by the page itself; `agents.txt` carries only the URL. |
 
 Blocks are separated by blank lines. Unknown keys are ignored by parsers (forward-compatible). Each block has independent semantics: removing the `Authorization:` block never requires changes to `MCP:` or `Skills:`, and so on.
 

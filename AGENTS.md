@@ -79,7 +79,7 @@ The single source of truth for the standard. Versioned (`v1.0` at time of writin
 - Wire format (UTF-8 plain text, RFC 3629)
 - Required and optional directives
 - Companion `agents.json` schema (UTF-8 JSON, RFC 8259)
-- Capability blocks: Payments (§8), Authorization (§11), MCP (§6), Skills (§7), A2A (§9)
+- Capability blocks: Payments (§8), Authorization (§11), MCP (§6), Skills (§7), A2A (§9), UCP (§10), WebMCP (§6.6)
 - `x-` prefix convention for experimental protocol identifiers (§3.1)
 - Conformance requirements
 
@@ -164,7 +164,7 @@ These constraints exist to keep the spec credible, the reference deployment work
 ### `site/`
 
 - The site is the canonical *demonstration* of the spec. Its `public/agents.txt` and `public/agents.json` should always be valid against the latest published spec. If you change the spec, regenerate or hand-edit those files in the same PR.
-- `worker.ts` is the reference x402 v2 implementation at `/x402` and the reference MPP implementation at `/mpp`. Keep both self-contained. Do not import from `@herald/*`. Do not move payment logic into a shared internal module.
+- `worker.ts` is the reference x402 v2 implementation at `/x402` and the reference MPP implementation at `/mpp`. Keep both self-contained. Do not import from `@agentstxtdev/herald-*`. Do not move payment logic into a shared internal module.
 - Astro pages serve user-facing content; do not put runtime logic in them. Push it into `worker.ts` or sibling workers.
 
 ### `mcp/`

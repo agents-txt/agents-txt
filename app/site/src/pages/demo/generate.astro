@@ -656,7 +656,7 @@ import { SPEC_VERSION } from '../../config';
       }
     }
 
-    // ── agents.txt generator (mirrors @herald/core/src/agents-txt.ts) ────────
+    // ── agents.txt generator (mirrors @agentstxtdev/herald-core/src/agents-txt.ts) ────────
     function buildAgentsTxt(c: GenConfig): string {
       const base = c.url.replace(/\/$/, '')
       const lines: string[] = [
@@ -700,7 +700,7 @@ import { SPEC_VERSION } from '../../config';
       return lines.join('\n') + '\n'
     }
 
-    // ── agents.json generator (mirrors @herald/core/src/agents-json.ts) ──────
+    // ── agents.json generator (mirrors @agentstxtdev/herald-core/src/agents-json.ts) ──────
     const SOLANA_MAINNET_CHAIN = 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
 
     function buildAgentsJson(c: GenConfig): string {

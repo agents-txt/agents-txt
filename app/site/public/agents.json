@@ -64,5 +64,11 @@
       "url": "https://agents-txt.com/.well-known/ucp",
       "description": "Reference UCP profile demonstrating the discovery shape: declared services, transport bindings, payment handlers including the AP2 mandate extension, and signing keys. No live UCP server runs at the declared endpoint; the profile exists as a discovery artifact."
     }
+  ],
+  "webmcp": [
+    {
+      "url": "https://agents-txt.com/demo/webmcp",
+      "description": "Reference WebMCP page: registers add_task, complete_task, and list_tasks tools against an in-page task list via navigator.modelContext, demonstrating the in-browser tool-registration shape."
+    }
   ]
 }

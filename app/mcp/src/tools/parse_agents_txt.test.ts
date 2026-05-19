@@ -6,7 +6,7 @@ import { registerParseAgentsTxt } from './parse_agents_txt.js';
 describe('parseAgentsTxt', () => {
   it('returns an empty shape for an empty input', () => {
     const parsed = parseAgentsTxt('');
-    expect(parsed).toEqual({ mcp: [], skills: [], a2a: [], ucp: [], extensions: {} });
+    expect(parsed).toEqual({ mcp: [], skills: [], a2a: [], ucp: [], webmcp: [], extensions: {} });
   });
 
   it('ignores comments and blank lines', () => {

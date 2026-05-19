@@ -6,7 +6,7 @@ import '../styles/global.css';
 
 <BaseLayout
   title="Demos · agents.txt"
-  description="Working protocol demonstrations for the agents.txt standard. Agent Auth, OAuth 2.0, MCP, Skills, A2A, UCP, and payment protocols running live against this server."
+  description="Working protocol demonstrations for the agents.txt standard. Agent Auth, OAuth 2.0, MCP, WebMCP, Skills, A2A, UCP, and payment protocols running live against this server."
   canonicalUrl="https://agents-txt.com/demo"
 >
   <!-- Nav -->
@@ -139,6 +139,42 @@ import '../styles/global.css';
                   ['3', 'Tool invocation: validate_agents_txt (live /agents.txt)'],
                   ['4', 'Tool invocation: validate_agents_json (live /agents.json)'],
                   ['5', 'Tool invocation: audit_site (full compliance audit)'],
+                ].map(([num, label]) => (
+                  <div class="flex items-baseline gap-2">
+                    <span class="font-mono text-[10px] text-[#bbb] shrink-0 w-4">{num}</span>
+                    <span class="text-xs text-[#555]">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- WebMCP demo -->
+        <a href="/demo/webmcp" class="block group no-underline h-full">
+          <div class="border border-[#e5e5e5] group-hover:border-[#111] transition-colors h-full flex flex-col">
+            <div class="px-6 py-5 border-b border-[#e5e5e5] flex-1">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-semibold text-[#111]">WebMCP (In-Browser Tools)</p>
+                  <p class="font-mono text-[11px] text-[#999] mt-1">WebMCP directive (§6.6) · navigator.modelContext · W3C Web ML CG</p>
+                </div>
+                <span class="font-mono text-xs text-[#999] group-hover:text-[#111] transition-colors shrink-0 mt-0.5">
+                  Run demo →
+                </span>
+              </div>
+              <p class="text-sm text-[#555] mt-3 leading-relaxed">
+                Registers three WebMCP tools against an in-page task list via <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">navigator.modelContext.registerTool()</code>, then invokes them the way a browser-context agent would: arguments parsed against the input schema, the tool's <code class="font-mono text-[11px] bg-[#f4f4f4] border border-[#e8e8e8] px-1 py-0.5">execute</code> handler called, the structured result rendered. Falls back to direct handler calls when the browser does not expose the API.
+              </p>
+            </div>
+            <div class="px-6 py-4 bg-[#fafafa]">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#999] mb-3">Steps covered</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-8">
+                {[
+                  ['0', 'Capability detection: navigator.modelContext'],
+                  ['1', 'Tool registration: registerTool() × 3'],
+                  ['2', 'Tool invocation: execute(args) → structured result'],
+                  ['3', 'Page state updated by the same handlers'],
                 ].map(([num, label]) => (
                   <div class="flex items-baseline gap-2">
                     <span class="font-mono text-[10px] text-[#bbb] shrink-0 w-4">{num}</span>

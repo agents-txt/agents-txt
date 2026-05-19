@@ -3,7 +3,7 @@ title: agents.txt Directives Registry
 shortTitle: Directives
 order: 1
 specSection: "§17.2"
-lastUpdated: 2026-05-14
+lastUpdated: 2026-05-19
 ---
 
 Governs the directive names that may appear in `agents.txt`. Parsers ignore unknown directives per §3.2 of the spec; this registry exists so directive authors have a coordination surface, not so parsers gain new failure modes.
@@ -20,3 +20,4 @@ Registration policy is defined in §17.1 of the spec. Provisional identifiers us
 | `Skills:` | Skills | Block opener | HTTPS URL | Yes | §3.1, §7 | registered |
 | `A2A:` | A2A | Block opener | HTTPS URL | Yes | §3.1, §9 | registered |
 | `UCP:` | UCP | Block opener | HTTPS URL | Yes | §3.1, §10 | registered |
+| `WebMCP:` | WebMCP | Block opener | HTTPS URL | Yes | §3.1, §6.6 | registered |

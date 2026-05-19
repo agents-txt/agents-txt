@@ -87,9 +87,9 @@ These rules exist to keep the spec credible and the reference deployment self-co
 - **Always mirror schema changes** into `mcp/src/` validators and the `agents.json` example output in `site/public/agents.json`.
 - **Never** introduce vendor-specific assumptions (e.g. "x402 must use Coinbase facilitator" or "MPP must use Stripe"). The spec is protocol-agnostic by design.
 
-### Do not import `@herald/*` anywhere
+### Do not import `@agentstxtdev/herald-*` anywhere
 
-`site/`, `mcp/`, `auth/` deliberately do not depend on the `herald` npm packages. The reference site re-implements x402 v2 + MPP from scratch in `site/src/worker.ts` so a developer reading it can see the protocols at the wire level without indirection. Do not factor that out into a shared library or replace it with `@herald/addon` calls.
+`site/`, `mcp/`, `auth/` deliberately do not depend on the `herald` npm packages. The reference site re-implements x402 v2 + MPP from scratch in `site/src/worker.ts` so a developer reading it can see the protocols at the wire level without indirection. Do not factor that out into a shared library or replace it with `@agentstxtdev/herald-addon` calls.
 
 ### Do not couple the three workers
 
@@ -183,7 +183,7 @@ Default behaviour: when a user mentions a brand-new protocol, suggest Path A fir
 1. The site satisfies §4.5 via `site/public/_headers` (Cloudflare Workers Static Assets format). It declares `Content-Type: text/plain; charset=utf-8` for `/agents.txt`, `Content-Type: application/json` for `/agents.json`, `Access-Control-Allow-Origin: *` on both, and `Cache-Control: public, max-age=3600`.
 2. Astro copies `public/_headers` to `dist/client/_headers` at build; the adapter-generated `dist/server/wrangler.json` resolves `assets.directory` to `../client`, so wrangler picks it up at deploy.
 3. Verify after deploy by calling the MCP `audit_site` tool against `https://agents-txt.com` (e.g. via `mcp.agents-txt.com/mcp`); a clean run reports `corsAllOrigins: true`, the right `Content-Type`, and a present `Cache-Control` for both files.
-4. Localhost (`astro dev`) does NOT honor `_headers`. The §4.5 errors that appear when auditing `http://localhost:4321` are expected; the spec governs production, not dev preview. If a developer asks for dev/prod parity (so `audit_site` passes against `localhost` too), point them at three options without prescribing one: audit the production URL instead, hand-roll a small middleware that parses `_headers` and applies the matching headers (~30 lines), or use their generator's dev shim if it ships one (the sibling `herald` project exposes `heraldHeadersVitePlugin` / `heraldHeadersConnect` / `heraldHeadersHono` from `@herald/addon/dev` for adopters already using it; Next.js sites can mirror the rules in `next.config.js` `async headers()`). Do not import any of these into this repo — the agents-txt deployment intentionally has no `@herald/*` dependency.
+4. Localhost (`astro dev`) does NOT honor `_headers`. The §4.5 errors that appear when auditing `http://localhost:4321` are expected; the spec governs production, not dev preview. If a developer asks for dev/prod parity (so `audit_site` passes against `localhost` too), point them at three options without prescribing one: audit the production URL instead, hand-roll a small middleware that parses `_headers` and applies the matching headers (~30 lines), or use their generator's dev shim if it ships one (the sibling `herald` project exposes `heraldHeadersVitePlugin` / `heraldHeadersConnect` / `heraldHeadersHono` from `@agentstxtdev/herald-addon/dev` for adopters already using it; Next.js sites can mirror the rules in `next.config.js` `async headers()`). Do not import any of these into this repo — the agents-txt deployment intentionally has no `@agentstxtdev/herald-*` dependency.
 
 ### …the user adds a new well-known path (or any new static discovery file)
 
@@ -256,7 +256,7 @@ The MCP `audit_site` tool lives at `mcp/src/tools/audit_site.ts` (function: `reg
 
 ### …the user mentions herald
 
-Acknowledge it as a sibling project that helps adopt this spec. Mention it lives in a different folder (the user's local clone hierarchy will tell them where) and that it is not imported anywhere here. Do not run `npm install @herald/addon` or similar inside this repo. Do not assume the user is using herald just because they're working in this repo.
+Acknowledge it as a sibling project that helps adopt this spec. Mention it lives in a different folder (the user's local clone hierarchy will tell them where) and that it is not imported anywhere here. Do not run `npm install @agentstxtdev/herald-addon` or similar inside this repo. Do not assume the user is using herald just because they're working in this repo.
 
 ### …a build fails
 
@@ -285,6 +285,7 @@ Acknowledge it as a sibling project that helps adopt this spec. Mention it lives
 | What does directive X mean? | `spec/AGENTS-TXT-STANDARD.md` |
 | What's the wire format of `agents.json`? | `spec/AGENTS-TXT-STANDARD.md` §5 |
 | What's the A2A block / `A2A:` directive? | `spec/AGENTS-TXT-STANDARD.md` §9 |
+| What's the WebMCP block / `WebMCP:` directive? | `spec/AGENTS-TXT-STANDARD.md` §6.6 (in-browser tools via `navigator.modelContext`; complements server-side `MCP:`) |
 | What identifiers are registered? | `mcp/src/protocols.ts` (single source of truth) |
 | What MCP tools does the server expose? | `mcp/src/` (read the actual handlers) |
 | What's the agent-auth handshake? | `auth/src/` + `/.well-known/agent-configuration` response |

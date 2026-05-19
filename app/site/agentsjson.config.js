@@ -258,6 +258,19 @@ export default {
     },
   },
 
+  // WebMCP page discovery (webmachinelearning.github.io/webmcp). Spec §6.6.
+  // One page URL per document that registers in-browser tools through
+  // navigator.modelContext. /demo/webmcp registers three tools against an
+  // in-page task list; the WebMCP: directive lets an agent reading agents.txt
+  // know the page exposes browser-context tools before it opens it. The tool
+  // definitions are registered at runtime by the page's own JavaScript.
+  webmcp: {
+    pages: {
+      url: 'https://agents-txt.com/demo/webmcp',
+      description: 'Reference WebMCP page: registers add_task, complete_task, and list_tasks tools against an in-page task list via navigator.modelContext, demonstrating the in-browser tool-registration shape.',
+    },
+  },
+
   // /.well-known/security.txt (RFC 9116). Vulnerability disclosure channel for
   // the reference deployment: the three Cloudflare workers (site, mcp, auth),
   // the spec site, and the herald SDK. Spec §12 acknowledges security.txt as

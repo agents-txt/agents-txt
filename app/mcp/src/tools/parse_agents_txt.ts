@@ -9,6 +9,7 @@ export type ParsedAgentsTxt = {
   skills: string[];
   a2a: string[];
   ucp: string[];
+  webmcp: string[];
   /**
    * Unknown directives the parser encountered. Forward-compatible bucket so
    * future block types can be observed without modifying the parser. Each
@@ -21,7 +22,7 @@ const splitList = (value: string) =>
   value.split(',').map((v) => v.trim()).filter(Boolean);
 
 export function parseAgentsTxt(content: string): ParsedAgentsTxt {
-  const result: ParsedAgentsTxt = { mcp: [], skills: [], a2a: [], ucp: [], extensions: {} };
+  const result: ParsedAgentsTxt = { mcp: [], skills: [], a2a: [], ucp: [], webmcp: [], extensions: {} };
 
   for (const raw of content.split('\n')) {
     const line = raw.trim();
@@ -68,6 +69,10 @@ export function parseAgentsTxt(content: string): ParsedAgentsTxt {
 
       case 'UCP':
         result.ucp.push(value);
+        break;
+
+      case 'WebMCP':
+        result.webmcp.push(value);
         break;
 
       default:

@@ -22,6 +22,7 @@ Plain UTF-8 text. One directive per line. Lines starting with `#` are comments. 
 | `MCP:` | 0–N | `MCP: https://mysite.com/mcp` | URL of an MCP server (Streamable HTTP transport) |
 | `Skills:` | 0–N | `Skills: https://mysite.com/skills/main/SKILL.md` | URL of a `SKILL.md` file or skill index. Path is site-specific. |
 | `A2A:` | 0–N | `A2A: https://mysite.com/.well-known/agent-card.json` | URL of an A2A AgentCard JSON document (a2a-protocol.org). Opens the A2A block (spec §9). |
+| `WebMCP:` | 0–N | `WebMCP: https://mysite.com/app` | URL of a page that registers in-browser tools via `navigator.modelContext`. Opens the WebMCP block (spec §6.6). |
 
 **Order:** Site-* directives first, capability blocks after. Within a block, the block-opener directive first (e.g., `Protocols:` for payments, `Authorization:` for auth) followed by any policy hints (`Payments: required`, `Identity: required`).
 
@@ -112,6 +113,23 @@ One `A2A:` line per [A2A](https://a2a-protocol.org) AgentCard URL. Each URL poin
 
 ---
 
+### WebMCP
+
+```
+WebMCP: https://mysite.com/app
+WebMCP: https://mysite.com/checkout
+```
+
+One `WebMCP:` line per page whose document registers [WebMCP](https://webmachinelearning.github.io/webmcp/) tools through `navigator.modelContext`. WebMCP exposes a page's own functions as structured tools to an AI agent running inside the browser tab. It complements the server-side `MCP:` directive: `MCP:` advertises endpoints for headless agents, `WebMCP:` advertises pages for agents operating in a browser-context runtime.
+
+**When to declare a WebMCP block.** Declare it only when the site serves pages that call `navigator.modelContext.registerTool()`, or describe declarative tool actions in HTML forms. If no page registers in-browser tools, drop the directive.
+
+`agents.txt` carries only the page URL. The tool set (names, descriptions, input schemas) is registered at runtime by the page's own JavaScript and is never duplicated into `agents.txt` or `agents.json`.
+
+`agents.json` mirrors the directive as a `webmcp[]` array of `{ url, description? }` entries, symmetric with `mcp[]`, `skills[]`, and `a2a[]`.
+
+---
+
 ## `agents.json` schema
 
 Same information as `agents.txt`, in machine-friendly JSON. Sites SHOULD serve both: `agents.txt` for plain-text discovery, `agents.json` for structured pre-screening.
@@ -176,6 +194,7 @@ The canonical JSON Schema 2020-12 document is hosted at `https://agents-txt.com/
 | `mcp[]` | when MCP declared | Array of `{ url, type, description? }`. `type` is always `"streamable-http"` for HTTP MCP. |
 | `skills[]` | when skills declared | Array of `{ url, description? }`. URL points to a `SKILL.md` file or skill index (agentskills.io). Path is site-specific. |
 | `a2a[]` | when A2A declared | Array of `{ url, description? }`. URL points to an A2A AgentCard JSON document (a2a-protocol.org). Description is optional and `agents.json`-only. |
+| `webmcp[]` | when WebMCP declared | Array of `{ url, description? }`. URL points to a page that registers in-browser tools via `navigator.modelContext` (spec §6.6). Description is optional and `agents.json`-only. |
 
 ### Security invariants for `agents.json`
 
@@ -327,7 +346,7 @@ Three ways to close the dev/prod gap. Pick whichever fits your stack:
 
 1. **Audit the production URL, not localhost.** Cleanest if you trust your deploy pipeline. The spec governs the public deployment; local dev is implementation detail.
 2. **Hand-roll a small middleware** that reads your `_headers` / `vercel.json` and applies the matching headers. ~30 lines of code: parse the file once, match `req.url` against each block, call `res.setHeader` for the matched rules, fall through to the next middleware.
-3. **Use an adoption tool's dev shim.** If you already use `herald` (or a similar generator) to emit your headers file, check whether it ships a dev-server shim. `@herald/addon/dev` exports a Vite plugin (`heraldHeadersVitePlugin`), a Connect/Express middleware (`heraldHeadersConnect`), and a Hono middleware (`heraldHeadersHono`) that do exactly the read-and-replay step. Next.js sites use the native `next.config.js` `async headers()` API (works in both dev and prod) and need no extra shim. None of this is required by the spec — it is convenience.
+3. **Use an adoption tool's dev shim.** If you already use `herald` (or a similar generator) to emit your headers file, check whether it ships a dev-server shim. `@agentstxtdev/herald-addon/dev` exports a Vite plugin (`heraldHeadersVitePlugin`), a Connect/Express middleware (`heraldHeadersConnect`), and a Hono middleware (`heraldHeadersHono`) that do exactly the read-and-replay step. Next.js sites use the native `next.config.js` `async headers()` API (works in both dev and prod) and need no extra shim. None of this is required by the spec — it is convenience.
 
 ### Per-platform configuration
 
@@ -340,7 +359,7 @@ Three ways to close the dev/prod gap. Pick whichever fits your stack:
 | Apache | `Header set` in `.htaccess` or vhost | ❌ (server config, manual) |
 | Caddy | `header` directive in Caddyfile | ❌ (server config, manual) |
 | AWS S3 + CloudFront | Response Headers Policy | ❌ (cloud console / IaC, manual) |
-| Express / Hono / Next.js handlers | Set in the route handler | n/a — `@herald/addon` middleware does this |
+| Express / Hono / Next.js handlers | Set in the route handler | n/a — `@agentstxtdev/herald-addon` middleware does this |
 
 Adopters using `herald` on a supported platform get the file emitted automatically (default mode of `herald generate`, or `herald generate --headers` to emit only the headers config). Other platforms require manual configuration with the values above.
 

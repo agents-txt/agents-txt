@@ -267,6 +267,26 @@
         ],
         "additionalProperties": false
       }
+    },
+    "webmcp": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "pattern": "^https?:\\/\\/",
+            "description": "URL of a page that registers in-browser tools via navigator.modelContext, per the WebMCP directive (spec §6.6)."
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -275,7 +295,7 @@
     "site"
   ],
   "additionalProperties": false,
-  "description": "agents.json — structured companion to agents.txt. Declares the capabilities a site exposes to AI agents (payments, authorization, MCP servers, skill packages, A2A AgentCards, UCP profiles). See https://agents-txt.com for the full specification.",
+  "description": "agents.json — structured companion to agents.txt. Declares the capabilities a site exposes to AI agents (payments, authorization, MCP servers, skill packages, A2A AgentCards, UCP profiles, WebMCP pages). See https://agents-txt.com for the full specification.",
   "$id": "https://agents-txt.com/schema/agents-json/v1.0.json",
   "title": "agents.json v1.0",
   "$comment": "JSON Schema for agents.json (v1.0). See https://agents-txt.com for the specification."
