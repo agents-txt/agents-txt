@@ -145,6 +145,25 @@ describe('GET /.well-known/oauth-authorization-server', () => {
     const b = await (await app.request('/.well-known/oauth-authorization-server', {}, env)).json();
     expect(b).toEqual(a);
   });
+
+  it('carries the auth-md activation block (agent_auth)', async () => {
+    const env = buildEnv(privateJwkJson);
+    const res = await app.request('/.well-known/oauth-authorization-server', {}, env);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body).toHaveProperty('agent_auth');
+    const agentAuth = body.agent_auth as Record<string, unknown>;
+    expect(agentAuth.skill).toMatch(/\/auth\.md$/);
+    expect(agentAuth.register_uri).toMatch(/\/agent\/auth$/);
+    expect(agentAuth.claim_uri).toMatch(/\/agent\/auth\/claim$/);
+    expect(agentAuth.revocation_uri).toMatch(/\/agent\/auth\/revoke$/);
+    expect(agentAuth.identity_types_supported).toEqual(['anonymous', 'identity_assertion']);
+    const ia = agentAuth.identity_assertion as Record<string, unknown>;
+    expect(ia.assertion_types_supported).toContain('urn:ietf:params:oauth:token-type:id-jag');
+    expect(ia.assertion_types_supported).toContain('verified_email');
+    expect(ia.credential_types_supported).toEqual(['access_token', 'api_key']);
+    const anon = agentAuth.anonymous as Record<string, unknown>;
+    expect(anon.credential_types_supported).toEqual(['api_key']);
+  });
 });
 
 describe('GET /.well-known/oauth-protected-resource (RFC 9728)', () => {

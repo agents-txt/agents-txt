@@ -277,5 +277,32 @@ function buildDiscoveryDoc(c: OAuthContext) {
     subject_types_supported:                ['public'],
     id_token_signing_alg_values_supported:  ['ES256'],
     code_challenge_methods_supported:       [],
+    // auth-md activation block. agents.txt §11.3 advertises `auth-md` in the
+    // `Authorization:` directive; this block on the AS metadata is the
+    // discovery surface that activates the flow described in /auth.md. Field
+    // shape follows the WorkOS auth.md schema. The /agent/auth endpoints are
+    // not implemented on this reference deployment yet; the URIs below are
+    // the addresses they will live at when wired. Agents that probe them
+    // before wiring lands receive 404.
+    agent_auth: {
+      skill:                       `${origin}/auth.md`,
+      register_uri:                `${origin}/agent/auth`,
+      claim_uri:                   `${origin}/agent/auth/claim`,
+      revocation_uri:              `${origin}/agent/auth/revoke`,
+      identity_types_supported:    ['anonymous', 'identity_assertion'],
+      anonymous: {
+        credential_types_supported: ['api_key'],
+      },
+      identity_assertion: {
+        assertion_types_supported: [
+          'urn:ietf:params:oauth:token-type:id-jag',
+          'verified_email',
+        ],
+        credential_types_supported: ['access_token', 'api_key'],
+      },
+      events_supported: [
+        'https://schemas.workos.com/events/agent/auth/identity/assertion/revoked',
+      ],
+    },
   });
 }

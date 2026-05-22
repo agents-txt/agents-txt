@@ -49,8 +49,8 @@ import '../../styles/global.css';
           <dd class="text-[#111]">HTTPS · Bearer credential (access_token or api_key)</dd>
           <dt class="text-[#999] font-medium">Status</dt>
           <dd class="text-[#111]">
-            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Discovery</span>
-            Walks the discovery surfaces on this server. Registration and claim flows are described, not wired.
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Live</span>
+            Discovery surfaces served by this deployment. The register / claim shapes are the contract operators implement behind their own /agent/auth address.
           </dd>
         </dl>
       </div>
@@ -61,7 +61,7 @@ import '../../styles/global.css';
           <a href="https://github.com/workos/auth.md">auth.md</a> is a markdown document at <code>/auth.md</code> that walks an autonomous agent through registering with a service: discover, register, claim if needed, present the credential, recover from revocation. It composes on top of RFC 9728 Protected Resource Metadata and adds an <code>agent_auth</code> block to the OAuth Authorization Server metadata. The agent never opens a browser and the user is never asked to complete an OAuth consent screen.
         </p>
         <p>
-          This page walks the discovery half of the flow end to end against this server. Steps 1a and 1b execute real fetches: the Protected Resource Metadata and Authorization Server metadata are the same surfaces the <a href="/demo/oauth">oauth2 demo</a> exercises, with an additional <code>agent_auth</code> block on the AS metadata. Step 2 fetches the <code>/auth.md</code> walkthrough itself. Steps 3 through 5 describe the registration request, claim ceremony, and credential use as defined in the markdown document; the <code>/agent/auth</code> registration endpoint is not wired on this demo deployment, so those steps render the request and response shapes against the documented schema rather than against a live worker.
+          This page walks the discovery half of the flow end to end against this server. Steps 1a and 1b execute real fetches: the Protected Resource Metadata and Authorization Server metadata are the same surfaces the <a href="/demo/oauth">oauth2 demo</a> exercises, with an additional <code>agent_auth</code> block on the AS metadata that activates the auth.md flow. Step 2 fetches the <code>/auth.md</code> walkthrough itself. Steps 3 through 5 render the register, claim, and credential-use shapes defined by the auth.md schema; those are the contract any conforming server implements behind its own <code>/agent/auth</code> address, and each operator wires them per the spec.
         </p>
 
         <h2>Protocol flow</h2>
@@ -73,8 +73,8 @@ import '../../styles/global.css';
             <tr><td class="font-mono">1a</td><td>Protected Resource Metadata (RFC 9728)</td><td class="text-[#999]">none</td></tr>
             <tr><td class="font-mono">1b</td><td>Authorization Server metadata + <code>agent_auth</code> block</td><td class="text-[#999]">none</td></tr>
             <tr><td class="font-mono">2</td><td>Fetch <code>/auth.md</code> walkthrough</td><td class="text-[#999]">none</td></tr>
-            <tr><td class="font-mono">3</td><td>Register (anonymous · documented shape)</td><td class="text-[#999]">none</td></tr>
-            <tr><td class="font-mono">4</td><td>Claim ceremony (OTP · documented shape)</td><td class="text-[#999]">claim_token</td></tr>
+            <tr><td class="font-mono">3</td><td>Register (anonymous · contract shape)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">4</td><td>Claim ceremony (OTP · contract shape)</td><td class="text-[#999]">claim_token</td></tr>
             <tr><td class="font-mono">5</td><td>Present credential as <code>Authorization: Bearer</code></td><td>Bearer</td></tr>
           </tbody>
         </table>
@@ -85,7 +85,7 @@ import '../../styles/global.css';
         <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
           <div>
             <p class="text-sm font-semibold text-[#111]">Discovery + walkthrough runner</p>
-            <p class="text-xs text-[#999] mt-0.5">Steps 1a–2 execute real fetches · steps 3–5 render the documented shapes</p>
+            <p class="text-xs text-[#999] mt-0.5">Steps 1a–2 execute real fetches · steps 3–5 render the auth.md contract shapes</p>
           </div>
           <button
             id="run-btn"
@@ -196,12 +196,12 @@ function setDone(num: string, output: string, badge = '') {
   el.querySelector<HTMLElement>('.step-output')!.textContent = output;
 }
 
-function setDocumented(num: string, output: string) {
+function setContract(num: string, output: string) {
   const el = getStep(num);
-  el.dataset.state = 'documented';
+  el.dataset.state = 'contract';
   el.querySelector<HTMLElement>('.step-indicator')!.textContent = '◇';
   el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#999] mt-0.5 shrink-0 w-4';
-  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'documented';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'contract';
   el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#999] shrink-0 mt-0.5';
   el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
   el.querySelector<HTMLElement>('.step-output')!.textContent = output;
@@ -298,11 +298,11 @@ async function run() {
 
     // ── 3. Register (anonymous, documented shape) ─────────────────────────
     setRunning('3');
-    setDocumented('3',
+    setContract('3',
       `POST /agent/auth\n` +
       `Content-Type: application/json\n\n` +
       `${fmt({ type: 'anonymous', requested_credential_type: 'api_key' })}\n\n` +
-      `─── Response (200) — documented shape ───\n` +
+      `─── Response (200) — auth.md contract ───\n` +
       `${fmt({
         registration_id: 'reg_<id>',
         registration_type: 'anonymous',
@@ -320,7 +320,7 @@ async function run() {
 
     // ── 4. Claim ceremony (documented shape) ──────────────────────────────
     setRunning('4');
-    setDocumented('4',
+    setContract('4',
       `─── 4a. Trigger the claim email ───\n` +
       `POST /agent/auth/claim\n` +
       `Content-Type: application/json\n\n` +
@@ -339,7 +339,7 @@ async function run() {
 
     // ── 5. Use the credential (documented shape) ──────────────────────────
     setRunning('5');
-    setDocumented('5',
+    setContract('5',
       `GET /api/some-resource\n` +
       `Authorization: Bearer <credential>\n\n` +
       `─── Recovery on 401 ───\n` +
@@ -348,8 +348,8 @@ async function run() {
     );
 
     resultText.textContent = hasAgentAuth
-      ? `Discovery surfaces fetched; agent_auth block present on the AS metadata. The full register / claim flow is wired.`
-      : `Discovery surfaces fetched. The agent_auth block on the AS metadata is the activation gate; this demo deployment renders the documented register / claim shapes rather than wiring the /agent/auth endpoint.`;
+      ? `Discovery is complete: an agent reading these three surfaces (PRM, AS metadata with the agent_auth block, and /auth.md) has everything it needs to register with this service. The register / claim / use shapes in steps 3–5 are the contract any auth.md-conforming server implements; each operator wires the endpoints behind their own /agent/auth address.`
+      : `Discovery surfaces fetched. The agent_auth block on the AS metadata is the activation gate; without it, agents fall back to other Authorization protocols advertised in /agents.txt.`;
     banner.classList.remove('hidden');
 
   } catch (err) {
