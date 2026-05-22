@@ -157,7 +157,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^(agent-auth|oauth2|x-.+)$"
+            "pattern": "^(agent-auth|oauth2|auth-md|x-.+)$"
           },
           "description": "Accepted authorization protocol identifiers."
         },

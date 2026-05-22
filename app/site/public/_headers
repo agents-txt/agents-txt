@@ -56,6 +56,11 @@
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
 
+/auth.md
+  Content-Type: text/markdown; charset=utf-8
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
 /schema/*
   Content-Type: application/json
   Access-Control-Allow-Origin: *

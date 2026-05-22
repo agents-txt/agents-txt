@@ -1,0 +1,369 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NavRight from '../../components/NavRight.astro';
+import '../../styles/global.css';
+---
+
+<BaseLayout
+  title="auth.md Demo · agents.txt"
+  description="Live demonstration of agentic registration over RFC 9728 metadata plus a /auth.md walkthrough: PRM discovery, AS metadata with agent_auth block, register, optional OTP claim ceremony, credential use, revocation."
+  canonicalUrl="https://agents-txt.com/demo/authmd"
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
+        <span class="text-[#ccc] select-none">/</span>
+        <a href="/demo" class="text-sm text-[#555] hover:text-[#111] transition-colors no-underline whitespace-nowrap">Demos</a>
+        <span class="text-[#ccc] select-none">/</span>
+        <span class="text-sm text-[#111] whitespace-nowrap">auth.md</span>
+      </div>
+      <NavRight current="demo" />
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <div class="max-w-[72ch]">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          auth.md: Agentic Registration Walkthrough
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">auth-md · RFC 9728 PRM · agent_auth AS metadata block</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Protocol</dt>
+          <dd class="text-[#111]">
+            <a href="https://github.com/workos/auth.md" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              github.com/workos/auth.md
+            </a>
+          </dd>
+          <dt class="text-[#999] font-medium">Discovery</dt>
+          <dd class="font-mono text-[#111]">/auth.md · /.well-known/oauth-protected-resource · /agents.json authorization</dd>
+          <dt class="text-[#999] font-medium">Underlying standards</dt>
+          <dd class="font-mono text-[#111]">RFC 9728 (PRM) · RFC 8414 (AS metadata) · IETF ID-JAG draft</dd>
+          <dt class="text-[#999] font-medium">Transport</dt>
+          <dd class="text-[#111]">HTTPS · Bearer credential (access_token or api_key)</dd>
+          <dt class="text-[#999] font-medium">Status</dt>
+          <dd class="text-[#111]">
+            <span class="inline-flex items-center border border-[#111] text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 leading-none mr-2">Discovery</span>
+            Walks the discovery surfaces on this server. Registration and claim flows are described, not wired.
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Introduction -->
+      <div class="prose max-w-none mb-10">
+        <p>
+          <a href="https://github.com/workos/auth.md">auth.md</a> is a markdown document at <code>/auth.md</code> that walks an autonomous agent through registering with a service: discover, register, claim if needed, present the credential, recover from revocation. It composes on top of RFC 9728 Protected Resource Metadata and adds an <code>agent_auth</code> block to the OAuth Authorization Server metadata. The agent never opens a browser and the user is never asked to complete an OAuth consent screen.
+        </p>
+        <p>
+          This page walks the discovery half of the flow end to end against this server. Steps 1a and 1b execute real fetches: the Protected Resource Metadata and Authorization Server metadata are the same surfaces the <a href="/demo/oauth">oauth2 demo</a> exercises, with an additional <code>agent_auth</code> block on the AS metadata. Step 2 fetches the <code>/auth.md</code> walkthrough itself. Steps 3 through 5 describe the registration request, claim ceremony, and credential use as defined in the markdown document; the <code>/agent/auth</code> registration endpoint is not wired on this demo deployment, so those steps render the request and response shapes against the documented schema rather than against a live worker.
+        </p>
+
+        <h2>Protocol flow</h2>
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Action</th><th>Auth</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="font-mono">1a</td><td>Protected Resource Metadata (RFC 9728)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">1b</td><td>Authorization Server metadata + <code>agent_auth</code> block</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">2</td><td>Fetch <code>/auth.md</code> walkthrough</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">3</td><td>Register (anonymous · documented shape)</td><td class="text-[#999]">none</td></tr>
+            <tr><td class="font-mono">4</td><td>Claim ceremony (OTP · documented shape)</td><td class="text-[#999]">claim_token</td></tr>
+            <tr><td class="font-mono">5</td><td>Present credential as <code>Authorization: Bearer</code></td><td>Bearer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Demo runner -->
+      <div class="border border-[#e5e5e5]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[#e5e5e5]">
+          <div>
+            <p class="text-sm font-semibold text-[#111]">Discovery + walkthrough runner</p>
+            <p class="text-xs text-[#999] mt-0.5">Steps 1a–2 execute real fetches · steps 3–5 render the documented shapes</p>
+          </div>
+          <button
+            id="run-btn"
+            class="flex items-center gap-2 border border-[#111] text-xs font-semibold tracking-[0.06em] uppercase px-4 py-2 hover:bg-[#111] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span id="run-btn-label">Run</span>
+          </button>
+        </div>
+
+        <div id="steps" class="divide-y divide-[#e5e5e5]">
+          {[
+            ['1a', 'Protected Resource Metadata',          'GET /.well-known/oauth-protected-resource'],
+            ['1b', 'Authorization Server metadata',        'GET /.well-known/oauth-authorization-server'],
+            ['2',  'Fetch the auth.md walkthrough',        'GET /auth.md'],
+            ['3',  'Register (anonymous)',                 'POST /agent/auth'],
+            ['4',  'Claim ceremony (OTP)',                 'POST /agent/auth/claim → /complete'],
+            ['5',  'Use the credential',                   'GET /api/... + Authorization: Bearer'],
+          ].map(([num, label, hint]) => (
+            <div class="step" data-step={num} data-state="idle">
+              <div class="flex items-start justify-between gap-4 px-5 py-3">
+                <div class="flex items-start gap-3 min-w-0">
+                  <span class="step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4">·</span>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-[#bbb] step-label">{label}</p>
+                    <p class="font-mono text-[11px] text-[#ccc] step-hint mt-0.5">{hint}</p>
+                  </div>
+                </div>
+                <span class="step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5"></span>
+              </div>
+              <div class="step-body hidden px-5 pb-4">
+                <pre class="step-output bg-[#f6f6f6] border border-[#e5e5e5] text-[11px] font-mono text-[#333] p-4 overflow-x-auto whitespace-pre-wrap leading-relaxed m-0"></pre>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div id="result-banner" class="hidden px-5 py-4 border-t border-[#e5e5e5]">
+          <p id="result-text" class="text-sm font-medium text-[#111]"></p>
+          <p class="text-xs text-[#999] mt-1">The <code>agent_auth</code> block on this deployment's AS metadata is what activates the auth.md flow; without it, a generic OAuth client sees only the standard RFC 8414 fields.</p>
+        </div>
+      </div>
+
+      <!-- Technical notes -->
+      <div class="prose max-w-none mt-12">
+        <h2>Technical notes</h2>
+        <h3>Where the agent learns about auth.md</h3>
+        <p>
+          Three independent surfaces all point at the same flow. An agent that reads <code>/agents.txt</code> sees <code>Authorization: auth-md</code> in the announcement layer. An agent that bumps into a 401 from a protected resource sees <code>WWW-Authenticate: Bearer resource_metadata="…"</code> and follows the pointer. An agent that already has the AS metadata in hand sees the <code>agent_auth</code> block alongside the standard RFC 8414 fields. Each path leads to the same <code>register_uri</code>.
+        </p>
+        <h3>Why three registration shapes</h3>
+        <p>
+          The three shapes (<code>identity_assertion + id-jag</code>, <code>identity_assertion + email</code>, <code>anonymous</code>) cover the three things an agent can prove about the user it acts for: a verified identity from a trusted provider, an email address only, or nothing. Each yields a credential immediately; the email and anonymous flows additionally trigger an out-of-band OTP ceremony so a human can confirm the registration. Anonymous registrations get a usable credential before the ceremony; the ceremony upgrades the scope set without re-issuing the credential.
+        </p>
+        <h3>Composition with oauth2 and agent-auth</h3>
+        <p>
+          The site's <code>Authorization:</code> directive advertises <code>agent-auth</code>, <code>oauth2</code>, and <code>auth-md</code> in the same line. The three are independent: an agent picks whichever it can satisfy. The OAuth metadata pair (<code>/.well-known/oauth-protected-resource</code> + <code>/.well-known/oauth-authorization-server</code>) is shared between <code>oauth2</code> and <code>auth-md</code>; the <code>agent_auth</code> block on the AS metadata is what activates the agentic registration flow alongside the classic client-credentials grant.
+        </p>
+        <h3>Revocation is provider-driven</h3>
+        <p>
+          The agent does not call a revoke endpoint. ID-JAG flows can be revoked by the provider posting an OIDC backchannel <code>logout+jwt</code> to <code>agent_auth.revocation_uri</code>; email and anonymous flows surface revocation as a 401 on a previously-working credential. Either way the agent's recovery path is the same: drop the credential and restart at the Protected Resource Metadata fetch.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">All demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<script>
+function getStep(num: string) {
+  return document.querySelector<HTMLElement>(`.step[data-step="${num}"]`)!;
+}
+
+function setRunning(num: string) {
+  const el = getStep(num);
+  el.dataset.state = 'running';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '▸';
+  el.querySelector<HTMLElement>('.step-label')!.classList.replace('text-[#bbb]', 'text-[#111]');
+  el.querySelector<HTMLElement>('.step-hint')!.classList.replace('text-[#ccc]', 'text-[#777]');
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = '···';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = 'Running…';
+}
+
+function setDone(num: string, output: string, badge = '') {
+  const el = getStep(num);
+  el.dataset.state = 'done';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✓';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#111] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = badge;
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#555] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setDocumented(num: string, output: string) {
+  const el = getStep(num);
+  el.dataset.state = 'documented';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '◇';
+  el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#999] mt-0.5 shrink-0 w-4';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'documented';
+  el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#999] shrink-0 mt-0.5';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = output;
+}
+
+function setError(num: string, message: string) {
+  const el = getStep(num);
+  el.dataset.state = 'error';
+  el.querySelector<HTMLElement>('.step-indicator')!.textContent = '✕';
+  el.querySelector<HTMLElement>('.step-badge')!.textContent = 'error';
+  el.querySelector<HTMLElement>('.step-body')!.classList.remove('hidden');
+  el.querySelector<HTMLElement>('.step-output')!.textContent = message;
+}
+
+const fmt = (obj: unknown) => JSON.stringify(obj, null, 2);
+
+async function run() {
+  const btn = document.getElementById('run-btn')!;
+  const label = document.getElementById('run-btn-label')!;
+  const banner = document.getElementById('result-banner')!;
+  const resultText = document.getElementById('result-text')!;
+
+  btn.setAttribute('disabled', '');
+  label.textContent = 'Running…';
+  banner.classList.add('hidden');
+  resultText.className = 'text-sm font-medium text-[#111]';
+
+  document.querySelectorAll<HTMLElement>('.step').forEach(el => {
+    el.dataset.state = 'idle';
+    el.querySelector<HTMLElement>('.step-indicator')!.textContent = '·';
+    el.querySelector<HTMLElement>('.step-indicator')!.className = 'step-indicator font-mono text-[10px] text-[#ccc] mt-0.5 shrink-0 w-4';
+    el.querySelector<HTMLElement>('.step-label')!.className = 'text-sm font-medium text-[#bbb] step-label';
+    el.querySelector<HTMLElement>('.step-hint')!.className = 'font-mono text-[11px] text-[#ccc] step-hint mt-0.5';
+    el.querySelector<HTMLElement>('.step-badge')!.textContent = '';
+    el.querySelector<HTMLElement>('.step-badge')!.className = 'step-badge font-mono text-[10px] text-[#ccc] shrink-0 mt-0.5';
+    el.querySelector<HTMLElement>('.step-body')!.classList.add('hidden');
+    el.querySelector<HTMLElement>('.step-output')!.textContent = '';
+  });
+
+  const origin = window.location.origin;
+
+  try {
+    // ── 1a. Protected Resource Metadata ───────────────────────────────────
+    setRunning('1a');
+    const prRes = await fetch(`${origin}/.well-known/oauth-protected-resource`);
+    const pr = await prRes.json() as Record<string, unknown>;
+    setDone('1a', `GET /.well-known/oauth-protected-resource\n\n${fmt(pr)}`, `${prRes.status}`);
+
+    // ── 1b. Authorization Server metadata ─────────────────────────────────
+    setRunning('1b');
+    const asRes = await fetch(`${origin}/.well-known/oauth-authorization-server`);
+    const asMeta = await asRes.json() as Record<string, unknown>;
+    const hasAgentAuth = 'agent_auth' in asMeta;
+    setDone('1b',
+      `GET /.well-known/oauth-authorization-server\n\n${fmt(asMeta)}\n\n` +
+      `─── agent_auth block ───\n` +
+      (hasAgentAuth
+        ? `Present. This is the block written for an auth.md client.`
+        : `Not present on this deployment yet. The auth-md identifier is advertised in /agents.txt; the agent_auth block on the AS metadata is the activation gate. A real auth-md deployment publishes the block alongside the standard RFC 8414 fields:\n\n${fmt({
+            agent_auth: {
+              skill: `${origin}/auth.md`,
+              register_uri: `${origin}/agent/auth`,
+              claim_uri: `${origin}/agent/auth/claim`,
+              revocation_uri: `${origin}/agent/auth/revoke`,
+              identity_types_supported: ['anonymous', 'identity_assertion'],
+              anonymous: { credential_types_supported: ['api_key'] },
+              identity_assertion: {
+                assertion_types_supported: [
+                  'urn:ietf:params:oauth:token-type:id-jag',
+                  'verified_email',
+                ],
+                credential_types_supported: ['access_token', 'api_key'],
+              },
+            },
+          })}`),
+      `${asRes.status}`,
+    );
+
+    // ── 2. /auth.md walkthrough ───────────────────────────────────────────
+    setRunning('2');
+    const mdRes = await fetch(`${origin}/auth.md`);
+    const mdText = await mdRes.text();
+    const ct = mdRes.headers.get('content-type') ?? '(none)';
+    const bytes = new Blob([mdText]).size;
+    const headings = (mdText.match(/^## .+$/gm) ?? []).slice(0, 8);
+    setDone('2',
+      `GET /auth.md\n\n` +
+      `Content-Type: ${ct}\n` +
+      `Bytes: ${bytes.toLocaleString()}\n` +
+      `Top-level sections:\n` +
+      headings.map(h => `  ${h}`).join('\n'),
+      `${mdRes.status}`,
+    );
+
+    // ── 3. Register (anonymous, documented shape) ─────────────────────────
+    setRunning('3');
+    setDocumented('3',
+      `POST /agent/auth\n` +
+      `Content-Type: application/json\n\n` +
+      `${fmt({ type: 'anonymous', requested_credential_type: 'api_key' })}\n\n` +
+      `─── Response (200) — documented shape ───\n` +
+      `${fmt({
+        registration_id: 'reg_<id>',
+        registration_type: 'anonymous',
+        credential_type: 'api_key',
+        credential: 'sk_demo_<credential>',
+        credential_expires: null,
+        scopes: ['spec:read'],
+        claim_url: `${origin}/agent/auth/claim`,
+        claim_token: 'clm_<token>',
+        claim_token_expires: '<iso-8601>',
+        post_claim_scopes: ['spec:read', 'mcp:tools'],
+      })}\n\n` +
+      `The credential is usable immediately at pre-claim scopes. The optional claim ceremony upgrades the scope set without re-issuing the credential.`,
+    );
+
+    // ── 4. Claim ceremony (documented shape) ──────────────────────────────
+    setRunning('4');
+    setDocumented('4',
+      `─── 4a. Trigger the claim email ───\n` +
+      `POST /agent/auth/claim\n` +
+      `Content-Type: application/json\n\n` +
+      `${fmt({ claim_token: 'clm_<token>', email: 'user@example.com' })}\n\n` +
+      `Response (200):\n` +
+      `${fmt({ registration_id: 'reg_<id>', claim_attempt_id: '<id>', status: 'initiated', expires_at: '<iso-8601>' })}\n\n` +
+      `─── 4b. User reads the OTP from email ───\n\n` +
+      `─── 4c. Submit the OTP ───\n` +
+      `POST /agent/auth/claim/complete\n` +
+      `Content-Type: application/json\n\n` +
+      `${fmt({ claim_token: 'clm_<token>', otp: '123456' })}\n\n` +
+      `Response (200, anonymous):\n` +
+      `${fmt({ registration_id: 'reg_<id>', status: 'claimed' })}\n\n` +
+      `The existing pre-claim credential keeps working; its scope set is upgraded in place.`,
+    );
+
+    // ── 5. Use the credential (documented shape) ──────────────────────────
+    setRunning('5');
+    setDocumented('5',
+      `GET /api/some-resource\n` +
+      `Authorization: Bearer <credential>\n\n` +
+      `─── Recovery on 401 ───\n` +
+      `Drop the credential and restart at step 1a (Protected Resource Metadata).\n` +
+      `Do not stash and retry.`,
+    );
+
+    resultText.textContent = hasAgentAuth
+      ? `Discovery surfaces fetched; agent_auth block present on the AS metadata. The full register / claim flow is wired.`
+      : `Discovery surfaces fetched. The agent_auth block on the AS metadata is the activation gate; this demo deployment renders the documented register / claim shapes rather than wiring the /agent/auth endpoint.`;
+    banner.classList.remove('hidden');
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const running = document.querySelector<HTMLElement>('.step[data-state="running"]');
+    if (running) setError(running.dataset.step!, msg);
+    resultText.textContent = 'Flow interrupted. See step above for details.';
+    resultText.classList.add('text-[#c00]');
+    banner.classList.remove('hidden');
+  } finally {
+    btn.removeAttribute('disabled');
+    label.textContent = 'Run again';
+  }
+}
+
+document.getElementById('run-btn')!.addEventListener('click', run);
+</script>

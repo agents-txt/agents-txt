@@ -311,13 +311,26 @@ curl 'https://agents-txt.com/audit?url=https://example.com'`}</code></pre>
       if (v && typeof v === 'object') return Object.keys(v).length > 0;
       return false;
     };
+    // Block-level pills (one per capability area) plus per-identifier pills
+    // for the two blocks that carry a `protocols[]` array (Payments, Auth).
+    // Per-identifier pills surface specific declarations like `x402`, `mpp`,
+    // `agent-auth`, `auth-md` that the block-level pill alone hides.
+    const identifiers = (key: string): string[] => {
+      const block = (p as Record<string, unknown>)[key];
+      if (!block || typeof block !== 'object') return [];
+      const arr = (block as Record<string, unknown>).protocols;
+      if (Array.isArray(arr)) return arr.filter((v): v is string => typeof v === 'string');
+      return [];
+    };
     const protocols: Protocol[] = [
       { label: 'MCP',      present: present('mcp')           },
       { label: 'Skills',   present: present('skills')        },
       { label: 'A2A',      present: present('a2a')           },
       { label: 'UCP',      present: present('ucp')           },
       { label: 'Payments', present: present('payments')      },
+      ...identifiers('payments').map((id) => ({ label: id, present: true })),
       { label: 'Auth',     present: present('authorization') },
+      ...identifiers('authorization').map((id) => ({ label: id, present: true })),
     ];
     categories.push({
       label: 'Capabilities',

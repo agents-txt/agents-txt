@@ -11,7 +11,7 @@
 export const PAYMENT_PROTOCOLS = ['x402', 'mpp', 'ap2'] as const;
 export type PaymentProtocol = (typeof PAYMENT_PROTOCOLS)[number];
 
-export const AUTH_PROTOCOLS = ['agent-auth', 'oauth2'] as const;
+export const AUTH_PROTOCOLS = ['agent-auth', 'oauth2', 'auth-md'] as const;
 export type AuthProtocol = (typeof AUTH_PROTOCOLS)[number];
 
 export const MPP_METHODS = ['tempo', 'stripe'] as const;

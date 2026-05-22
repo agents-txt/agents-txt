@@ -571,7 +571,7 @@ Protocols: x402, mpp
 Payments: required
 ```
 
-This is symmetric with `Identity: required` in the Authorization block (§11.2): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
+This is symmetric with `Identity: required` in the Authorization block (§11.4): both convey site-wide policy beyond what the protocol's own per-request mechanism conveys.
 
 ### 8.5 Protocol Selection
 
@@ -723,7 +723,83 @@ The access token format is implementation-defined; this specification recommends
 
 **Coexistence with agent-auth:** A site MAY advertise both `agent-auth` and `oauth2` in the same `Authorization:` block. The two protocols are independent: agents pick whichever they support. `agent-auth` is keyed by per-agent Ed25519 identity with capability-scoped grants; `oauth2` is keyed by client_id and is scope-based at the resource level. Sites that publish both run both discovery surfaces in parallel and accept either credential at protected routes.
 
-### 11.3 `Identity: required`
+### 11.3 auth-md — Agentic Registration
+
+[auth.md](https://github.com/workos/auth.md) is a markdown document at `/auth.md` that walks an autonomous agent through registration with the service: discover, register, claim if needed, present the credential, recover from revocation. It composes on top of RFC 9728 Protected Resource Metadata and adds an `agent_auth` block to the OAuth Authorization Server metadata so agents can register without a browser and without a human-in-the-loop OAuth consent flow.
+
+**Discovery:** Advertised in `agents.txt` as `auth-md`. Implementation details (registration endpoints, supported identity types, supported credential types, revocation event schemas) are NOT in `agents.txt`. They are served by the OAuth metadata pair plus the markdown document the metadata points at:
+
+```
+GET /.well-known/oauth-protected-resource              (RFC 9728)
+GET <auth-server>/.well-known/oauth-authorization-server   (RFC 8414 + agent_auth block)
+GET /auth.md                                           (the agent-facing registration walkthrough)
+```
+
+The Authorization Server metadata carries an `agent_auth` object that points at the markdown document and lists the registration endpoints:
+
+```
+{
+  "resource": "https://api.service.com/",
+  "authorization_servers": ["https://auth.service.com/"],
+  "scopes_supported": ["api.read", "api.write"],
+  "bearer_methods_supported": ["header"],
+  "agent_auth": {
+    "skill": "https://service.com/auth.md",
+    "register_uri": "https://auth.service.com/agent/auth",
+    "claim_uri": "https://auth.service.com/agent/auth/claim",
+    "revocation_uri": "https://auth.service.com/agent/auth/revoke",
+    "identity_types_supported": ["anonymous", "identity_assertion"],
+    "anonymous": { "credential_types_supported": ["api_key"] },
+    "identity_assertion": {
+      "assertion_types_supported": [
+        "urn:ietf:params:oauth:token-type:id-jag",
+        "verified_email"
+      ],
+      "credential_types_supported": ["access_token", "api_key"]
+    }
+  }
+}
+```
+
+A `401 Unauthorized` from a protected resource carries the discovery pointer in the `WWW-Authenticate` header, so an agent that bumps into a gated route without prior knowledge can still walk the rest of the flow:
+
+```
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://api.service.com/.well-known/oauth-protected-resource"
+```
+
+**Three registration shapes.** An agent picks one based on what it can prove about the user it acts for:
+
+- `identity_assertion` with an ID-JAG ([IETF draft](https://datatracker.ietf.org/doc/draft-ietf-oauth-identity-chaining/)): the agent's provider signs an audience-bound assertion claiming "this agent acts for this user." The service verifies the JWT against the provider's published JWKS and synchronously returns a credential. No out-of-band ceremony.
+- `identity_assertion` with a verified email: the agent presents the user's address. The service emails a one-time code; the user reads it back to the agent, which submits it to the claim endpoint and receives a credential.
+- `anonymous`: the agent receives a scoped credential immediately. An optional claim ceremony lets a user take ownership later and unlock additional scopes.
+
+**Flow summary (anonymous with deferred claim):**
+```
+Agent → GET /.well-known/oauth-protected-resource
+Server ← { resource, authorization_servers, scopes_supported }
+
+Agent → GET <auth-server>/.well-known/oauth-authorization-server
+Server ← { …, agent_auth: { skill, register_uri, claim_uri, … } }
+
+Agent → POST <register_uri>  { "type": "anonymous", "requested_credential_type": "api_key" }
+Server ← { credential, claim_url, claim_token, post_claim_scopes, … }
+
+[later, when the user wants to claim]
+Agent → POST <claim_uri>            { claim_token, email }
+Server ← { status: "initiated" }
+User  → reads 6-digit OTP from email
+Agent → POST <claim_uri>/complete   { claim_token, otp }
+Server ← { status: "claimed" }
+```
+
+**Revocation** runs through `agent_auth.revocation_uri` (provider-driven for ID-JAG flows via OIDC backchannel `logout+jwt`) or, for email and anonymous flows, surfaces as a 401 on a previously-working credential. Either way the agent's recovery path is the same: drop the credential and restart at the OAuth Protected Resource Metadata fetch.
+
+Credential and key details (JWKs, ID-JAG signing keys, claim tokens, OTPs) are NOT in `agents.txt`. They are exchanged via the OAuth metadata pair, the `agent_auth` block, and the `/auth.md` walkthrough.
+
+**Coexistence with agent-auth and oauth2:** A site MAY advertise `auth-md` alongside `agent-auth` and / or `oauth2` in the same `Authorization:` block. The three protocols are independent: an agent picks whichever it can satisfy. `agent-auth` is keyed by per-agent Ed25519 identity with capability-scoped grants; `oauth2` is the classic client-credentials grant keyed by `client_id`; `auth-md` is agent-initiated registration over RFC 9728 metadata that yields a bearer credential without a browser-mediated consent flow. Sites that publish more than one run the matching discovery surfaces in parallel and accept any of the issued credentials at protected routes.
+
+### 11.4 `Identity: required`
 
 When a site emits `Identity: required` in the Authorization block, it signals a site-level policy: agents MUST authenticate before any interaction, not just before capability execution. This is a stronger signal than the protocol's own capability-gating and is intended for sites where unauthenticated agent access is not acceptable under any circumstance.
 
@@ -759,6 +835,7 @@ Absence of `Identity: required` does not mean identity is optional; it means the
 | MCP Server Card (SEP-2127 / [`modelcontextprotocol/modelcontextprotocol#2127`](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127)) | Complementary. The Server Card at `/.well-known/mcp/server-card.json` describes a single MCP server's `serverInfo`, transport endpoint, and capability flags (`tools` / `resources` / `prompts`). It is the MCP-side discovery card; `agents.txt`'s `MCP:` directive remains the cross-protocol discovery surface that lets agents find the server in the first place. Sites SHOULD publish both: `agents.txt` for ecosystem discovery, the Server Card for MCP-native pre-screening of capabilities before opening a session. |
 | Agent Skills Discovery ([agentskills.io](https://agentskills.io) v0.2.0) | Complementary. The discovery index at `/.well-known/agent-skills/index.json` lists skill artifacts with name / type / url / sha256 digest per entry. `agents.txt`'s `Skills:` directive carries only URLs and remains the primary discovery channel; the Skills Discovery index adds verification (sha256) and metadata (type: `skill-md` or `archive`) for skill packagers that need integrity guarantees. Both list the same skill set; the digests in the discovery index let agents detect drift between the advertised artifact and what they fetched. |
 | OAuth Protected Resource Metadata (RFC 9728) | Independent. `/.well-known/oauth-protected-resource` declares which OAuth/OIDC authorization servers can issue tokens for the resource and which scopes it accepts. `agents.txt`'s `Authorization:` directive identifies a protocol family (e.g. `agent-auth`, `oauth2`); the OAuth Protected Resource Metadata declares the OAuth-specific binding details. Sites with OAuth-gated APIs SHOULD publish both. |
+| auth.md ([github.com/workos/auth.md](https://github.com/workos/auth.md)) | Complementary. `auth.md` is a markdown document at `/auth.md` that walks an agent through agentic registration: discovery (RFC 9728 + an `agent_auth` block on the Authorization Server metadata), registration (`identity_assertion` with ID-JAG, `identity_assertion` with verified email, or `anonymous`), an optional OTP claim ceremony, credential use, and revocation. `agents.txt`'s `Authorization:` directive advertises `auth-md` so an agent learns the registration shape is available before hitting a 401; the markdown document itself is the per-service walkthrough. Sites with agent-initiated registration SHOULD publish both. |
 | Payment Discovery (`x-payment-info` OpenAPI extension, [paymentauth.org draft](https://paymentauth.org/draft-payment-discovery-00.txt)) | Complementary. An OpenAPI document at `/openapi.json` MAY declare payable operations using the `x-payment-info` extension (per-operation offers of `{ intent, method, amount, currency, description }`). `agents.txt` declares which payment protocols the site speaks; the OpenAPI document declares which paths require payment and at what price. The two layers don't overlap: an agent that has read `agents.txt` and knows a site supports MPP still needs the OpenAPI document (or the 402 response itself) to find out which paths are payable and how much each costs. |
 | WebMCP ([webmachinelearning.github.io/webmcp](https://webmachinelearning.github.io/webmcp/)) | Complementary. WebMCP exposes site-defined tools to in-page AI agents via `navigator.modelContext.registerTool()` calls in the document. `agents.txt` provides discovery of WebMCP-enabled pages via the `WebMCP:` directive (§6.6): the `MCP:` directive advertises server-side MCP endpoints for headless agents, the `WebMCP:` directive advertises pages that register browser-context tools. Both can coexist on the same site. The browser API itself (the `navigator.modelContext` interface, tool schema, user-consent model) is defined by the WebMCP specification. |
 | Markdown for Agents ([Cloudflare convention](https://developers.cloudflare.com/fundamentals/reference/markdown-for-agents/)) | Independent. HTTP content negotiation: requests with `Accept: text/markdown` SHOULD receive a markdown representation with `Content-Type: text/markdown`. `agents.txt` declares capabilities; Markdown for Agents handles content-format negotiation for arbitrary HTML pages. The two are orthogonal and can be applied to the same site without overlap. |
@@ -984,7 +1061,7 @@ Governs the directive names that may appear in `agents.txt`. Parsers ignore unkn
 | `Protocols:` | Payments | Block opener | Comma-separated identifier list | No | §3.1, §8 | registered |
 | `Payments:` | Payments | Modifier | Enum (`required`) | No | §3.1, §8.4 | registered |
 | `Authorization:` | Authorization | Block opener | Comma-separated identifier list | No | §3.1, §11 | registered |
-| `Identity:` | Authorization | Modifier | Enum (`required`) | No | §3.1, §11.3 | registered |
+| `Identity:` | Authorization | Modifier | Enum (`required`) | No | §3.1, §11.4 | registered |
 | `MCP:` | MCP | Block opener | HTTPS URL | Yes | §3.1, §6 | registered |
 | `Skills:` | Skills | Block opener | HTTPS URL | Yes | §3.1, §7 | registered |
 | `A2A:` | A2A | Block opener | HTTPS URL | Yes | §3.1, §9 | registered |

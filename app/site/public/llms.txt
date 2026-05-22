@@ -11,6 +11,7 @@
 ## Demos
 - [Demos index](https://agents-txt.com/demo): Live demonstrations of every capability the spec advertises.
 - [Agent Auth demo](https://agents-txt.com/demo/auth): 7-step Ed25519 + JWT handshake against the agent-auth Cloudflare Worker.
+- [auth.md demo](https://agents-txt.com/demo/authmd): Agentic registration walkthrough: PRM discovery, AS metadata with agent_auth block, anonymous registration, optional OTP claim ceremony, credential use.
 - [MCP demo](https://agents-txt.com/demo/mcp): Streamable HTTP MCP session: initialize, tools/list, get_spec, validators.
 - [Payments demo](https://agents-txt.com/demo/payments): Announcement-then-wire walkthrough: reads agents.json, then fetches the synthetic /x402 gated route to show the payTo recipient in a real 402.
 - [MPP demo](https://agents-txt.com/demo/mpp): Announcement-then-wire walkthrough: reads agents.json, then probes /mpp for a real 402 + WWW-Authenticate: Payment challenge composed by mppx. Tempo and/or Stripe methods activate per the credentials configured on the worker.

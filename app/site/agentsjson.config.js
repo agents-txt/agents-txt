@@ -172,6 +172,7 @@ export default {
           pages: [
             { url: 'https://agents-txt.com/demo',           title: 'Demos index',                description: 'Live demonstrations of every capability the spec advertises.' },
             { url: 'https://agents-txt.com/demo/auth',      title: 'Agent Auth demo',            description: '7-step Ed25519 + JWT handshake against the agent-auth Cloudflare Worker.' },
+            { url: 'https://agents-txt.com/demo/authmd',    title: 'auth.md demo',               description: 'Agentic registration walkthrough: PRM discovery, AS metadata with agent_auth block, anonymous registration, optional OTP claim ceremony, credential use.' },
             { url: 'https://agents-txt.com/demo/mcp',       title: 'MCP demo',                   description: 'Streamable HTTP MCP session: initialize, tools/list, get_spec, validators.' },
             { url: 'https://agents-txt.com/demo/payments',  title: 'Payments demo',              description: 'Announcement-then-wire walkthrough: reads agents.json, then fetches the synthetic /x402 gated route to show the payTo recipient in a real 402.' },
             { url: 'https://agents-txt.com/demo/mpp',       title: 'MPP demo',                   description: 'Announcement-then-wire walkthrough: reads agents.json, then probes /mpp for a real 402 + WWW-Authenticate: Payment challenge composed by mppx. Tempo and/or Stripe methods activate per the credentials configured on the worker.' },
@@ -190,16 +191,19 @@ export default {
 
   authorization: {
     enabled: true,
-    // Both protocols are wired in the auth worker. agent-auth (Ed25519 + JWT)
-    // is the per-agent identity flow; oauth2 (RFC 6749 §4.4 client-credentials)
-    // is the per-client token flow. Agents pick whichever they support. The
-    // matching well-known discovery surfaces are served at:
+    // Three protocols are advertised. agent-auth (Ed25519 + JWT) is the
+    // per-agent identity flow; oauth2 (RFC 6749 §4.4 client-credentials) is
+    // the per-client token flow; auth-md is agentic registration over RFC 9728
+    // metadata with an `agent_auth` block plus a /auth.md walkthrough. Agents
+    // pick whichever they support. The matching well-known discovery surfaces
+    // are served at:
     //   /.well-known/agent-configuration            (agent-auth)
     //   /.well-known/openid-configuration           (oauth2)
-    //   /.well-known/oauth-authorization-server     (oauth2 alias)
-    //   /.well-known/oauth-protected-resource       (oauth2 RFC 9728)
+    //   /.well-known/oauth-authorization-server     (oauth2 + auth-md agent_auth block)
+    //   /.well-known/oauth-protected-resource       (oauth2 + auth-md, RFC 9728)
     //   /.well-known/jwks.json                      (oauth2 public key)
-    protocols: ['agent-auth', 'oauth2'],
+    //   /auth.md                                    (auth-md walkthrough)
+    protocols: ['agent-auth', 'oauth2', 'auth-md'],
     identityRequired: false,
   },
 
@@ -289,6 +293,20 @@ export default {
   // validation when an operator hand-edits their agents.json. Long cache:
   // the schema for a given version is immutable; v1.1 ships at a different URL.
   headersExtras: [
+    // /auth.md — the auth-md walkthrough document. Static file served from
+    // public/, fetched by the demo page via JavaScript, and read by any agent
+    // following the auth-md identifier advertised in /agents.txt. Needs the
+    // markdown Content-Type so browsers and command-line clients see it as
+    // text, and the wildcard CORS so browser-context fetches from any origin
+    // resolve. Cache aligned with the other public discovery files.
+    {
+      source: '/auth.md',
+      headers: [
+        { key: 'Content-Type',                value: 'text/markdown; charset=utf-8' },
+        { key: 'Access-Control-Allow-Origin', value: '*' },
+        { key: 'Cache-Control',               value: 'public, max-age=3600' },
+      ],
+    },
     {
       source: '/schema/*',
       headers: [
