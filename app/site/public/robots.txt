@@ -41,3 +41,4 @@ Allow: /
 
 Sitemap: https://agents-txt.com/sitemap.xml
 Content-Signal: search=yes, ai-train=no, ai-input=no
+Schemamap: https://agents-txt.com/schemamap.xml

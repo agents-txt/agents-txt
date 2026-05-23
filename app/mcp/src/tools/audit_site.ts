@@ -642,10 +642,17 @@ export function registerAuditSite(server: McpServer, env?: AuditEnv) {
   server.registerTool(
     'audit_site',
     {
+      title: 'Audit site for agents.txt compliance',
       description:
         'Fetch and audit a live site for agents.txt spec compliance. Validates agents.txt and agents.json against the directives in §3, §6–§11, the JSON schema in §5, and the §4.5 HTTP serving requirements; cross-checks the two files for consistency. Scope is the agents.txt spec only — robots.txt, sitemap.xml, and llms.txt are governed by other specs and are not audited here.',
       inputSchema: {
         url: z.string().describe('Site origin or URL to audit (e.g. "https://example.com" or "example.com")'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   true,
       },
     },
     async ({ url }: { url: string }) => {

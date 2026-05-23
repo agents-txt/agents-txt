@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  NLWeb Schema Map for agents.txt Standard.
+  Lists the surfaces on this site that carry structured schema-bearing data
+  (JSON-LD, OpenAPI, agents.json, the ecosystem discovery files). NLWeb-aware
+  crawlers walk this file to find typed content without parsing HTML.
+  NLWeb: https://github.com/microsoft/nlweb
+-->
+<schemamap xmlns="https://schema.org/schemamap/0.1">
+  <schema>
+    <loc>https://agents-txt.com/</loc>
+    <type>https://schema.org/SoftwareApplication</type>
+    <type>https://schema.org/Organization</type>
+    <type>https://schema.org/WebSite</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/agents.json</loc>
+    <type>https://agents-txt.com/schema/agents-json/v1.0.json</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/openapi.json</loc>
+    <type>https://spec.openapis.org/oas/3.1.0</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/.well-known/api-catalog</loc>
+    <type>https://www.rfc-editor.org/rfc/rfc9264.html</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/.well-known/mcp/server-card.json</loc>
+    <type>https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2127</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/.well-known/agent-card.json</loc>
+    <type>https://a2a-protocol.org/AgentCard</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+  <schema>
+    <loc>https://agents-txt.com/.well-known/agent-skills/index.json</loc>
+    <type>https://agentskills.io/discovery/0.2.0</type>
+    <changefreq>weekly</changefreq>
+  </schema>
+</schemamap>

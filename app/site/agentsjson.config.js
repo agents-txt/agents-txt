@@ -135,6 +135,14 @@ export default {
     blockFreeAiScrapers: true,
     allowSearchEngines: true,
     allowPaidAgents: true,
+    // NLWeb (Microsoft) Schema Map advertisement. Points NLWeb-aware crawlers
+    // at /schemamap.xml, which lists the schema-bearing surfaces this site
+    // publishes (homepage JSON-LD, /agents.json, /openapi.json, the four
+    // ecosystem discovery files). The schemamap.xml file is hand-authored
+    // under public/ and headers are wired via headersExtras below.
+    additionalDirectives: [
+      'Schemamap: https://agents-txt.com/schemamap.xml',
+    ],
   },
 
   content: {
@@ -164,6 +172,16 @@ export default {
               url: 'https://agents-txt.com/audit',
               title: 'Audit a site against the agents.txt spec',
               description: 'Audits any live site against the agents.txt specification: validates /agents.txt and /agents.json against §3–§11, the §5 schema, §4.5 serving headers, and cross-file consistency, and reports an agent-readiness score. Runs in the browser or via the audit_site MCP tool.',
+            },
+            {
+              url: 'https://agents-txt.com/about',
+              title: 'About agents.txt',
+              description: 'Working group, governance, licensing (CC0 spec / Apache 2.0 code), adoption paths, and contact channels. Trust anchor page covering the questions agents and developers ask before adopting the spec.',
+            },
+            {
+              url: 'https://agents-txt.com/AGENTS.md',
+              title: 'AGENTS.md (agent instructions)',
+              description: 'When-to-use instructions for AI agents working against this repository: scope of the spec, boundary with the herald toolkit, where each capability lives. Same content as the AGENTS.md at the repo root, served at the agents.md convention path.',
             },
           ],
         },
@@ -215,8 +233,17 @@ export default {
     // SEP-2127 server-card metadata. herald emits
     // /.well-known/mcp/server-card.json describing this MCP server.
     serverCard: {
-      name:    'agents.txt',
-      version: '0.5.0',
+      name:        'agents.txt',
+      version:     '0.5.0',
+      description: 'Reads, parses, validates, and audits agents.txt and agents.json files against the v1.0 specification. Exposes six read-only tools so agents can verify any site’s agent-readiness without leaving the MCP transport.',
+      tools: [
+        { name: 'get_spec',             description: 'Fetch the agents.txt v1.0 specification (full text or by section).' },
+        { name: 'parse_agents_txt',     description: 'Parse a raw agents.txt file into a structured JSON object matching the agents.json schema shape.' },
+        { name: 'validate_agents_txt',  description: 'Validate an agents.txt file against the spec; returns errors and warnings.' },
+        { name: 'validate_agents_json', description: 'Validate an agents.json file against the spec schema; returns errors, warnings, and notes.' },
+        { name: 'audit_site',           description: 'Fetch and audit a live site for agents.txt compliance (directives, schema, §4.5 serving headers, cross-file consistency).' },
+        { name: 'get_skill',            description: 'Fetch a skill package SKILL.md by name from the site’s skill index.' },
+      ],
       capabilities: {
         tools:     true,
         resources: false,
@@ -275,6 +302,30 @@ export default {
     },
   },
 
+  // /.well-known/http-message-signatures-directory — Web Bot Auth directory.
+  // Publishes the Ed25519 public JWK an agentic crawler operating this site
+  // would use to sign outbound HTTP Message Signatures (RFC 9421). The
+  // private half is intentionally not in the repo; if signing is wired in
+  // the future, it lives as a wrangler secret keyed by `kid`. nbf / exp set
+  // to a 1-year window per the IETF draft. Rotate by generating a fresh
+  // keypair (node `crypto.generateKeyPairSync('ed25519')` + RFC 7638
+  // thumbprint as `kid`) and updating the entry below, keeping the prior key
+  // until its `exp` passes so already-verified requests still validate.
+  webBotAuth: {
+    keys: [
+      {
+        kty: 'OKP',
+        crv: 'Ed25519',
+        x:   'Ckb46yvRcxSfcoimhk60zPGlHk9QVxjLEWIdhd1FwU4',
+        kid: 'Fb78bHcAxqRAaVH_c1QnnCUKYqpPrrvFfcSwQ-yOd1M',
+        alg: 'EdDSA',
+        use: 'sig',
+        nbf: 1779503752,
+        exp: 1811039752,
+      },
+    ],
+  },
+
   // /.well-known/security.txt (RFC 9116). Vulnerability disclosure channel for
   // the reference deployment: the three Cloudflare workers (site, mcp, auth),
   // the spec site, and the herald SDK. Spec §12 acknowledges security.txt as
@@ -301,6 +352,20 @@ export default {
     // resolve. Cache aligned with the other public discovery files.
     {
       source: '/auth.md',
+      headers: [
+        { key: 'Content-Type',                value: 'text/markdown; charset=utf-8' },
+        { key: 'Access-Control-Allow-Origin', value: '*' },
+        { key: 'Cache-Control',               value: 'public, max-age=3600' },
+      ],
+    },
+    // /AGENTS.md — the agents.md convention (agents.md). The file is the
+    // when-to-use instruction surface for AI agents operating against this
+    // repo: it explains what the spec is, the boundary with herald, and where
+    // each capability lives. Serves as the agent-instructions surface that
+    // AEO scanners probe for. Source-of-truth is the repo root AGENTS.md;
+    // the file under public/ is a copy that lands in the deployed assets.
+    {
+      source: '/AGENTS.md',
       headers: [
         { key: 'Content-Type',                value: 'text/markdown; charset=utf-8' },
         { key: 'Access-Control-Allow-Origin', value: '*' },

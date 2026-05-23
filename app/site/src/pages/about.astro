@@ -1,0 +1,117 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import NavRight from '../components/NavRight.astro';
+import '../styles/global.css';
+import { SPEC_VERSION } from '../config';
+---
+
+<BaseLayout
+  title="About · agents.txt Standard"
+  description="About the agents.txt working group, the specification, governance, licensing, and how to reach the maintainers. Open standard, CC0 spec, Apache 2.0 reference code."
+  canonicalUrl="https://agents-txt.com/about"
+  isFaq={true}
+>
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 bg-white border-b border-[#e5e5e5]">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="/" class="flex items-center no-underline shrink-0" aria-label="agents.txt"><img src="/assets/mark-2.svg" alt="agents.txt" width="26" height="26" class="h-[26px] w-[26px]" /></a>
+        <span class="hidden sm:inline text-[#ccc] select-none">/</span>
+        <span class="hidden sm:inline text-sm text-[#555] whitespace-nowrap">About</span>
+      </div>
+      <NavRight current="about" />
+    </div>
+  </header>
+
+  <!-- Page body -->
+  <div class="max-w-[1280px] mx-auto px-6 sm:px-10 pt-12 pb-24">
+    <main class="max-w-3xl mx-auto">
+
+      <!-- Cover -->
+      <div class="mb-10 pb-8 border-b border-[#e5e5e5]">
+        <h1 class="text-2xl font-bold tracking-tight text-[#111] mb-1">
+          About agents.txt
+        </h1>
+        <p class="text-sm text-[#777] font-mono mb-6">Open specification · v{SPEC_VERSION} · CC0 spec · Apache 2.0 code</p>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt class="text-[#999] font-medium">Standard</dt>
+          <dd class="text-[#111]">agents.txt v{SPEC_VERSION}</dd>
+          <dt class="text-[#999] font-medium">Specification license</dt>
+          <dd class="text-[#111]">CC0 1.0 Universal (public domain)</dd>
+          <dt class="text-[#999] font-medium">Reference code license</dt>
+          <dd class="text-[#111]">Apache 2.0</dd>
+          <dt class="text-[#999] font-medium">Governance</dt>
+          <dd class="text-[#111]">RFC-style PR review on GitHub</dd>
+          <dt class="text-[#999] font-medium">Source</dt>
+          <dd class="text-[#111]">
+            <a href="https://github.com/agents-txt/agents-txt" target="_blank" rel="noopener noreferrer"
+              class="font-mono underline underline-offset-2 decoration-[#bbb] hover:decoration-[#111] transition-all">
+              github.com/agents-txt/agents-txt
+            </a>
+          </dd>
+        </dl>
+      </div>
+
+      <!-- Content -->
+      <div class="prose max-w-none mb-10">
+        <h2 id="what-is-agents-txt">What is agents.txt?</h2>
+        <p>
+          <code>agents.txt</code> is an open specification for <strong>AI agent capability declarations</strong>. A site publishes a plain-text <code>/agents.txt</code> file plus a structured <code>/agents.json</code> companion describing the payment rails (<a href="https://x402.org" target="_blank" rel="noopener noreferrer">x402</a>, <a href="https://mpp.dev" target="_blank" rel="noopener noreferrer">MPP</a>, <a href="https://ap2-protocol.org" target="_blank" rel="noopener noreferrer">AP2</a>), authorization protocols (<a href="https://agentauthprotocol.com" target="_blank" rel="noopener noreferrer">agent-auth</a>, OAuth 2.0, <a href="https://github.com/workos/auth.md" target="_blank" rel="noopener noreferrer">auth.md</a>), MCP servers, agent skills, A2A AgentCards, UCP profiles, and WebMCP pages an agent can use. It is <strong>Layer 4 of the agent-readiness stack</strong>: discovery on top of <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer">llms.txt</a> (Layer 3), <a href="https://www.sitemaps.org/protocol.html" target="_blank" rel="noopener noreferrer">sitemap.xml</a> (Layer 2), and <a href="https://www.rfc-editor.org/rfc/rfc9309" target="_blank" rel="noopener noreferrer">robots.txt</a> (Layer 1).
+        </p>
+
+        <h2 id="who-maintains-the-specification">Who maintains the specification?</h2>
+        <p>
+          The <a href="https://github.com/agents-txt" target="_blank" rel="noopener noreferrer">agents.txt working group</a> on GitHub. The specification and reference deployment are open-source: the spec is <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0</a> (public domain), the reference code is Apache 2.0. Anyone can implement, fork, or extend the standard without licensing friction.
+        </p>
+        <p>
+          Spec changes follow RFC-style PR review. Structural changes (new directives, schema fields, conformance shifts) require an RFC-style description in the pull request and two reviewer approvals. Editorial polish (typos, clarifying examples, broken links) goes through a single approval. The full registration policy is at <a href="/spec#171-registration-policy">spec §17.1</a> and the template at <a href="/spec#174-registration-template">§17.4</a>.
+        </p>
+
+        <h2 id="how-is-agents-txt-different">How is agents.txt different from MCP, A2A, or llms.txt?</h2>
+        <p>
+          agents.txt is the <strong>discovery</strong> layer. It does not implement payments, authorization, or tool execution. It tells an agent which protocols a site speaks and where their discovery surfaces live. The protocols themselves (<a href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer">MCP</a>, <a href="https://a2a-protocol.org" target="_blank" rel="noopener noreferrer">A2A</a>, x402, MPP, AP2, agent-auth, OAuth 2.0, auth.md) are independent specifications. agents.txt is the one file at the canonical path that gives an agent a complete capability map in one fetch, complemented by <code>llms.txt</code> for LLM-friendly content discovery.
+        </p>
+
+        <h2 id="is-there-a-cli-or-sdk">Is there a CLI or SDK?</h2>
+        <p>
+          Yes, <a href="https://www.npmjs.com/package/@agentstxtdev/herald" target="_blank" rel="noopener noreferrer">herald</a> (<code>@agentstxtdev/herald</code> on npm). It generates the agents.txt, agents.json, llms.txt, robots.txt, sitemap.xml, security.txt, and the four ecosystem discovery files from a single config. herald is a separate project; the spec itself can be hand-written or generated by any tool. The full toolkit lives at <a href="https://github.com/agentstxtdev/HERALD" target="_blank" rel="noopener noreferrer">github.com/agentstxtdev/HERALD</a>.
+        </p>
+
+        <h2 id="how-do-i-adopt-agents-txt">How do I adopt agents.txt on my site?</h2>
+        <p>Three paths, in increasing automation:</p>
+        <ol>
+          <li><strong>Hand-write</strong> the two files following the <a href="/spec">spec</a>. The wire format is plain text plus one JSON document, both at canonical paths.</li>
+          <li><strong>Generate with herald</strong>: <code>pnpm dlx @agentstxtdev/herald init</code> walks you through it, then <code>herald emit</code> writes the files to your public directory.</li>
+          <li><strong>Write your own generator</strong> against the <a href="/schema/agents-json/v1.0.json" target="_blank" rel="noopener noreferrer">published JSON Schema</a>. Validate the output with the live <a href="/audit">audit tool</a> or the <code>audit_site</code> MCP tool at <a href="https://mcp.agents-txt.com" target="_blank" rel="noopener noreferrer">mcp.agents-txt.com</a>.</li>
+        </ol>
+
+        <h2 id="contact">Contact</h2>
+        <p>
+          Issues and feature requests go to <a href="https://github.com/agents-txt/agents-txt/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>. Security disclosures go through <a href="/.well-known/security.txt"><code>/.well-known/security.txt</code></a> per RFC 9116: email <a href="mailto:security@agents-txt.com">security@agents-txt.com</a>, policy at <a href="https://github.com/agents-txt/agents-txt/security/policy" target="_blank" rel="noopener noreferrer">github.com/agents-txt/agents-txt/security/policy</a>. Specification changes go through pull requests with the RFC template.
+        </p>
+
+        <h2 id="privacy">Privacy</h2>
+        <p>
+          agents-txt.com serves a public specification and live demos. The site does not require accounts, does not set tracking cookies, and does not run third-party analytics. Edge logs (Cloudflare access logs) are retained for the platform's default window and are used only for debugging and abuse mitigation. The two synthetic gated demo routes (<code>/x402</code>, <code>/mpp</code>) emit real 402 challenges; any payment payload an agent submits is verified against the public facilitator and is not stored beyond the transaction window. The agent-auth demo generates ephemeral Ed25519 keypairs in the browser; no keys leave the visitor's device.
+        </p>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e5e5e5] mt-4">
+    <div class="max-w-[1280px] mx-auto px-6 sm:px-10 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="text-xs text-[#999]">
+        <img src="/assets/wordmark.svg" alt="agents.txt" class="inline-block h-[16px] w-auto align-middle" />
+        {' '}
+        <a href="/spec" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Spec</a>
+        {' '}·{' '}
+        <a href="/registry" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Registry</a>
+        {' '}·{' '}
+        <a href="/demo" class="underline underline-offset-2 decoration-[#ccc] hover:decoration-[#999] transition-all">Demos</a>
+      </div>
+      <p class="text-xs text-[#bbb]">CC0 (spec) · Apache 2.0 (code).</p>
+    </div>
+  </footer>
+</BaseLayout>

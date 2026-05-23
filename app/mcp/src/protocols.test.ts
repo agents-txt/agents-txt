@@ -18,7 +18,7 @@ describe('protocol registries', () => {
   });
 
   it('AUTH_PROTOCOLS contains the canonical identifiers', () => {
-    expect(AUTH_PROTOCOLS).toEqual(['agent-auth', 'oauth2']);
+    expect(AUTH_PROTOCOLS).toEqual(['agent-auth', 'oauth2', 'auth-md']);
   });
 
   it('MPP_METHODS contains the canonical methods', () => {

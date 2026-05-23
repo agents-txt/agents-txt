@@ -20,11 +20,29 @@ export type Env = {
 type State = Record<string, never>;
 type Props = Record<string, never>;
 
+// Instructions surfaced to MCP clients on initialize. Lets an agent connecting
+// to this server know what it is for before listing tools. Format follows the
+// MCP spec's `serverInfo.instructions` field: short prose describing scope,
+// the right times to call each tool, and the boundary between this server's
+// concerns and adjacent specs. AEO scanners read this field as the "MCP
+// server identity" / "when to use" signal.
+const SERVER_INSTRUCTIONS = `This server exposes the agents.txt v1.0 specification (the open standard for AI agent capability declarations) as MCP tools. Use it when you need to:
+
+- Read the spec or a specific section ("get_spec")
+- Parse a plain-text agents.txt file into structured JSON ("parse_agents_txt")
+- Validate an agents.txt or agents.json document against the spec ("validate_agents_txt", "validate_agents_json")
+- Audit a live site for full agents.txt compliance, including §4.5 serving headers and cross-file consistency ("audit_site")
+- Fetch a skill package by name from the agents.txt skills index ("get_skill")
+
+All tools are read-only and side-effect-free. Out of scope: implementing payment protocols (x402, MPP, AP2), authorization protocols (agent-auth, OAuth 2.0, auth.md), or any runtime behaviour. This server only reads, parses, validates, and audits the discovery files; the protocols those files declare are independent specifications. Live spec and demos at https://agents-txt.com; toolkit (herald) at https://www.npmjs.com/package/@agentstxtdev/herald.`;
+
 export class AgentsTxtMCP extends McpAgent<Env, State, Props> {
   server = new McpServer({
     name: 'agents.txt',
     version: '0.5.0',
     websiteUrl: 'https://agents-txt.com',
+  }, {
+    instructions: SERVER_INSTRUCTIONS,
   });
 
   initialState: State = {};

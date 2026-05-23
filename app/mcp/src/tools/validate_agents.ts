@@ -240,10 +240,17 @@ export function registerValidateAgents(server: McpServer) {
   server.registerTool(
     'validate_agents_txt',
     {
+      title: 'Validate agents.txt',
       description:
         'Validate the text content of an agents.txt file against the spec rules. Returns errors (spec violations) and warnings (unknown identifiers).',
       inputSchema: {
         content: z.string().describe('Raw text content of an agents.txt file'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   false,
       },
     },
     ({ content }: { content: string }) => {
@@ -256,10 +263,17 @@ export function registerValidateAgents(server: McpServer) {
   server.registerTool(
     'validate_agents_json',
     {
+      title: 'Validate agents.json',
       description:
         'Validate an agents.json object against the spec schema. Returns errors (schema violations) and warnings.',
       inputSchema: {
         content: z.string().describe('Raw JSON string content of an agents.json file'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   false,
       },
     },
     ({ content }: { content: string }) => {

@@ -97,10 +97,17 @@ export function registerParseAgentsTxt(server: McpServer) {
   server.registerTool(
     'parse_agents_txt',
     {
+      title: 'Parse agents.txt to JSON',
       description:
         'Parse the text content of an agents.txt file into a structured JSON object matching the agents.json schema shape.',
       inputSchema: {
         content: z.string().describe('Raw text content of an agents.txt file'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   false,
       },
     },
     ({ content }: { content: string }) => {

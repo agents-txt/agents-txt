@@ -1,0 +1,24 @@
+{
+  "$comment": "Discovery surface for the x402 payment protocol on this deployment. Mirrors the payments.x402 block from /agents.json. The x402 specification (https://x402.org) does not mandate this well-known path; it is published here as a convenience for agent-readiness scanners that probe /.well-known/x402 as the conventional discovery surface.",
+  "protocol": "x402",
+  "version": "v2",
+  "specification": "https://x402.org",
+  "resources": [
+    {
+      "url": "https://agents-txt.com/x402",
+      "description": "Returns HTTP 402 with x402 v2 accepts on first contact; settles via the public x402.org facilitator after the agent supplies a signed payment payload.",
+      "chains": [
+        "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"
+      ],
+      "facilitator": "https://x402.org/facilitator"
+    }
+  ],
+  "discovery": {
+    "agentsJson": "https://agents-txt.com/agents.json",
+    "openapi": "https://agents-txt.com/openapi.json"
+  },
+  "pricing": {
+    "amount": "0.01",
+    "token": "USDC"
+  }
+}

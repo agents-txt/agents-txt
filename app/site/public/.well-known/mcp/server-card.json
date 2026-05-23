@@ -1,7 +1,38 @@
 {
+  "name": "agents.txt",
+  "description": "Reads, parses, validates, and audits agents.txt and agents.json files against the v1.0 specification. Exposes six read-only tools so agents can verify any site’s agent-readiness without leaving the MCP transport.",
+  "version": "0.5.0",
+  "serverUrl": "https://agents-txt.com/mcp",
+  "tools": [
+    {
+      "name": "get_spec",
+      "description": "Fetch the agents.txt v1.0 specification (full text or by section)."
+    },
+    {
+      "name": "parse_agents_txt",
+      "description": "Parse a raw agents.txt file into a structured JSON object matching the agents.json schema shape."
+    },
+    {
+      "name": "validate_agents_txt",
+      "description": "Validate an agents.txt file against the spec; returns errors and warnings."
+    },
+    {
+      "name": "validate_agents_json",
+      "description": "Validate an agents.json file against the spec schema; returns errors, warnings, and notes."
+    },
+    {
+      "name": "audit_site",
+      "description": "Fetch and audit a live site for agents.txt compliance (directives, schema, §4.5 serving headers, cross-file consistency)."
+    },
+    {
+      "name": "get_skill",
+      "description": "Fetch a skill package SKILL.md by name from the site’s skill index."
+    }
+  ],
   "serverInfo": {
     "name": "agents.txt",
-    "version": "0.5.0"
+    "version": "0.5.0",
+    "description": "Reads, parses, validates, and audits agents.txt and agents.json files against the v1.0 specification. Exposes six read-only tools so agents can verify any site’s agent-readiness without leaving the MCP transport."
   },
   "transport": {
     "endpoint": "https://agents-txt.com/mcp",

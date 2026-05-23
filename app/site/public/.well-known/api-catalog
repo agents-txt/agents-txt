@@ -1,43 +1,67 @@
 {
   "linkset": [
     {
-      "anchor": "https://agents-txt.com/mcp",
-      "links": [
+      "anchor": "https://agents-txt.com/.well-known/api-catalog",
+      "item": [
         {
-          "rel": "describedby",
-          "href": "https://agents-txt.com/.well-known/mcp/server-card.json",
-          "type": "application/json"
+          "href": "https://agents-txt.com/mcp",
+          "type": "application/json",
+          "title": "Exposes the agents.txt spec as structured resources: sections, directive reference, examples, and the JSON schema for agents.json."
         },
         {
-          "rel": "service-doc",
+          "href": "https://agents-txt.com/.well-known/agent-card.json",
+          "type": "application/json",
+          "title": "Reference A2A AgentCard describing a meta-agent that explains the agents.txt spec, validates discovery files, and points clients at the live MCP tools."
+        },
+        {
+          "href": "https://agents-txt.com/.well-known/ucp",
+          "type": "application/json",
+          "title": "Reference UCP profile demonstrating the discovery shape: declared services, transport bindings, payment handlers including the AP2 mandate extension, and signing keys. No live UCP server runs at the declared endpoint; the profile exists as a discovery artifact."
+        },
+        {
+          "href": "https://agents-txt.com/openapi.json",
+          "type": "application/json"
+        }
+      ]
+    },
+    {
+      "anchor": "https://agents-txt.com/mcp",
+      "describedby": [
+        {
+          "href": "https://agents-txt.com/.well-known/mcp/server-card.json",
+          "type": "application/json"
+        }
+      ],
+      "service-doc": [
+        {
           "href": "https://agents-txt.com"
         }
       ]
     },
     {
       "anchor": "https://agents-txt.com/.well-known/agent-card.json",
-      "links": [
+      "service-desc": [
         {
-          "rel": "service-desc",
           "href": "https://agents-txt.com/.well-known/agent-card.json",
           "type": "application/json"
-        },
+        }
+      ],
+      "service-doc": [
         {
-          "rel": "service-doc",
           "href": "https://agents-txt.com"
         }
       ]
     },
     {
       "anchor": "https://agents-txt.com/.well-known/ucp",
-      "links": [
+      "service-desc": [
         {
-          "rel": "service-desc",
           "href": "https://agents-txt.com/.well-known/ucp",
           "type": "application/json"
-        },
+        }
+      ],
+      "service-doc": [
         {
-          "rel": "service-doc",
           "href": "https://agents-txt.com"
         }
       ]

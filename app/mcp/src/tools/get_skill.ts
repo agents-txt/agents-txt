@@ -38,6 +38,7 @@ export function registerGetSkill(server: McpServer, siteOrigin: string) {
   server.registerTool(
     'get_skill',
     {
+      title: 'Get skill document (SKILL.md)',
       description:
         'Fetch a skill package by name. Returns the full SKILL.md markdown content. ' +
         'Skill names come from the agents.json skills list; use "list" to see available skills. ' +
@@ -47,6 +48,12 @@ export function registerGetSkill(server: McpServer, siteOrigin: string) {
         name: z
           .string()
           .describe('Skill name (e.g. "adopt-agents-txt") or "list" to see all available skills'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   true,
       },
     },
     async ({ name }: { name: string }) => {

@@ -91,6 +91,22 @@ const CORS = {
   'Access-Control-Expose-Headers': 'X-Payment-Response, Payment-Receipt, WWW-Authenticate',
 };
 
+// RFC 9598 RateLimit header field set advertised on rate-limited routes.
+// Cloudflare's `limit()` API does not expose remaining quota, so the
+// `RateLimit-Remaining` value we report is an approximation: on a 429 it
+// reads zero, on success it reads the static limit. Agents that respect
+// `RateLimit-Policy` self-throttle to the published window without needing
+// per-request accuracy.
+const RL_LIMIT  = 30;
+const RL_WINDOW = 60;
+const RL_POLICY = `"audit"; q=${RL_LIMIT}; w=${RL_WINDOW}`;
+const rateLimitHeaders = (remaining: number, reset: number): Record<string, string> => ({
+  'RateLimit-Limit':     String(RL_LIMIT),
+  'RateLimit-Remaining': String(Math.max(0, remaining)),
+  'RateLimit-Reset':     String(Math.max(0, reset)),
+  'RateLimit-Policy':    RL_POLICY,
+});
+
 /**
  * Per-IP, per-route rate-limit gate. Returns a 429 Response when over budget,
  * null otherwise. CF-Connecting-IP is set by Cloudflare's edge and cannot be
@@ -103,7 +119,15 @@ async function enforceRateLimit(request: Request, env: Env, route: string): Prom
   if (success) return null;
   return new Response(
     JSON.stringify({ error: 'rate_limited', message: 'Too many requests. Slow down and retry shortly.' }),
-    { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS } },
+    {
+      status: 429,
+      headers: {
+        'Content-Type':  'application/json',
+        'Retry-After':   String(RL_WINDOW),
+        ...rateLimitHeaders(0, RL_WINDOW),
+        ...CORS,
+      },
+    },
   );
 }
 
@@ -413,6 +437,46 @@ export default {
     if (env.MCP  && matches(pathname, MCP_PREFIXES))  return proxyTo(request, env.MCP);
     if (env.AUTH && matches(pathname, AUTH_PREFIXES)) return proxyTo(request, env.AUTH);
 
+    // ── /.well-known/mcp: directory-style manifest ───────────────────────────
+    // Scanners and clients probe /.well-known/mcp as a directory entry point
+    // before walking into /.well-known/mcp/server-card.json. Emit a small
+    // pointer document so the bare path returns a useful 200 instead of
+    // depending on static-asset 404 / index fallback behaviour. The actual
+    // SEP-2127 server card lives at the canonical sub-path and is generated
+    // by herald from agentsjson.config.js.
+    if (pathname === '/.well-known/mcp') {
+      const origin = new URL(request.url).origin;
+      // Read the server-card to mirror its `name` / `description` / `version`
+      // / `tools[]` on the directory manifest so scanners that only fetch the
+      // bare path still see the full identity. One source of truth: herald
+      // generates the card from agentsjson.config.js, the manifest just
+      // re-projects it.
+      let cardData: Record<string, unknown> = {};
+      try {
+        const cardRes = await env.ASSETS.fetch(new Request(new URL('/.well-known/mcp/server-card.json', request.url)));
+        if (cardRes.ok) cardData = await cardRes.json();
+      } catch { /* fall through; manifest still useful without tools */ }
+      const body = JSON.stringify({
+        name:        cardData.name        ?? 'agents.txt',
+        description: cardData.description ?? undefined,
+        version:     cardData.version     ?? undefined,
+        endpoint:    `${origin}/mcp`,
+        transport:   'streamable-http',
+        serverCard:  `${origin}/.well-known/mcp/server-card.json`,
+        agentsTxt:   `${origin}/agents.txt`,
+        agentsJson:  `${origin}/agents.json`,
+        ...(Array.isArray(cardData.tools) ? { tools: cardData.tools } : {}),
+      }, null, 2) + '\n';
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type':  'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600',
+          ...CORS,
+        },
+      });
+    }
+
     // ── /audit: shareable spec audit for any site ─────────────────────────
     // - GET /audit          (no ?url) → static Astro form page
     // - GET /audit?url=…    → run audit + content-negotiate:
@@ -436,10 +500,14 @@ export default {
       const wantsJson = /application\/json/i.test(acceptH);
       const wantsMd   = /text\/markdown/i.test(acceptH);
 
+      // RFC 9598 RateLimit headers attached to every /audit response so
+      // agents can self-throttle without hitting a 429 first.
+      const rlH = rateLimitHeaders(RL_LIMIT - 1, RL_WINDOW);
+
       if (!validated) {
         const errEnv: AuditEnvelope = { ok: false, target, error: 'invalid_url', message: `"${target}" is not a valid http(s) URL.` };
-        if (wantsJson) return Response.json(errEnv, { status: 400, headers: CORS });
-        if (wantsMd)   return new Response(renderAuditMarkdown(errEnv), { status: 400, headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...CORS } });
+        if (wantsJson) return Response.json(errEnv, { status: 400, headers: { ...rlH, ...CORS } });
+        if (wantsMd)   return new Response(renderAuditMarkdown(errEnv), { status: 400, headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...rlH, ...CORS } });
         return renderAuditHtml(request, env, errEnv);
       }
 
@@ -453,8 +521,8 @@ export default {
       const bypassCache = new URL(request.url).searchParams.get('nocache') === '1';
       const envelope = await runAuditCached(env, validated, { bypassCache });
 
-      if (wantsJson) return Response.json(envelope, { headers: CORS });
-      if (wantsMd)   return new Response(renderAuditMarkdown(envelope), { headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...CORS } });
+      if (wantsJson) return Response.json(envelope, { headers: { ...rlH, ...CORS } });
+      if (wantsMd)   return new Response(renderAuditMarkdown(envelope), { headers: { 'Content-Type': 'text/markdown; charset=utf-8', ...rlH, ...CORS } });
       return renderAuditHtml(request, env, envelope);
     }
 
@@ -472,9 +540,30 @@ export default {
     // `assets.run_worker_first: true` to ensure / and other static-asset pages
     // reach this handler. Without the page-path allowlist below we'd shadow
     // future no-extension routes (e.g. /pay or /api/foo) with markdown content.
-    const PAGE_PATHS = /^\/(spec|demo(\/[^/]+)?)?$/;
-    const accept = request.headers.get('accept') ?? '';
-    if (request.method === 'GET' && /text\/markdown/i.test(accept) && PAGE_PATHS.test(pathname)) {
+    const PAGE_PATHS = /^\/(spec|demo(\/[^/]+)?|about)?$/;
+    const accept     = request.headers.get('accept') ?? '';
+    const url        = new URL(request.url);
+    const modeAgent  = url.searchParams.get('mode') === 'agent';
+    const isIndexMd  = pathname === '/index.md';
+
+    // Three triggers all collapse to the same markdown branch:
+    //   • Accept: text/markdown on an HTML page path (RFC content negotiation)
+    //   • ?mode=agent query-string flag (AEO scanner heuristic; some agents
+    //     append this rather than setting the header, depending on the runtime
+    //     they're hosted in)
+    //   • GET /index.md (the optional Markdown URL fallback some scanners
+    //     probe for before reading from the homepage)
+    // All three serve the canonical /llms-full.txt body with text/markdown,
+    // matching what Cloudflare's managed `content_converter` setting will do
+    // transparently once it rolls out for this zone.
+    const wantsMarkdown =
+      request.method === 'GET' &&
+      (
+        isIndexMd ||
+        (modeAgent && PAGE_PATHS.test(pathname)) ||
+        (/text\/markdown/i.test(accept) && PAGE_PATHS.test(pathname))
+      );
+    if (wantsMarkdown) {
       const md = await env.ASSETS.fetch(new Request(new URL('/llms-full.txt', request.url)));
       if (md.ok) {
         return new Response(md.body, {

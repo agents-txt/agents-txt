@@ -56,7 +56,27 @@
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
 
+/.well-known/x402
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/schemamap.xml
+  Content-Type: application/xml; charset=utf-8
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/.well-known/http-message-signatures-directory
+  Content-Type: application/jwk-set+json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
 /auth.md
+  Content-Type: text/markdown; charset=utf-8
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/AGENTS.md
   Content-Type: text/markdown; charset=utf-8
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
@@ -74,6 +94,8 @@
   Link: </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json"
   Link: </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"
   Link: </openapi.json>; rel="service-desc"; type="application/json"
+  Link: </.well-known/x402>; rel="payment-discovery"; type="application/json"
+  Link: </.well-known/http-message-signatures-directory>; rel="http-message-signatures-directory"; type="application/jwk-set+json"
   Link: </agents.txt>; rel="describedby"; type="text/plain"
   Link: </agents.json>; rel="describedby"; type="application/json"
   Link: </llms.txt>; rel="describedby"; type="text/plain"

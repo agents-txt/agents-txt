@@ -62,6 +62,7 @@ export function registerGetSpec(server: McpServer, siteOrigin: string) {
   server.registerTool(
     'get_spec',
     {
+      title: 'Get agents.txt spec section',
       description:
         'Get the agents.txt standard spec (v1.0) from the live site. ' +
         'Use "all" for the full spec or a section name to filter: ' +
@@ -71,6 +72,12 @@ export function registerGetSpec(server: McpServer, siteOrigin: string) {
           .enum(SECTIONS)
           .default('all')
           .describe('Spec section to retrieve (default: all)'),
+      },
+      annotations: {
+        readOnlyHint:    true,
+        destructiveHint: false,
+        idempotentHint:  true,
+        openWorldHint:   true,
       },
     },
     async ({ section }: { section: Section }) => {
